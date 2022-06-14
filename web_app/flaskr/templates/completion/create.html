@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Create a Completion{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <form method="post">
+        
+        <label for="model_id">Enter the ID of the model you choose</label>
+        <input name="model_id" id="model_id" value="{{ request.form['model_id'] }}" required type="integer"></input>
+        <label for="prompt">Enter your prompt</label>
+        <textarea name="prompt" id="prompt" value="{{ request.form['prompt'] }}" required></textarea>
+        <input type="submit" value="Save">
+    </form>
+{% endblock %}
