@@ -1,4 +1,4 @@
-"""Contains the functions for the completion page"""
+"""Contains the functions for the completion page and the completion blueprint"""
 from typing import Optional, List, Union
 import tensorflow as tf
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
@@ -21,7 +21,7 @@ def index():
     # Execute a SQL query and return the results
     completions: List[dict] = db.execute(
         'SELECT c.id, user_id, model_id, created, prompt, answer FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC').fetchall()
-    return render_template('completion/index.html', completions = completions)
+    return render_template("completion/index.html", completions = completions)
 
 
 def complete(prompt: str, model_name: str) -> Union[Response, str]:
@@ -73,7 +73,7 @@ def create():
         if error is not None:
             flash(error)
         else:
-            db = get_db()
+            db: Connection = get_db()
             model_name: str = db.execute('SELECT model_name FROM model WHERE id = ?', (model_id,)).fetchone()
             if model_name is None:
                 flash('Model does not exist')
