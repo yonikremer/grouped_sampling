@@ -10,7 +10,7 @@
 {% block content %}
     {% for completion in completions %}
         <article class="completion">
-            <div class="about">by {{ completion['username'] }} on {{ completion['created'].strftime('%Y/%m/%d %H:%M:%S') }}</div>
+            <div class="about">by {{ completion['username'] }} on {{ completion['created'].strftime('%d/%m/%y %H:%M') }}</div>
             <div class="prompt">{{ completion['prompt'] }}</div>
             <div class="answer">{{ completion['answer'] }}</div>
         </article>

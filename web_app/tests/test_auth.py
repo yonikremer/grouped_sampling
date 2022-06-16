@@ -1,68 +1,78 @@
-"""Contains all the tests for the authentications"""
-
-import os
-import tempfile
+"""Test the auth blueprint"""
 
 import pytest
+from flask import g, session, Flask, Response
+from flask.testing import FlaskClient
 
-from flaskr import create_app
 from flaskr.db import get_db
-from flaskr.db import init_db
-
-# read in SQL for populating test data
-with open(os.path.join(os.path.dirname(__file__), "data.sql"), "rb") as f:
-    _data_sql = f.read().decode("utf8")
 
 
-@pytest.fixture
-def app():
-    """Create and configure a new app instance for each test."""
-    # create a temporary file to isolate the database for each test
-    db_fd, db_path = tempfile.mkstemp()
-    # create the app with common test config
-    app = create_app({"TESTING": True, "DATABASE": db_path})
+def test_register(client: FlaskClient, app: Flask) -> None:
+    # test that viewing the page renders without template errors
+    assert client.get("/auth/register").status_code == 200
 
-    # create the database and load test data
+    # test that successful registration redirects to the login page
+    response = client.post("/auth/register", data={"username": "a", "password": "a"})
+    assert response.headers["Location"] == "/auth/login"
+
+    # test that the user was inserted into the database
     with app.app_context():
-        init_db()
-        get_db().executescript(_data_sql)
-
-    yield app
-
-    # close and remove the temporary database
-    os.close(db_fd)
-    os.unlink(db_path)
-
-
-@pytest.fixture
-def client(app):
-    """A test client for the app."""
-    return app.test_client()
-
-
-@pytest.fixture
-def runner(app):
-    """A test runner for the app's Click commands."""
-    return app.test_cli_runner()
-
-
-class AuthActions:
-    """Contains helper methods for testing the authentication"""
-    def __init__(self, client):
-        self._client = client
-
-    def login(self, username: str = "test", password: str = "test"):
-        """Login helper function."""
-        return self._client.post(
-            "/auth/login", data={"username": username, "password": password}
+        assert (
+            get_db().execute("SELECT * FROM user WHERE username = 'a'").fetchone()
+            is not None
         )
 
-    def logout(self):
-        """Logout helper function."""
-        return self._client.get("/auth/logout")
+
+@pytest.mark.parametrize(
+    ("username", "password", "message"),
+    (
+        ("", "", b'Username is required.'),
+        ("a", "", b'Password is required.'),
+        ("test", "test", b'already registered'),
+    ),
+)
+def test_register_validate_input(client: FlaskClient, username: str, password: str, message: bytes) -> None:
+    """Tests that you:
+    1 can't create a user with existing username
+    2 can't create a user with no password
+    3 can't register twice"""
+    response = client.post(
+        "/auth/register", data={"username": username, "password": password}
+    )
+    assert message in response.data
 
 
-@pytest.fixture
-def auth(client):
-    """tests login and logout for an existing user"""
-    return AuthActions(client)
+def test_login(client: FlaskClient, auth):
+    """Tests you can login"""
+    # test that viewing the page renders without template errors
+    assert client.get("/auth/login").status_code == 200
+
+    # test that successful login redirects to the index page
+    response: Response = auth.login()
+    assert response.headers["Location"] == "/"
+
+    # login request set the user_id in the session
+    # check that the user is loaded from the session
+    with client:
+        client.get("/")
+        assert session["user_id"] == 1
+        assert g.user["username"] == "test"
+
+
+@pytest.mark.parametrize(
+    ("username", "password", "message"),
+    (("a", "test", b'Incorrect username.'), ("test", "a", b'Incorrect password.')),
+)
+def test_login_validate_input(auth, username: str, password: str, message: bytes) -> None:
+    """Tests you can't log in to none existing users or with wrong password"""
+    response: Response = auth.login(username, password)
+    assert message in response.data
+
+
+def test_logout(client: FlaskClient, auth):
+    """Tests the logout feature"""
+    auth.login()
+
+    with client:
+        auth.logout()
+        assert "user_id" not in session

@@ -4,7 +4,6 @@ import tensorflow as tf
 import tensorflow_text as tf_text
 from flask import g  # A dictionary containing all the global variables.
 from typing import List
-from flask.cli import with_appcontext
 
 
 def init_tokenizer() -> tf_text.BertTokenizer:
@@ -22,7 +21,7 @@ def init_tokenizer() -> tf_text.BertTokenizer:
             value_dtype = tf.int64),
         num_oov_buckets = 1
     )
-    my_tokenizer: tf_text.Tokenizer = tf_text.BertTokenizer(lookup_table, **bert_tokenizer_params)
+    my_tokenizer: tf_text.BertTokenizer = tf_text.BertTokenizer(lookup_table, **bert_tokenizer_params)
     # tf_text.Tokenizer is the base class for tf_text.BertTokenizer
     return my_tokenizer
 

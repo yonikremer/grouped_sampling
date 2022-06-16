@@ -1,16 +1,12 @@
 """Contains the functions for the authentication."""
 
 import functools
-
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
 from werkzeug.security import check_password_hash, generate_password_hash
-
 from flaskr.db import get_db
-
-import sqlite3
-
+from sqlite3 import Connection
 from typing import Optional
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -18,11 +14,13 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
-    """Register a new user."""
+    """Register a new user.
+    If the registration is successful, the user is directed to auth.login
+    else, the user is directed to auth.register recursively until a successful registration"""
     if request.method == 'POST':
         username: str = request.form['username']
         password: str = request.form['password']
-        db: sqlite3 = get_db()
+        db: Connection = get_db()
         error: Optional[str] = None
 
         if not username:
@@ -38,7 +36,7 @@ def register():
                 )
                 db.commit()  # commit the changes to the database
             except db.IntegrityError:
-                error = "User {username} is already registered."
+                error = f"User {username} is already registered."
             else:
                 return redirect(url_for("auth.login"))
 
@@ -49,14 +47,16 @@ def register():
 
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
-    """Logs in a user."""
+    """Logs in a user.
+    If the loging is successful, the user is directed to the main page
+    else, the user is directed to auth.login recursively until a successful registration"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        db = get_db()
+        db: Connection = get_db()
         error = None
-        user = db.execute(
-            'SELECT * FROM user WHERE username = ?', (username,)
+        user: dict = db.execute(
+            "SELECT * FROM user WHERE username = ?", (username,)
         ).fetchone()
 
         if user is None:
@@ -75,7 +75,7 @@ def login():
 
 
 @bp.before_app_request
-def load_logged_in_user():
+def load_logged_in_user() -> None:
     """If a user id is stored in the session, load the user object from the database into g.user."""
     user_id = session.get('user_id')
 
@@ -89,7 +89,7 @@ def load_logged_in_user():
 
 @bp.route('/logout')
 def logout():
-    """clear session and logout"""
+    """clears session, logs out and redirects to the main page"""
     session.clear()
     return redirect(url_for('index'))
 

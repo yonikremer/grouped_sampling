@@ -1,5 +1,6 @@
 """This file contains all the tests for the database."""
 import sqlite3
+from sqlite3 import Connection
 
 import pytest
 from flaskr.db import get_db
@@ -9,7 +10,7 @@ from flask import Flask
 def test_get_close_db(app: Flask):
     """Test that the close db is called when app is terminated."""
     with app.app_context():
-        db = get_db()
+        db: Connection = get_db()
         assert db is get_db()  # Assert that get_db()
         # returns a pointer to the same database evert time
 
