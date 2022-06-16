@@ -18,13 +18,14 @@ To use my models (Unfortunately, I don't have my web app hosted currently):
 3. Download /webapp to my_path
 4. Open **windows cmd** 
 5. Type:
-  'cd my_path'
-  'conda create -n my_venv python=3.9'
-  'conda activate my_venv'
-  'pip install -q -r requirements.txt'
-  'set FLASK_APP=flaskr'
-  'flask init-db'
-  'flask run'
+  'cd my_path'/n
+  'conda create -n my_venv python=3.9'/n
+  'conda activate my_venv'/n
+  'pip install -q -r requirements.txt'/n
+  'set FLASK_APP=flaskr'/n
+  'pytest'/n
+  'flask init-db'/n
+  'flask run'/n
 6. Enter http://127.0.0.1:5000/register
 
 If you have any issues with the project, contact me at yoni.kremer@gmail.com
