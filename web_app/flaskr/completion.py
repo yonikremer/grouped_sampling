@@ -1,8 +1,7 @@
 """Contains the functions for the completion page and the completion blueprint"""
 from typing import Optional, List, Union
 import tensorflow as tf
-from flask import Blueprint, flash, g, redirect, render_template, request, url_for
-from werkzeug import Response
+from flask import Blueprint, flash, g, redirect, render_template, request, url_for, Response
 
 from flaskr.auth import login_required
 from flaskr.db import get_db
@@ -15,26 +14,36 @@ bp = Blueprint('completion', __name__)
 
 
 @bp.route('/')
-def index():
+def index() -> str:
     """The page with all the completions"""
-    db: Connection = get_db()
+    my_db: Connection = get_db()
     # Execute a SQL query and return the results
-    completions: List[dict] = db.execute(
+    completions: List[dict] = my_db.execute(
         'SELECT c.id, user_id, model_id, created, prompt, answer FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC').fetchall()
     return render_template("completion/index.html", completions = completions)
 
 
-def complete(prompt: str, model_name: str) -> Union[Response, str]:
+def complete(prompt: str, model_name: str) -> str:
     """Loads the model, preprocess the prompt and completes the text"""
-    path: str = f"/flaskr/static/models/{model_name}"
+    if not hasattr(g, 'my_tokenizer'):
+        my_tokenizer = init_tokenizer()
+        g.my_tokenizer = my_tokenizer
+    path: str = f"/flaskr/static/models/{model_name}.pb"
     if not os.path.exists(path):
-        raise ValueError(f"Model {model_name} does not exist or have a wrong name")
+        flash(f"Model {model_name} does not exist or have a wrong name")
+        return render_template("completion/create.html")
     model: tf.keras.model.Model = tf.saved_model.load(path)
-    tokenizer_prompt: tf.Tensor = tokenize(prompt)
-    if tokenizer_prompt.shape[0] > g.MAX_LEN:
+    tokenized_prompt: tf.Tensor = tokenize(prompt)
+    if tokenized_prompt.shape[0] > g.MAX_LEN:
         flash('The prompt is too long')
-        return redirect(url_for('completion.index'))
-    tokenized_ans = model.predict(tokenizer_prompt)
+        return render_template("completion/create.html")
+    tokenized_ans: tf.TensorSpec(shape=[1, None, None]) = model.predict(tokenized_prompt)
+    if not tokenized_ans.shape[0] == 1:
+        flash('The model have a wrong output shape')
+        return render_template("completion/create.html")
+    if not tokenized_ans.dtype in (tf.float32, tf.float16):
+        flash('The model have a wrong output data type')
+        return render_template("completion/create.html")
     string_tensor_ans: tf.RaggedTensor = g.tokenizer.detokenize(tokenized_ans)
     string_words: List[str] = []
     for one_d_tensor in string_tensor_ans:
@@ -45,6 +54,8 @@ def complete(prompt: str, model_name: str) -> Union[Response, str]:
             string_words.append(string_word)
 
     sentence: str = ' '.join(string_words)
+    if not isinstance(sentence, str):
+        flash('Something with the model is not working as intended. Please try a different model')
     remove_words = {'[PAD]', '[UNK]', '[START]', '[END]', '[MASK]'}
     for word in remove_words:
         sentence = sentence.replace(word, '')
@@ -53,15 +64,11 @@ def complete(prompt: str, model_name: str) -> Union[Response, str]:
 
 @login_required
 @bp.route('/create', methods = ('GET', 'POST'))
-def create():
+def create() -> Union[str, Response]:
     """Creates a new completion
     If a completion is created successfully, directs to the main page.
     else, recursively redirect to this page (completion/create) until a successful completion"""
     if request.method == 'POST':
-
-        if not hasattr(g, 'my_tokenizer'):
-            my_tokenizer = init_tokenizer()
-            g.my_tokenizer = my_tokenizer
         prompt: str = request.form['prompt']
         model_id: int = int(request.form['model_id'])
         error: Optional[str] = None
@@ -73,18 +80,18 @@ def create():
         if error is not None:
             flash(error)
         else:
-            db: Connection = get_db()
-            model_name: str = db.execute('SELECT model_name FROM model WHERE id = ?', (model_id,)).fetchone()
-            if model_name is None:
+            my_db: Connection = get_db()
+            model_name: str = my_db.execute('SELECT model_name FROM model WHERE id = ?', (model_id,)).fetchone()
+            if model_name is None or not isinstance(model_name, str):
                 flash('Model does not exist')
                 return redirect(url_for('completion.create'))
             answer: str = complete(prompt, model_name)
-            db.execute(
-                'INSERT INTO completion (model_id, prompt, answer, author_id)'
+            my_db.execute(
+                'INSERT INTO completion (model_id, prompt, answer, user_id)'
                 ' VALUES (?, ?, ?, ?)',
                 (model_id, prompt, answer, g.user['id'])
             )
-            db.commit()
+            my_db.commit()
             return redirect(url_for('completion/index.html'), )
     return render_template("completion/create.html")
 
@@ -108,7 +115,7 @@ def get_completion(com_id: int) -> dict:
 # def delete(com_id: int):
 #     """Deletes a completion"""
 #     get_completion(com_id)
-#     db = get_db()
-#     db.execute('DELETE FROM completion WHERE id = ?', (id,))
-#     db.commit()
+#     my_db = get_db()
+#     my_db.execute('DELETE FROM completion WHERE id = ?', (id,))
+#     my_db.commit()
 #     return redirect(url_for('completion.index'))

@@ -32,6 +32,6 @@ def test_create(client: FlaskClient, auth, app: Flask) -> None:
     assert client.get('/create').status_code == 200
     client.post('/create', data={'prompt': 'test prompt',  'model_id': 1})
     with app.app_context():
-        db: Connection = get_db()
-        count = db.execute('SELECT COUNT(id) FROM completion').fetchone()[0]
+        my_db: Connection = get_db()
+        count = my_db.execute('SELECT COUNT(id) FROM completion').fetchone()[0]
         assert count == 3  # there are 3 completions in the database, two from testing_data.sql and one from the test

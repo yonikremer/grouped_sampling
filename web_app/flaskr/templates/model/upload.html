@@ -5,7 +5,7 @@
     <a class="action" href="{{ url_for('model.view_all') }}">See all the models that were created!</a>
 {% endblock %}
 
-{% block body %}
+{% block content %}
     <p>
         Upload here only tensorflow models that:
         <ul>
@@ -18,10 +18,36 @@
             <li>Input: [inp: tf.TensorSpec(shape=[batch_size, None], dtype=tf.int32),
                 outp: tf.TensorSpec(shape=[batch_size, set_size], dtype=tf.int32)], training: bool</li>
             <li>Output: tf.TensorSpec(shape=[batch_size, set_size, vocab_size], dtype=tf.float16)</li>
+            <li>Have Embedding as their first layer</li>
+            <li>Have Softmax with axis = -1 or 2 as their last layer</li>
         </ul>
-    </p>
     <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
+      <input type=file name=file required>
     </form>
+    <label for="set_size">Set size: int</label>
+    <input name="set_size" id="set_size" required type="text">
+    <br>
+    <label for="num_layers">Number of layers: int</label>
+    <input name="num_layers" id="num_layers" required type="text">
+    <br>
+    <label for="num_heads">Number of heads: int</label>
+    <input name="num_heads" id="num_heads" required type="text">
+    <br>
+    <label for="d_model">Dimension of the model: int</label>
+    <input name="d_model" id="d_model" required type="text">
+    <br>
+    <label for="dff">Dimension of the feed forward layer: int</label>
+    <input name="dff" id="dff" required type="text">
+    <br>
+    <label for="dropout_rate">Dropout rate: float</label>
+    <input name="dropout_rate" id="dropout_rate" required type="text">
+    <br>
+    <label for="learning_rate">Learning rate: float</label>
+    <input name="learning_rate" id="learning_rate" required type="text">
+    <br>
+    <label for="batch_size">Batch size: int</label>
+    <input name="batch_size" id="batch_size" required type="text">
+    <br>
+    <input type=submit value=Upload>
+
 {% endblock %}

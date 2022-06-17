@@ -6,10 +6,10 @@
   <ul>
     {% if g.user %}
       <li><span>{{ g.user['username'] }}</span>
+          <br>
       <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
     {% else %}
       <a href="{{ url_for('auth.register') }}">Register</a>
-      <!-- <li>___</li>  -->
       <a href="{{ url_for('auth.login') }}">Log in</a>
     {% endif %}
   </ul>
@@ -21,9 +21,11 @@
   {% for message in get_flashed_messages() %}
     <div class="flash">{{ message }}</div>
   {% endfor %}
-  {% block content %}{% endblock %}
+{% block content %}{% endblock %}
 </section>
 <div class="footer">
-  <p><a href="https:/github.com/yonikremer/final_project">Visit the project's GitHub repository</a></p>
-  <p>For any issues, please contact me at yoni.kremer@gmail.com</p>
+    For any issues, please contact me at yoni.kremer@gmail.com
+    <br>
+    <a href="https://github.com/yonikremer/final_project">Visit the project repository on GitHub</a>
 </div>
+</html>

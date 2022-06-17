@@ -2,12 +2,12 @@
 
 import functools
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, Response
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from flaskr.db import get_db
 from sqlite3 import Connection
-from typing import Optional
+from typing import Optional, Union
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -20,7 +20,7 @@ def register():
     if request.method == 'POST':
         username: str = request.form['username']
         password: str = request.form['password']
-        db: Connection = get_db()
+        my_db: Connection = get_db()
         error: Optional[str] = None
 
         if not username:
@@ -30,12 +30,12 @@ def register():
 
         if error is None:
             try:
-                db.execute(
+                my_db.execute(
                     "INSERT INTO user (username, password) VALUES (?, ?)",
                     (username, generate_password_hash(password)),
                 )
-                db.commit()  # commit the changes to the database
-            except db.IntegrityError:
+                my_db.commit()  # commit the changes to the database
+            except my_db.IntegrityError:
                 error = f"User {username} is already registered."
             else:
                 return redirect(url_for("auth.login"))
@@ -46,16 +46,16 @@ def register():
 
 
 @bp.route('/login', methods=('GET', 'POST'))
-def login():
+def login() -> Union[Response, str]:
     """Logs in a user.
     If the loging is successful, the user is directed to the main page
     else, the user is directed to auth.login recursively until a successful registration"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        db: Connection = get_db()
+        my_db: Connection = get_db()
         error = None
-        user: dict = db.execute(
+        user: dict = my_db.execute(
             "SELECT * FROM user WHERE username = ?", (username,)
         ).fetchone()
 
@@ -83,12 +83,12 @@ def load_logged_in_user() -> None:
         g.user = None
     else:
         g.user = get_db().execute(
-            'SELECT * FROM user WHERE id = ?', (user_id,)
+                "SELECT * FROM user WHERE id = ?", (user_id,)
         ).fetchone()
 
 
 @bp.route('/logout')
-def logout():
+def logout() -> Response:
     """clears session, logs out and redirects to the main page"""
     session.clear()
     return redirect(url_for('index'))
