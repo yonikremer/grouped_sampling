@@ -1,6 +1,6 @@
 """Contains the functions and blueprint to upload a model and see a list of all models"""
 import os
-from typing import List, Union
+from typing import List, Union, Set
 import tensorflow as tf
 
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, g, Response
@@ -28,7 +28,8 @@ def view_all() -> str:
 
 def allowed_file(filename: str) -> bool:
     """return if the file has the correct extension"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() == "pb"
+    banned_chars: Set[chr] = {'/', ':', '*', '?', '<', '>', '|'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() == "pb" and not any(char in filename for char in banned_chars)
 
 
 def model_errors(model_name: str) -> List[str]:
@@ -91,9 +92,15 @@ def upload() -> Union[Response, str]:
             errors.append('File extension is not .pb')
         filename: str = secure_filename(file.filename)
         model_name: str = filename.split('.')[0]
-        errors += model_errors(model_name)
-        file.save(os.path.join(current_app.root_path, "static", "models", filename))
-        flash('File successfully uploaded')
+        if len(errors) == 0:
+            full_path: str = os.path.join(current_app.root_path, "static", "models", filename)
+            file.save(full_path)
+            flash('File successfully uploaded')
+            errors = model_errors(model_name)  # The same as appending to errors because it's empty
+            if len(errors) > 0:
+                os.remove(full_path)
+                errors.append('Model removed')
+
         set_size: int = int(request.form["set_size"])
         num_layers: int = int(request.form["num_layers"])
         num_heads: int = int(request.form["num_heads"])
@@ -111,7 +118,6 @@ def upload() -> Union[Response, str]:
                           (g.user["id"], model_name, set_size, num_layers, num_heads, d_model, dff, dropout_rate,
                            learning_rate, batch_size))
             return redirect(url_for("model.view_all"))
-        for error in errors:
-            flash(error)
+        flash('\n'.join(errors))
 
     return render_template("model/upload.html")
