@@ -11,17 +11,6 @@ CREATE TABLE user (
   password TEXT NOT NULL
 );
 
-CREATE TABLE completion (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    model_id INTEGER NOT NULL,
-    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    prompt TEXT NOT NULL,
-    answer TEXT NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES user(id),
-    FOREIGN KEY(model_id) REFERENCES model(id)
-);
-
 CREATE TABLE model (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -35,4 +24,18 @@ CREATE TABLE model (
     dropout_rate float NOT NULL,
     learning_rate float NOT NULL,
     batch_size int NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES user(id));
+    FOREIGN KEY(user_id) REFERENCES user(id)
+);
+
+
+CREATE TABLE completion (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    model_id INTEGER NOT NULL,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    prompt TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES user(id),
+    FOREIGN KEY(model_id) REFERENCES model(id)
+);
+

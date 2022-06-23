@@ -102,6 +102,7 @@ def login_required(view):
     def wrapped_view(**kwargs):
         """the wrapped function"""
         if g.user is None:
+            flash('Loging in is required for this page.')
             return redirect(url_for('auth.login'))
 
         return view(**kwargs)
