@@ -1,5 +1,5 @@
 """Contains the functions for the completion page and the completion blueprint"""
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Set
 import tensorflow as tf
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for, Response
 
@@ -56,7 +56,7 @@ def complete(prompt: str, model_name: str) -> str:
     sentence: str = ' '.join(string_words)
     if not isinstance(sentence, str):
         flash('Something with the model is not working as intended. Please try a different model')
-    remove_words = {'[PAD]', '[UNK]', '[START]', '[END]', '[MASK]'}
+    remove_words: Set[str] = {'[PAD]', '[UNK]', '[START]', '[END]', '[MASK]'}
     for word in remove_words:
         sentence = sentence.replace(word, '')
     return sentence
@@ -70,52 +70,34 @@ def create() -> Union[str, Response]:
     else, recursively redirect to this page (completion/create) until a successful completion"""
     if request.method == 'POST':
         prompt: str = request.form['prompt']
-        model_id: int = int(request.form['model_id'])
+        model_id_str: str = request.form['model_id']
+        model_id: int = int(model_id_str)
         error: Optional[str] = None
         if not prompt:
-            error = 'Title is required.'
-        if not model_id:
+            error = 'Prompt is required.'
+        if not isinstance(prompt, str):
+            error = 'prompt must be a string.'
+        if not model_id_str:
             error = 'You must select a model.'
-
+        if int(str(model_id)) != model_id or model_id < 0:
+            error = 'Model id must be aa integer greater than 0'
         if error is not None:
             flash(error)
         else:
             my_db: Connection = get_db()
             model_name: str = my_db.execute('SELECT model_name FROM model WHERE id = ?', (model_id,)).fetchone()
             if model_name is None or not isinstance(model_name, str):
-                flash('Model does not exist')
-                return redirect(url_for('completion.create'))
-            answer: str = complete(prompt, model_name)
-            my_db.execute(
-                'INSERT INTO completion (model_id, prompt, answer, user_id)'
-                ' VALUES (?, ?, ?, ?)',
-                (model_id, prompt, answer, g.user['id'])
-            )
-            my_db.commit()
-            return redirect(url_for('completion/index.html'), )
+                error = f'Model: {model_id} does not exist'
+            if error is None:
+                answer: str = complete(prompt, model_name)
+                if not isinstance(answer, str):
+                    error = 'Something with the model is not working as intended. Please try a different model'
+                if error is None:
+                    my_db.execute(
+                        'INSERT INTO completion (model_id, prompt, answer, user_id)'
+                        ' VALUES (?, ?, ?, ?)',
+                        (model_id, prompt, answer, g.user['id'])
+                    )
+                    my_db.commit()
+                    return redirect(url_for('completion/index.html'), )
     return render_template("completion/create.html")
-
-
-def get_completion(com_id: int) -> dict:
-    """Get a completion with id com_id from the database"""
-    completion = get_db().execute(
-        "SELECT p.id, title, body, created, author_id, username"
-        "FROM completion c JOIN user u ON c.user_id = u.id"
-        "WHERE p.id = ?",
-        (com_id,)
-    ).fetchone()
-
-    if completion is None:
-        abort(404, f"Completion with id {com_id} doesn't exist.")
-
-    return completion
-
-# @bp.route('/<int:id>/delete', methods=('POST',))
-# @login_required
-# def delete(com_id: int):
-#     """Deletes a completion"""
-#     get_completion(com_id)
-#     my_db = get_db()
-#     my_db.execute('DELETE FROM completion WHERE id = ?', (id,))
-#     my_db.commit()
-#     return redirect(url_for('completion.index'))
