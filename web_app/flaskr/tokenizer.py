@@ -18,7 +18,8 @@ def init_tokenizer() -> tf_text.BertTokenizer:
             keys = tensor_vocab,
             key_dtype = tf.string,
             values = tf.range(tf.size(vocab, out_type = tf.int64), dtype = tf.int64),
-            value_dtype = tf.int64),
+            value_dtype = tf.int64
+            ),
         num_oov_buckets = 1
     )
     my_tokenizer: tf_text.BertTokenizer = tf_text.BertTokenizer(lookup_table, **bert_tokenizer_params)
@@ -26,7 +27,7 @@ def init_tokenizer() -> tf_text.BertTokenizer:
     return my_tokenizer
 
 
-def tokenize(text: str) -> tf.Tensor:
+def tokenize_and_preprocces(text: str) -> tf.Tensor:
     """Converts string to tensor"""
     ragged: tf.RaggedTensor = g.my_tokenizer.tokenize(text)[0, :]
     eager: tf.Tensor = ragged.to_tensor(default_value = 0, shape = [None, 1])  # 0 is the value of the padding token

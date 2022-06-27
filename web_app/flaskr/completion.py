@@ -2,13 +2,13 @@
 from typing import Optional, List, Union, Set
 import tensorflow as tf
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for, Response
+import os
+from sqlite3 import Connection
+from langdetect import detect
 
 from flaskr.auth import login_required
 from flaskr.db import get_db
-from flaskr.tokenizer import tokenize, init_tokenizer
-from werkzeug.exceptions import abort
-import os
-from sqlite3 import Connection
+from flaskr.tokenizer import tokenize_and_preprocces, init_tokenizer
 
 bp = Blueprint('completion', __name__)
 
@@ -33,7 +33,7 @@ def complete(prompt: str, model_name: str) -> str:
         flash(f"Model {model_name} does not exist or have a wrong name")
         return render_template("completion/create.html")
     model: tf.keras.model.Model = tf.saved_model.load(path)
-    tokenized_prompt: tf.Tensor = tokenize(prompt)
+    tokenized_prompt: tf.Tensor = tokenize_and_preprocces(prompt)
     if tokenized_prompt.shape[0] > g.MAX_LEN:
         flash('The prompt is too long')
         return render_template("completion/create.html")
@@ -68,7 +68,7 @@ def create() -> Union[str, Response]:
     """Creates a new completion
     If a completion is created successfully, directs to the main page.
     else, recursively redirect to this page (completion/create) until a successful completion"""
-    if request.method == 'POST':
+    if request.method == "POST":
         prompt: str = request.form['prompt']
         model_id_str: str = request.form['model_id']
         model_id: int = int(model_id_str)
@@ -77,6 +77,8 @@ def create() -> Union[str, Response]:
             error = 'Prompt is required.'
         if not isinstance(prompt, str):
             error = 'prompt must be a string.'
+        if detect(prompt) != 'en':
+            error = 'prompt must be in english.'
         if not model_id_str:
             error = 'You must select a model.'
         if int(str(model_id)) != model_id or model_id < 0:
