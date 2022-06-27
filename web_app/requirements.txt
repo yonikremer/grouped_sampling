@@ -6,3 +6,4 @@ setuptools~=57.4.0
 tensorflow~=2.9.1
 tensorflow_text~=2.9.0
 pandas~=1.4.2
+langdetect~=1.0.7
