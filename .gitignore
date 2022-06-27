@@ -140,5 +140,6 @@ cython_debug/
 
 .sqlite3
 /documents/examples
+/documents/resources
 /model/wiki_data
 .vscode
