@@ -6,12 +6,23 @@
   <ul>
     {% if g.user %}
       <li><span>{{ g.user['username'] }}</span>
-          <br>
+        <br>
       <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
+        <br>
     {% else %}
       <a href="{{ url_for('auth.register') }}">Register</a>
+      <br>
       <a href="{{ url_for('auth.login') }}">Log in</a>
+      <br>
+      <a href="{{ url_for('completion.create') }}">Create your own completion></a>
+      <br>
+      <a href="{{ url_for('model.upload') }}">Upload your model</a>
+      <br>
     {% endif %}
+    <a href="{{ url_for('completion.index') }}">See all past completion</a>
+    <br>
+    <a href="{{ url_for('model.view_all') }}">See all available models</a>
+    <br>
   </ul>
 </nav>
 <section class="content">
