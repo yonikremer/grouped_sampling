@@ -7,7 +7,7 @@ from typing import List
 
 
 def init_tokenizer() -> tf_text.BertTokenizer:
-    """Creates and returns the tokenizer."""
+    """Creates and returns the tokenizer and vocabulary."""
     path: str = 'flaskr/static/look_up_table.txt'
     bert_tokenizer_params: dict = dict(lower_case = True)
     with open(path, 'r') as f:
@@ -24,16 +24,16 @@ def init_tokenizer() -> tf_text.BertTokenizer:
     )
     my_tokenizer: tf_text.BertTokenizer = tf_text.BertTokenizer(lookup_table, **bert_tokenizer_params)
     # tf_text.Tokenizer is the base class for tf_text.BertTokenizer
-    return my_tokenizer
+    return my_tokenizer, vocab
 
 
 def tokenize_and_preprocces(text: str) -> tf.Tensor:
-    """Converts string to tensor"""
+    """Converts string to tensor of tokens of shape [1, seq_length]."""
     ragged: tf.RaggedTensor = g.my_tokenizer.tokenize(text)[0, :]
     eager: tf.Tensor = ragged.to_tensor(default_value = 0, shape = [None, 1])  # 0 is the value of the padding token
     sqeezed: tf.Tensor = tf.squeeze(eager, axis = 1)
     typed: tf.Tensor = tf.cast(sqeezed, tf.int32)
-    start_token = tf.constant([2], dtype=tf.int32)
-    end_token = tf.constant([3], dtype=tf.int32)
-    edited: tf.Tensor = tf.concat([start_token, typed, end_token], axis = 0)
-    return edited
+    start_token: tf.Tensor = tf.constant([2], dtype=tf.int32)
+    edited: tf.Tensor = tf.concat([start_token, typed], axis = 0)
+    expended: tf.Tensor = tf.expand_dims(edited, axis=0)
+    return expended
