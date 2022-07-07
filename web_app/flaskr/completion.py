@@ -45,8 +45,8 @@ def doesnt_have_duplicates(l: list[int]) -> bool:
 
 def nucleus_sampeling(set_prob: tf.Tensor, top_p: float, top_k: int) -> list[list[int]]:
     """Returns the most probable completions for the prompt as tokens such that
-       the sum probabilities of the ith token adds up to top_p
-       and the number of tokens in every set is set_size"""
+       the sum probabilities of the ith token adds up to less than top_p, there are at maximum top_k
+       diffrent tokens each place and the number of tokens in every set is set_size"""
     # set_prob.shape is [1, set_size, vocab_size]
     indeces: list[list[int]] = []
     for i in range(set_prob.shape[1]):
@@ -68,7 +68,6 @@ def nucleus_sampeling(set_prob: tf.Tensor, top_p: float, top_k: int) -> list[lis
             else:
                 break
         indeces.append(curr_indeces)
-    
     new_prompts: list[list[int]] = combenations(indeces)
     return list(filter(doesnt_have_duplicates, new_prompts))
 
