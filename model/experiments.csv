@@ -1,1 +1,0 @@
-﻿date,test_loss,val_loss,train_loss,set_size,num_layers,d_model,dff,num_heads,learning_rate,max_seq_len,dropout_rate,batch_size
