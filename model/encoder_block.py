@@ -1,10 +1,11 @@
 import tensorflow as tf
+from keras.layers import Layer
 
 from mmha import MyMultiHeadAttention
 from pwff import PointWiseFeedForwardNetwork
 
 
-class EncoderBlock(tf.keras.layers.Layer):
+class EncoderBlock(Layer):
     def __init__(self, d_model: int, num_heads: int, dff: int, drop_out_rate: float, **kwargs):
         super().__init__(**kwargs)
 
@@ -14,6 +15,7 @@ class EncoderBlock(tf.keras.layers.Layer):
         self.layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
         self.dropout = tf.keras.layers.Dropout(drop_out_rate)
+
 
     def call(self, x: tf.Tensor, training: bool, mask: tf.Tensor) -> tf.Tensor:
         

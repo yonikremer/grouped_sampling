@@ -1,4 +1,10 @@
+"""Contains the class SeTransformer"""
+
 import tensorflow as tf
+from tensorflow import Tensor
+from keras import Model
+from keras.layers import Embedding
+
 from decoder import Decoder
 from encoder import Encoder
 from emb_trans import EmbeddingTransposed
@@ -6,11 +12,11 @@ from pos_enc import create_positional_encoding
 from masks import create_masks
 
 
-class SeTransformer(tf.keras.Model):
+class SeTransformer(Model):
     """The base architecture of my models in this project."""
     def __init__(self, num_blocks: int, d_model: int, num_heads: int, dff: int,
-                 vocab_size: int, max_len: int, rate: float, pad_int: int, using_tpu: bool, **kwargs):
-        super().__init__(**kwargs)  # calls tf.keras.Model's __init__ method
+                 vocab_size: int, max_len: int, rate: float, pad_int: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.pad_int = pad_int
         self.vocab_size = vocab_size
         pos_encoding = create_positional_encoding(max_len, d_model)
@@ -19,42 +25,34 @@ class SeTransformer(tf.keras.Model):
         self.encoder = Encoder(pos_encoding, num_blocks, d_model, num_heads, dff, rate)
         self.decoder = Decoder(pos_encoding, num_blocks, d_model, num_heads, dff, vocab_size, rate)
 
-        self.embedding = tf.keras.layers.Embedding(input_dim=vocab_size, output_dim=d_model)
+        self.embedding = Embedding(input_dim=vocab_size, output_dim=d_model)
         self.emb_trans = EmbeddingTransposed(self.embedding, "softmax")
-        # self.dense = tf.keras.layers.Dense(vocab_size, activation="softmax")
 
 
-    def count_params(self) -> int:
+    def count_params(self):
         """counts trainable parameters
-        Raises an error if caleed before building the model"""
-        param_count: int = self.encoder.count_params() + self.decoder.count_params() + self.embedding.count_params() + self.emb_trans.count_params()
+        Raises an error if called before building the model"""
+        sub_layers = (self.encoder, self.decoder, self.embedding)
+        # Ignoring the embedding transposed layer
+        # because it is sharing parameters with the embedding layer
+        param_count = sum(map(lambda x: x.count_params(), sub_layers))
         assert isinstance(param_count, int)
         return param_count
 
 
-    def call(self, inputs: list, training: bool) -> tf.Tensor:
-        inp, tar = inputs
+    def call(self, inputs: list) -> Tensor:
+        """The forward pass of the model"""
+        inp, tar, training = inputs
         # inp.shape should be (batch_size, max_seq_len)
         # tar.shape should be (batch_size, set_size)
-        x = self.embedding(inp)  # (batch_size, max_seq_len, d_model)
-        # for d0 in range(x.shape[0]):
-        #     for d1 in range(x.shape[1]):
-        #         for d2 in range(x.shape[2]):
-        #             assert not tf.math.is_nan(x[d0][d1][d2])
-        # if len(x.shape) == 3:
-        #     assert not tf.math.is_nan(x[0][0][0])
-        # elif len(x.shape) == 2:
-        #     assert not tf.math.is_nan(x[0][0])
-        # else: raise ValueError('embedding output should by 3 dim tensor')
+        input_embeddings = self.embedding(inp)  # (batch_size, max_seq_len, d_model)
         padding_mask, look_ahead_mask = create_masks(inp, tar, self.pad_int)
-        
-        enc_output = self.encoder(x, training, padding_mask)  # (batch_size, max_seq_len, d_model)
-        # assert not tf.math.is_nan(enc_output[0][0][0])
+
+        enc_output = self.encoder(input_embeddings, training, padding_mask)
+        # (batch_size, max_seq_len, d_model)
 
         # dec_output.shape should be (batch_size, set_size, d_model)
         dec_output = self.decoder(tar, enc_output, training, look_ahead_mask, padding_mask)
-        # assert not tf.math.is_nan(dec_output[0][0][0])
 
         final_output = self.emb_trans(dec_output)
-        # assert not tf.math.is_nan(final_output[0][0][0])
         return final_output

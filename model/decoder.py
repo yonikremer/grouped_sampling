@@ -1,8 +1,11 @@
 import tensorflow as tf
+from keras.layers import Layer
+from tensorflow import Tensor
+
 from decoder_block import DecoderBlock
 
 
-class Decoder(tf.keras.layers.Layer):
+class Decoder(Layer):
     def __init__(self, pos_encoding, num_blocks: int, d_model: int, num_heads: int, dff: int,
                  vocab_size: int, rate: float, **kwargs):
         super().__init__(**kwargs)
@@ -15,8 +18,8 @@ class Decoder(tf.keras.layers.Layer):
         self.dec_layers = [DecoderBlock(d_model, num_heads, dff, rate) for _ in range(num_blocks)]
         self.dropout = tf.keras.layers.Dropout(rate)
 
-    def call(self, tar: tf.Tensor, enc_output: tf.Tensor, training: bool,
-             look_ahead_mask: tf.Tensor, padding_mask: tf.Tensor) -> tf.Tensor:
+    def call(self, tar: Tensor, enc_output: Tensor, training: bool,
+             look_ahead_mask: Tensor, padding_mask: Tensor) -> tf.Tensor:
 
         seq_len = tf.shape(tar)[1]
 

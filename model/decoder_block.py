@@ -1,9 +1,11 @@
-import tensorflow as tf
+from tensorflow import Tensor
+from keras.layers import Layer, LayerNormalization, Dropout
+
 from mmha import MyMultiHeadAttention
 from pwff import PointWiseFeedForwardNetwork
 
 
-class DecoderBlock(tf.keras.layers.Layer):
+class DecoderBlock(Layer):
     def __init__(self, d_model: int, num_heads: int, dff: int, rate: float, **kwargs):
         super().__init__(**kwargs)
 
@@ -11,11 +13,11 @@ class DecoderBlock(tf.keras.layers.Layer):
 
         self.ffn = PointWiseFeedForwardNetwork(d_model, dff)
 
-        self.layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self.layer_norm = LayerNormalization(epsilon=1e-6)
 
-        self.dropout = tf.keras.layers.Dropout(rate)
+        self.dropout = Dropout(rate)
 
-    def call(self, x: tf.Tensor, enc_output: tf.Tensor, look_ahead_mask: tf.Tensor, padding_mask: tf.Tensor, training):
+    def call(self, x: Tensor, enc_output: Tensor, look_ahead_mask: Tensor, padding_mask: Tensor, training):
         # enc_output.shape should be (batch_size, input_seq_len, d_model)
 
         attn1 = self.mha(x, x, look_ahead_mask)  # (batch_size, set_size, d_model)
@@ -32,4 +34,4 @@ class DecoderBlock(tf.keras.layers.Layer):
         ffn_output = self.dropout(ffn_output, training=training)
         out3 = self.layer_norm(ffn_output + out2)  # (batch_size, set_size, d_model)
 
-        return out3 
+        return out3
