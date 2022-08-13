@@ -23,7 +23,7 @@ def test_tokenize_vocab():
     new_vocab: List[str] = [t.replace('#', '') for t in vocab]
     for word in new_vocab:
         assert word in my_tokenizer.vocab
-        assert tf.Tensor(vocab.index(word)) == tokenizer.tokenize_and_preprocces(word)
+        assert tf.Tensor(vocab.index(word)) == tokenizer.tokenize_and_preprocess(word)
 
 
 def test_tokenize_detokenize() -> None:

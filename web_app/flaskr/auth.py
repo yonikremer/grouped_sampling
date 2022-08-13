@@ -1,13 +1,11 @@
 """Contains the functions for the authentication."""
 
 import functools
-from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, Response
-)
+
+from flask import (Blueprint, flash, g, redirect, render_template, request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
+
 from flaskr.db import get_db
-from sqlite3 import Connection
-from typing import Optional, Union
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -18,10 +16,10 @@ def register():
     If the registration is successful, the user is directed to auth.login
     else, the user is directed to auth.register recursively until a successful registration"""
     if request.method == 'POST':
-        username: str = request.form['username']
-        password: str = request.form['password']
-        my_db: Connection = get_db()
-        error: Optional[str] = None
+        username = request.form['username']
+        password = request.form['password']
+        my_db = get_db()
+        error = None
 
         if not username:
             error = 'Username is required.'
@@ -46,16 +44,16 @@ def register():
 
 
 @bp.route('/login', methods=('GET', 'POST'))
-def login() -> Union[Response, str]:
+def login():
     """Logs in a user.
-    If the loging is successful, the user is directed to the main page
+    If the logging is successful, the user is directed to the main page
     else, the user is directed to auth.login recursively until a successful registration"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        my_db: Connection = get_db()
+        my_db = get_db()
         error = None
-        user: dict = my_db.execute(
+        user = my_db.execute(
             "SELECT * FROM user WHERE username = ?", (username,)
         ).fetchone()
 
@@ -75,7 +73,7 @@ def login() -> Union[Response, str]:
 
 
 @bp.before_app_request
-def load_logged_in_user() -> None:
+def load_logged_in_user():
     """If a user id is stored in the session, load the user object from the database into g.user."""
     user_id = session.get('user_id')
 
@@ -88,7 +86,7 @@ def load_logged_in_user() -> None:
 
 
 @bp.route('/logout')
-def logout() -> Response:
+def logout():
     """clears session, logs out and redirects to the main page"""
     session.clear()
     return redirect(url_for('index'))
@@ -102,7 +100,7 @@ def login_required(view):
     def wrapped_view(**kwargs):
         """the wrapped function"""
         if g.user is None:
-            flash('Loging in is required for this page.')
+            flash('Logging in is required for this page.')
             return redirect(url_for('auth.login'))
 
         return view(**kwargs)
