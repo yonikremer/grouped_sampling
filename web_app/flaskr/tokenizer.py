@@ -8,19 +8,8 @@ from flask import g  # A dictionary containing all the global variables.
 def init_tokenizer():
     """Creates and returns the tokenizer and vocabulary."""
     path = 'flaskr/static/look_up_table.txt'
-    tokenizer_params = dict(lower_case = True)
     with open(path, 'r', encoding="utf-8") as file:
         vocab = file.read().split()
-    tensor_vocab = [tf.convert_to_tensor(token_key, dtype = tf.string) for token_key in vocab]
-    lookup_table = tf.lookup.StaticVocabularyTable(
-        tf.lookup.KeyValueTensorInitializer(
-            keys = tensor_vocab,
-            key_dtype = tf.string,
-            values = tf.range(tf.size(vocab, out_type = tf.int64), dtype = tf.int64),
-            value_dtype = tf.int64
-            ),
-        num_oov_buckets = 1
-    )
     my_tokenizer = Tokenizer(lower_case = True).fit_on_texts(vocab)
     return my_tokenizer, vocab
 
