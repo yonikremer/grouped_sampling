@@ -1,11 +1,14 @@
-import tensorflow as tf
-from tensorflow import Tensor
 from typing import Tuple
 
 
-def create_masks(inp: Tensor, tar: Tensor, pad_ten: Tensor) -> Tuple[Tensor, Tensor]:
+import tensorflow as tf
+from tensorflow import Tensor
+
+
+def create_masks(inp: Tensor, tar: Tensor, pad_int: int) -> Tuple[Tensor, Tensor]:
     """Creates all the masks needed for the model
-    input: inp: tf.Tensor of shape (batch_size, seq_len), tar: tf.Tensor of shape (batch_size, set_size)
+    input: inp: tf.Tensor of shape (batch_size, seq_len),
+    tar: tf.Tensor of shape (batch_size, set_size)
     Returns: tuple of (padding_mask, look_ahead_mask)
     padding_mask, look_ahead_mask: tf.Tensor of shape (batch_size, 1, 1, seq_len)"""
 
@@ -13,7 +16,7 @@ def create_masks(inp: Tensor, tar: Tensor, pad_ten: Tensor) -> Tuple[Tensor, Ten
             """Returns a padding mask for the given sequence.
             input: seq: tf.Tensor of shape (batch_size, seq_len)
             Returns: tf.Tensor of shape (batch_size, 1, 1, seq_len)"""
-            seq = tf.cast(tf.math.equal(seq, pad_ten), tf.keras.backend.floatx())
+            seq = tf.cast(tf.math.equal(seq, pad_int), tf.keras.backend.floatx())
             # For every item in the sequence, 1 if it is a padding token, 0 if it is not
             # add extra dimensions to add the padding
             return seq[:, tf.newaxis, tf.newaxis, :]

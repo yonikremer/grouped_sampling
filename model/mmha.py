@@ -1,9 +1,9 @@
-import tensorflow as tf
 from typing import Optional
+
+import tensorflow as tf
 from tensorflow import keras, Tensor, TensorSpec
 from keras.backend import floatx as float_type
 from keras.layers import Layer, Softmax
-
 
 
 class ScaledDotProductAttention(Layer):
@@ -16,10 +16,10 @@ class ScaledDotProductAttention(Layer):
 
     def call(self, q: Tensor, k: Tensor, v: Tensor, mask: Optional[Tensor] = None) -> Tensor:
         """Scaled Dot-Product Attention
-        input: 
-        q: Tensor of shape (batch_size, seq_len, d_model), 
-        k: Tensor of shape (batch_size, seq_len, d_model), 
-        v: Tensor of shape (batch_size, seq_len, d_model), 
+        input:
+        q: Tensor of shape (batch_size, seq_len, d_model),
+        k: Tensor of shape (batch_size, seq_len, d_model),
+        v: Tensor of shape (batch_size, seq_len, d_model),
         mask: Optional[Tensor] of shape (batch_size, 1, 1, seq_len)
         output: Tensor of shape (batch_size, seq_len, d_model)"""
         matmul_qk: Tensor = tf.matmul(q, k, transpose_b=True)  # (..., seq_len_q, seq_len_k)
@@ -33,7 +33,8 @@ class ScaledDotProductAttention(Layer):
             # noinspection PyTypeChecker
             if float_type() == 'float16':
                 # tf.float16.min is minus infinity
-                scaled_attention_logits += (mask * tf.float16.min)  # changed from -1e9 to prevent nan's
+                scaled_attention_logits += (mask * tf.float16.min)
+                # changed from -1e9 to inf to avoid overflow
             else:
                 scaled_attention_logits += (mask * -1e9) 
 
@@ -49,8 +50,8 @@ class ScaledDotProductAttention(Layer):
 
 class MyMultiHeadAttention(Layer):
     """U can use the built-in keras.layers.multihead_attention but is caused a bug for me"""
-    def __init__(self, num_heads: int, d_model: int, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, num_heads: int, d_model: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         if d_model % num_heads != 0:
             raise ValueError(f"d_model ({d_model}) must be divisible by num_heads ({num_heads})")
         self.num_heads = num_heads
@@ -64,10 +65,11 @@ class MyMultiHeadAttention(Layer):
         self.dense = keras.layers.Dense(d_model)
         self.sdpa = ScaledDotProductAttention(d_model)
 
-    def split_heads(self, x: Tensor, batch_size: int) -> Tensor:
+    def split_heads(self, x: Tensor) -> Tensor:
         """Split the last dimension into (num_heads, depth).
         Transpose the result such that the shape is (batch_size, num_heads, seq_len, depth)
         """
+        batch_size = tf.shape(x)[0]
         x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
@@ -82,9 +84,9 @@ class MyMultiHeadAttention(Layer):
         k: Tensor = self.wk(v_k)  # (batch_size, seq_len, d_model)
         v: Tensor = self.wv(v_k)  # (batch_size, seq_len, d_model)
 
-        q: Tensor = self.split_heads(q, batch_size)  # (batch_size, num_heads, seq_len_q, depth)
-        k: Tensor = self.split_heads(k, batch_size)  # (batch_size, num_heads, seq_len_k, depth)
-        v: Tensor = self.split_heads(v, batch_size)  # (batch_size, num_heads, seq_len_v, depth)
+        q: Tensor = self.split_heads(q)  # (batch_size, num_heads, seq_len_q, depth)
+        k: Tensor = self.split_heads(k)  # (batch_size, num_heads, seq_len_k, depth)
+        v: Tensor = self.split_heads(v)  # (batch_size, num_heads, seq_len_v, depth)
 
         # scaled_attention.shape should be (batch_size, num_heads, seq_len_q, depth)
         scaled_attention = self.sdpa(q, k, v, mask)

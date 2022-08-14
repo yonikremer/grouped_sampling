@@ -1,6 +1,5 @@
 """Contains the class SeTransformer"""
 
-import tensorflow as tf
 from tensorflow import Tensor
 from keras import Model
 from keras.layers import Embedding
@@ -30,7 +29,7 @@ class SeTransformer(Model):
 
 
     def count_params(self):
-        """counts trainable parameters
+        """counts parameters
         Raises an error if called before building the model"""
         sub_layers = (self.encoder, self.decoder, self.embedding)
         # Ignoring the embedding transposed layer

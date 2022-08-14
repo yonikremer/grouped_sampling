@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import Tensor
 from keras import backend
-from keras.layers import Layer, LayerNormalization, Dropout
+from keras.layers import Layer, Dropout
 
 from encoder_block import EncoderBlock
 

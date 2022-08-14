@@ -1,16 +1,19 @@
 import tensorflow as tf
 import numpy as np
+from tensorflow import Tensor
 
 
-def create_positional_encoding(max_len: int, d_model: int) -> tf.Tensor:
+def create_positional_encoding(max_len: int, d_model: int) -> Tensor:
     """Returns the positional encoding for a given a maximal sequence length and model dimension.
     inputs: max_len: int, d_model: int
-    returns: tf.Tensor of shape (1, max_len, d_model) and dtype tf.keras.backend.floatx()
+    returns: Tensor of shape (1, max_len, d_model) and dtype tf.keras.backend.floatx()
     The 1 is for the batch dimension, the place in the batch dimension does not matter"""
 
     def get_angles(positions: np.ndarray, timestamps: np.ndarray, d_model: int) -> np.ndarray:
-        """Returns the angle in radians for given positions, timestamps and the dimension of the model
-        input: positions: np.ndarray of shape (max_len, 1), timestamps: np.ndarray of shape (1, d_model), d_model: int
+        """Returns the angle in radians for given positions,
+        timestamps and the dimension of the model
+        input: positions: np.ndarray of shape (max_len, 1),
+        timestamps: np.ndarray of shape (1, d_model), d_model: int
         output: np.ndarray of shape (max_len, d_model)"""
         if tf.keras.backend.floatx() == "float32":
             angle_rates = 1 / np.power(10000, ((2 * (timestamps//2)) / np.float32(d_model)))
@@ -18,7 +21,7 @@ def create_positional_encoding(max_len: int, d_model: int) -> tf.Tensor:
             angle_rates = 1 / np.power(10000, ((2 * (timestamps//2)) / np.float16(d_model)))
 
         return positions * angle_rates
-    
+
     angle_rads = get_angles(np.arange(max_len)[:, np.newaxis],
                             np.arange(d_model)[np.newaxis, :],
                             d_model)  # (max_len, d_model)
