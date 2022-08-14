@@ -1,14 +1,14 @@
 """Contains the functions for the tokenizer."""
 
 import tensorflow as tf
-from tensoeflow_text import BertTokenizer
+from keras.preprocessing.text import Tokenizer
 from flask import g  # A dictionary containing all the global variables.
 
 
 def init_tokenizer():
     """Creates and returns the tokenizer and vocabulary."""
     path = 'flaskr/static/look_up_table.txt'
-    bert_tokenizer_params = dict(lower_case = True)
+    tokenizer_params = dict(lower_case = True)
     with open(path, 'r', encoding="utf-8") as file:
         vocab = file.read().split()
     tensor_vocab = [tf.convert_to_tensor(token_key, dtype = tf.string) for token_key in vocab]
@@ -21,7 +21,7 @@ def init_tokenizer():
             ),
         num_oov_buckets = 1
     )
-    my_tokenizer = BertTokenizer(lookup_table, **bert_tokenizer_params)
+    my_tokenizer = Tokenizer(lower_case = True).fit_on_texts(vocab)
     return my_tokenizer, vocab
 
 
