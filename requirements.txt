@@ -1,0 +1,11 @@
+pytest
+Flask
+click
+Werkzeug
+setuptools
+tensorflow~=2.9
+tensorflow_text~=2.9
+pandas
+langdetect
+torch
+transformers
