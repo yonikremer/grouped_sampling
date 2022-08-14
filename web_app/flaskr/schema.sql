@@ -13,17 +13,17 @@ CREATE TABLE user (
 
 CREATE TABLE model (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     model_name TEXT UNIQUE NOT NULL,
-    set_size int NOT NULL,
-    num_layers int NOT NULL,
-    d_model int NOT NULL,
-    dff int NOT NULL,
-    num_heads int NOT NULL,
-    dropout_rate float NOT NULL,
-    learning_rate float NOT NULL,
-    batch_size int NOT NULL,
+    group_size int,
+    num_layers int,
+    d_model int,
+    dff int,
+    num_heads int,
+    dropout_rate float,
+    learning_rate float,
+    batch_size int
     FOREIGN KEY(user_id) REFERENCES user(id)
 );
 
@@ -39,3 +39,6 @@ CREATE TABLE completion (
     FOREIGN KEY(model_id) REFERENCES model(id)
 );
 
+INSERT INTO model 
+  (user_id, model_name, num_layers, num_heads), 
+    VALUES (1, 'bloom', 70, 112, 14336)
