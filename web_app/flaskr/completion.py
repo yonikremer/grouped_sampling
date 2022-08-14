@@ -3,6 +3,7 @@ from functools import lru_cache, reduce
 import os
 
 import tensorflow as tf
+from keras import Model as KerasModel
 from langdetect import detect
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 from transformers import BloomTokenizerFast, BloomForCausalLM
@@ -44,44 +45,13 @@ def doesnt_have_duplicates(my_list):
     return len(my_list) == len(set(my_list))
 
 
-def grouped_sampling_tf(group_prob, top_p, top_k):
-    """Returns the most probable completions for the prompt as tokens such that
-       the sum probabilities of the ith token adds up to less than top_p, there are at maximum top_k
-       different tokens each place and the number of tokens in every group is group_size"""
-    # group_prob.shape is [1, group_size, vocab_size]
-    group_prob = tf.squeeze(group_prob)
-    # and now [group_size, vocab_size]
-    indices= []
-    for i in range(group_prob.shape[1]):
-        # token_prob: tf.TensorSpec(shape=[vocab_size], dtype=tf.float)
-        token_prob = group_prob[:, i, :]
-        # token_prob.shape is [vocab_size] and token_prob.dtype is float
-        sorted_indices = tf.argsort(token_prob, direction='DESCENDING')[:top_k]
-        # sorted_indices.shape is [vocab_size] and sorted_indices.dtype is int
-        total_prob = sorted_indices[0].numpy().item()
-        curr_indices = [sorted_indices[0].numpy().item()]
-        j = 1
-        while j < top_k:
-            total_prob += token_prob[sorted_indices[j]]
-            if total_prob <= top_p:
-                token_num = sorted_indices[j].numpy().item()
-                curr_indices.append(token_num)
-                total_prob += token_prob[token_num].numpy().item()
-                j += 1
-            else:
-                break
-        indices.append(curr_indices)
-    new_prompts = combinations(indices)
-    return list(filter(doesnt_have_duplicates, new_prompts))
-
-def grouped_sampling_pt(prob_tensor, top_p, top_k, group_size):
+def grouped_sampling(prob_mat, top_p, top_k, group_size):
     """The same as grouped_sampling_tf but works with pytorch"""
-    prob_tensor.squeeze(0)
-    prob_tensor = prob_tensor[:group_size, :]
+    
     # prob_tensor.shape is now (group_size, vocab_size)
     indices = []
     for i in range(group_size):
-        token_prob = prob_tensor[i, :].tolist()
+        token_prob = prob_mat[i]
         vocab_size = len(token_prob)
         indexed_prob = list(zip(token_prob, range(vocab_size)))
         sorted_indexed_prob = sorted(indexed_prob, key=lambda x: x[0], reverse=True)[:top_k]
@@ -113,16 +83,32 @@ def create_tar(group_size):
     return tf.random.uniform([1, group_size], minval=5, maxval=len(g.vocab), dtype=tf.int32)
 
 
-def complete(model, prompt, top_p, top_k, num_groups, group_size):
+def complete(model_name, prompt, top_p, top_k, num_groups, group_size):
     """preprocess the prompt and completes the text"""
-    if prompt is None:
-        return []
-    tokenized_prompt = tokenize_and_preprocess(prompt)
-    # vocab[0:4] are the saved tokens
-    tar = create_tar(group_size)
-    # dont include the probability for the [PAD] token
-    group_prob = model([tokenized_prompt, tar], training=False)
-    tokenized_ans_list = grouped_sampling_tf(group_prob, top_p, top_k)
+    if "bloom" in model_name.lower():
+        model_path = f"bigscience/{model_name}"
+        model_name = BloomForCausalLM.from_pretrained(model_path)
+        pt_tokenizer = BloomTokenizerFast.from_pretrained(model_path)
+        inputs = pt_tokenizer(prompt, return_tensors="pt")
+        outputs = model_name(**inputs, labels=inputs["input_ids"])
+        prob_tensor = Softmax(outputs.logits)
+        prob_tensor.squeeze(0)
+        prob_tensor = prob_tensor[:group_size, :]
+        prob_mat = [prob_tensor[i, :].tolist() for i in range(group_size)]
+    else:
+        model_path = f"/flaskr/static/models/{model_name}.pb"
+        if not os.path.exists(model_path):
+            raise RuntimeError(f"Model {model_name} not found")
+        model = tf.saved_model.load(model_path)
+        tokenized_prompt = tokenize_and_preprocess(prompt)
+        tar = create_tar(group_size)
+        prob_ten = model([tokenized_prompt, tar], training=False)
+        prob_squeezed = tf.squeeze(prob_ten)
+        prob_ndarray = tf.make_ndarray(prob_squeezed)
+        prob_mat = [prob_ndarray[i, :].tolist() for i in range(group_size)]
+
+    prob_mat = [prob_mat[i, :].tolist() for i in range(group_size)]
+    tokenized_ans_list = grouped_sampling(prob_mat, top_p, top_k, group_size)
     ans_list = [token_list_to_str(tokenized_ans_list[i]) for i in range(len(tokenized_ans_list))]
     if num_groups == 1:
         return ans_list
@@ -131,30 +117,7 @@ def complete(model, prompt, top_p, top_k, num_groups, group_size):
         if "[END]" in new_prompt:
             end_index = new_prompt.index("[END]")
             new_prompts[i] = new_prompt[:end_index]
-    new_answers = [complete(model, prompt, top_p, top_k, num_groups - 1, group_size) for prompt in new_prompts]
-    if len(new_answers) > 1:
-        flatten_ans = reduce(lambda x, y: x + y, new_answers)
-        return flatten_ans
-    if len(new_answers) == 1 and len(new_answers[0]) > 0:
-        return new_answers[0]
-    return []
-
-
-def complete_bloom(model_name, prompt, top_p, top_k, num_groups, group_size):
-    """Uses the bloom model to complete the prompt"""
-    tokenizer = BloomTokenizerFast.from_pretrained(f"bigscience/{model_name}")
-    model = BloomForCausalLM.from_pretrained(f"bigscience/{model_name}")
-
-    inputs = tokenizer(prompt, return_tensors="pt")
-    outputs = model(**inputs, labels=inputs["input_ids"])
-
-    prob_tensor = Softmax(outputs.logits)
-    tokenized_ans_list = grouped_sampling_pt(prob_tensor, top_p, top_k, group_size)
-    ans_list = [tokenizer.detokenize(tokenized_ans) for tokenized_ans in tokenized_ans_list]
-    if num_groups == 1:
-        return ans_list
-    new_prompts = [f"{prompt} {ans}" for ans in ans_list]
-    new_answers = [complete_bloom(model, prompt, top_p, top_k, num_groups - 1, group_size) for prompt in new_prompts]
+    new_answers = [complete(model_name, prompt, top_p, top_k, num_groups - 1, group_size) for prompt in new_prompts]
     if len(new_answers) > 1:
         flatten_ans = reduce(lambda x, y: x + y, new_answers)
         return flatten_ans
@@ -223,9 +186,9 @@ def create():
         model_id = int(model_id_str)
         top_p_float = float(top_p_str)
         top_k = int(top_k_str)
-        if not hasattr(g, 'my_tokenizer'):
-            my_tokenizer, vocab = init_tokenizer()
-            g.my_tokenizer = my_tokenizer
+        if not hasattr(g, 'tf_tokenizer'):
+            tf_tokenizer, vocab = init_tokenizer()
+            g.tf_tokenizer = tf_tokenizer
             g.vocab = vocab
         if errors != "":
             flash(errors)
@@ -234,14 +197,7 @@ def create():
             model_name, group_size = my_db.execute('SELECT model_name, group_size FROM model WHERE id = ?', (model_id,)).fetchone()
             if model_name is None or not isinstance(model_name, str):
                 errors += f'Model: {model_id} does not exist./n'
-            if "bloom" in model_name.lower():
-                completions = complete_bloom(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
-            else:
-                path = f"/flaskr/static/models/{model_name}.pb"
-                if not os.path.exists(path):
-                    errors += f"Model {model_name} does not exist or have a wrong name"
-                model = tf.saved_model.load(path)
-                completions = complete(prompt, model, top_p_float, top_k, num_groups_int, group_size)
+            completions = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
             if errors == "":
                 if len(completions) == 0:
                     errors += "No valid completions suggested, please try bigger pot p and k"
