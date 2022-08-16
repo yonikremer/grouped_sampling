@@ -11,7 +11,7 @@ from torch.nn import Softmax
 
 from flaskr.auth import login_required
 from flaskr.db import get_db
-from flaskr.tokenizer import tokenize_and_preprocess, init_tokenizer
+from flaskr.tokenizer import tokenize_and_preprocess, init_tokenizer, token_list_to_str, create_tar
 from flaskr.sampling import grouped_sampling
 
 
@@ -26,36 +26,6 @@ def index():
     query = "SELECT * FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC"
     completions= my_db.execute(query).fetchall()
     return render_template("completion/index.html", completions = completions)
-
-
-def token_list_to_str(token_list: List[int], library: str) -> str:
-    """decodes a list of tokens ids (integers) to a string"""
-    if library in ("tensorflow", "tf"):
-        token_ten = tf.convert_to_tensor(token_list, dtype=tf.int32)
-        expanded = tf.expand_dims(token_ten, axis=0)
-        tokenizer = g.tf_tokenizer
-        detokenized = tokenizer.detokenize(expanded).to_tensor()
-        bytes_ten = tf.squeeze(detokenized)
-        bytes_list = bytes_ten.numpy().tolist()
-        word_list: List[str] = [b.decode('utf-8') for b in bytes_list]
-        str_ans =  " ".join(word_list).replace(" ##", "").replace("[PAD]", "")
-        if "[END]" in str_ans:
-            end_index = str_ans.index("[END]")
-            str_ans = str_ans[:end_index]
-        return str_ans
-
-    elif library in ("torch", "pytorch", "pt"):
-        tokenizer = g.pt_tokenizer
-        word_list = tokenizer.decode(token_list, skip_special_tokens = True, clean_up_tokenization_spaces = False)
-        return "".join(word_list)
-    raise ValueError("library not recognized, must by a string and either 'tf', 'tensorflow', 'pt', 'torch', or 'pytorch'")
-
-
-@lru_cache(maxsize = 10)
-def create_tar(group_size):
-    """Creates a tensor of shape [1, group_size]
-    with random integers between 5 and the size of the vocabulary"""
-    return tf.random.uniform([1, group_size], minval = 5, maxval = g.vocab_size, dtype = tf.int32)
 
 
 def get_prob_mat(model_name, prompt, group_size):
