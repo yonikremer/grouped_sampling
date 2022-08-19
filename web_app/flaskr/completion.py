@@ -6,7 +6,7 @@ from typing import List, Iterable, Tuple
 import tensorflow as tf
 from langdetect import detect
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
-from transformers import BloomTokenizerFast, BloomForCausalLM
+from transformers import AutoTokenizer, AutoModel
 from torch.nn import Softmax
 
 from flaskr.auth import login_required
@@ -30,13 +30,16 @@ def index():
 
 def get_prob_mat(model_name, prompt, group_size):
     """Returns the probability matrix as a list of lists of floats"""
-    if "bloom" in model_name.lower():
-        model_path = f"bigscience/{model_name}"
-        model_name = BloomForCausalLM.from_pretrained(model_path)
+    is_auto_model = True
+    try:
+        model = AutoModel.from_pretrained(model_name)
+    except:
+        is_auto_model = False
+    if is_auto_model: 
         if not hasattr(g, "pt_tokenizer"):
-            g.pt_tokenizer = BloomTokenizerFast.from_pretrained(model_path)
+            g.pt_tokenizer = AutoTokenizer.from_pretrained(model_path)
         inputs = g.pt_tokenizer.tokenize(prompt, return_tensors="pt")
-        outputs = model_name(**inputs, labels=inputs["input_ids"])
+        outputs = model(**inputs, labels=inputs["input_ids"])
         prob_tensor = Softmax(outputs.logits)
         prob_tensor.squeeze(0)
         prob_tensor = prob_tensor[:group_size, :]
@@ -155,17 +158,12 @@ def create():
             if model_name is None or not isinstance(model_name, str):
                 errors += f'Model: {model_id} does not exist./n'
             completions, probabilities = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
+            if sum(probabilities) > 1:
+                errors += "The probabilities of the completions are not normalized.\n"
             if errors == "":
-                if sum(probabilities) > 1:
-                    errors += "The probabilities of the completions are not normalized.\n"
-                if len(completions) == 0:
-                    errors += "No valid completions suggested, please try bigger top p and k\n"
-                if not isinstance(completions[0], str) or not isinstance(completions, list):
-                    errors += 'Something with the model is not working. Please try a different model.\n'
-                if errors == "":
-                    max_prob = max(probabilities)
-                    index_of_best_completion = probabilities.index(max_prob)
-                    best_completion = completions[index_of_best_completion]
-                    add_answer_to_db(my_db, model_id, prompt, best_completion)
-                    return redirect(url_for('completion/index.html'))
+                max_prob = max(probabilities)
+                index_of_best_completion = probabilities.index(max_prob)
+                best_completion = completions[index_of_best_completion]
+                add_answer_to_db(my_db, model_id, prompt, best_completion)
+                return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
