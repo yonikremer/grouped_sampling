@@ -75,7 +75,7 @@ def complete(model_name, org_prompt, top_p, top_k, num_groups, group_size, org_p
     ans_list: List[str] = [token_list_to_str(ans, library) for ans in tokenized_ans_list]
     new_prompts: List[str] = [f"{org_prompt} {ans}" for ans in ans_list]
     if num_groups == 1:
-        return new_prompts
+        return new_prompts, prob_list
     for i, curr_new_prompt in enumerate(new_prompts):
         if "[END]" in curr_new_prompt:
             end_index = curr_new_prompt.index("[END]")
