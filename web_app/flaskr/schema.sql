@@ -16,14 +16,6 @@ CREATE TABLE model (
     user_id INTEGER,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     model_name TEXT UNIQUE NOT NULL,
-    group_size int,
-    num_layers int,
-    d_model int,
-    dff int,
-    num_heads int,
-    dropout_rate float,
-    learning_rate float,
-    batch_size int
     FOREIGN KEY(user_id) REFERENCES user(id)
 );
 
@@ -38,7 +30,3 @@ CREATE TABLE completion (
     FOREIGN KEY(user_id) REFERENCES user(id),
     FOREIGN KEY(model_id) REFERENCES model(id)
 );
-
-INSERT INTO model 
-  (user_id, model_name, num_layers, num_heads), 
-    VALUES (1, 'bloom', 70, 112, 14336)
