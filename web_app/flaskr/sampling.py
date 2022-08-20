@@ -60,5 +60,5 @@ def grouped_sampling(prob_mat: List[List[int]], top_p, top_k, group_size) -> Tup
     # len(indices[i]) < min(top_k, vocab_size)
     # therefore the complexity is O(min(top_k, vocab_size) * group_size)
     filtered_sequences: Iterable[List[int]] = list(filter(doesnt_have_duplicates, new_sequences))
-    prob_list: List[Tuple[List[int], float]] = [seq_prob(seq) for seq in filtered_sequences]
+    prob_list: List[Tuple[List[int], float]] = [seq_prob(seq, prob_mat) for seq in filtered_sequences]
     return filtered_sequences, prob_list
