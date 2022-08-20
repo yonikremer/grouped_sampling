@@ -40,7 +40,8 @@ def get_prob_mat(model_name, prompt, group_size):
             g.pt_tokenizer = AutoTokenizer.from_pretrained(model_path)
         inputs = g.pt_tokenizer.tokenize(prompt, return_tensors="pt")
         outputs = model(**inputs, labels=inputs["input_ids"])
-        prob_tensor = Softmax(outputs.logits)
+        pt_softmax_func = Softmax(dim=1)
+        prob_tensor = pt_softmax_func(outputs.logits)
         prob_tensor.squeeze(0)
         prob_tensor = prob_tensor[:group_size, :]
         prob_mat = [prob_tensor[i, :].tolist() for i in range(group_size)]
