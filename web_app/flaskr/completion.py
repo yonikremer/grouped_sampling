@@ -1,12 +1,12 @@
 """Contains the functions for the completion page and the completion blueprint"""
 from functools import lru_cache
 import os
-from typing import List, Iterable, Tuple
+from typing import List, Tuple, Dict
 
 import tensorflow as tf
 from langdetect import detect
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, BloomTokenizerFast, BloomForCausalLM
 from torch.nn import Softmax
 
 from flaskr.auth import login_required
@@ -30,20 +30,18 @@ def index():
 
 def get_prob_mat(model_name, prompt, group_size):
     """Returns the probability matrix as a list of lists of floats"""
-    is_auto_model = True
-    try:
-        model = AutoModel.from_pretrained(model_name)
-    except:
-        is_auto_model = False
-    if is_auto_model: 
-        if not hasattr(g, "pt_tokenizer"):
-            g.pt_tokenizer = AutoTokenizer.from_pretrained(model_path)
-        inputs = g.pt_tokenizer.tokenize(prompt, return_tensors="pt")
-        outputs = model(**inputs, labels=inputs["input_ids"])
-        pt_softmax_func = Softmax(dim=1)
-        prob_tensor = pt_softmax_func(outputs.logits)
-        prob_tensor.squeeze(0)
-        prob_tensor = prob_tensor[:group_size, :]
+    is_bloom = "bloom" in model_name
+    if is_bloom: 
+        model = g.loaded_models[model_name]
+        tokenizer = g.loaded_tokenizers[model_name]
+        inputs = tokenizer(prompt, return_tensors="pt")
+        logits_pt_tensor = model(**inputs, labels=inputs["input_ids"]).logits.squeeze(0)
+        prob_tensor = Softmax(dim=1)(logits_pt_tensor)
+        try:
+            prob_tensor = prob_tensor[:group_size, :]
+        except IndexError as e:
+            raise [e, ValueError("Group size must be smaller than the size of the prompt in tokens")]
+        
         prob_mat = [prob_tensor[i, :].tolist() for i in range(group_size)]
     else:
         if not hasattr(g, 'tf_tokenizer'):
@@ -63,32 +61,58 @@ def get_prob_mat(model_name, prompt, group_size):
     return prob_mat
 
 
-def complete(model_name, org_prompt, top_p, top_k, num_groups, group_size, org_prompt_prob = 1.0) -> Tuple[List[str], List[float]]:
-    """preprocess the prompt and completes the text"""
-    prob_mat = get_prob_mat(model_name, org_prompt, group_size)
-    tokenized_ans_list, prob_list = grouped_sampling(prob_mat, top_p, top_k, group_size)
+def flatten(l: list) -> List[int]:
+    # Complexity: O(len(the flatten list))
+    new_list = []
+    for item in l:
+        if isinstance(item, int):
+            new_list.append(item)
+        elif isinstance(item, list):
+            new_list.extend(flatten(item))
+    return new_list
 
-    if "bloom" in model_name.lower():
-        library = "pytorch"
+
+def complete(model_name, org_prompt, top_p, top_k, num_groups, group_size, org_prompt_prob = 1.0) -> Dict[Tuple[int], float]:
+    """preprocess the prompt and completes the text
+    model name: str
+    org_prompt: str"""
+    if isinstance(org_prompt, str):
+        str_prompt = org_prompt
+        if "bloom" in model_name:
+            tokenizer = g.loaded_tokenizers[model_name]
+            tokenized_prompt_ten = tokenizer(str_prompt, return_tensors="pt")["input_ids"]
+        tokenized_prompt_list = tokenized_prompt_ten.tolist()
+    elif isinstance(org_prompt, list):
+        tokenized_prompt_list = flatten(org_prompt)
+        str_prompt = tokenizer.decode(tokenized_prompt_list)
     else:
-        library = "tensorflow"
-
-    ans_list: List[str] = [token_list_to_str(ans, library) for ans in tokenized_ans_list]
-    new_prompts: List[str] = [f"{org_prompt} {ans}" for ans in ans_list]
+        raise ValueError("org_prompt must be a string or list of integers")
+    
+    prob_mat = get_prob_mat(model_name, str_prompt, group_size)
+    tokenized_ans_list, prob_list = grouped_sampling(prob_mat, top_p, top_k, group_size)
+    new_prompts: List[List[int]] = [tokenized_prompt_list + ans for ans in tokenized_ans_list]
     if num_groups == 1:
-        return new_prompts, prob_list
-    for i, curr_new_prompt in enumerate(new_prompts):
-        if "[END]" in curr_new_prompt:
-            end_index = curr_new_prompt.index("[END]")
-            new_prompts[i] = curr_new_prompt[:end_index]
-    all_new_completions: List[str] = []
+        return remove_duplicates(new_prompts, prob_list)
+    all_new_completions: List[List[int]] = []
     all_new_probs: List[float] = []
     for curr_new_prompt, curr_new_prompt_prob in zip(new_prompts, prob_list):
         curr_new_prompt_prob *= org_prompt_prob
-        curr_completions, curr_probs = complete(model_name, curr_new_prompt, top_p, top_k, num_groups - 1, group_size, curr_new_prompt_prob)
-        all_new_completions.extend(curr_completions)
-        all_new_probs.extend(curr_probs)
-    return all_new_completions, all_new_probs
+        curr_completions = complete(model_name, curr_new_prompt, top_p, top_k, num_groups - 1, group_size, curr_new_prompt_prob)
+        for tokens, prob in curr_completions.items():
+            all_new_completions.append(tokens)
+            all_new_probs.append(prob)
+    return remove_duplicates(all_new_completions, all_new_probs)
+
+
+def remove_duplicates(completions: List[List[int]], probs: List[float]) -> Dict[Tuple[int], float]:
+    """Given a list of tokenized answers and the probability of each complition,
+    removes every repeated completion and every complition that have repeated tokens"""
+    filtered_completions: Dict[Tuple[int], float] = dict()
+    for curr_comp, curr_prob in zip(completions, probs):
+        if len(curr_comp) == len(set(curr_comp)):
+            curr_comp_tuple = tuple(curr_comp)
+            filtered_completions[curr_comp_tuple] = curr_prob
+    return filtered_completions
 
 
 def add_answer_to_db(connection, model_id, prompt, answer):
@@ -158,13 +182,14 @@ def create():
             model_name, group_size = my_db.execute('SELECT model_name, group_size FROM model WHERE id = ?', (model_id,)).fetchone()
             if model_name is None or not isinstance(model_name, str):
                 errors += f'Model: {model_id} does not exist./n'
+            if "bloom" in model_name:
+                g.loaded_models[model_name] = BloomForCausalLM.from_pretrained(model_name)
+                g.loaded_tokenizers[model_name] = BloomTokenizerFast.from_pretrained(model_name)
             completions, probabilities = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
             if sum(probabilities) > 1:
                 errors += "The probabilities of the completions are not normalized.\n"
             if errors == "":
-                max_prob = max(probabilities)
-                index_of_best_completion = probabilities.index(max_prob)
-                best_completion = completions[index_of_best_completion]
+                best_completion = max(completions, key=completions.get)
                 add_answer_to_db(my_db, model_id, prompt, best_completion)
                 return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
