@@ -24,7 +24,7 @@ def index():
     my_db = get_db()
     # Execute a SQL query and return the results
     query = "SELECT * FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC"
-    completions= my_db.execute(query).fetchall()
+    completions = my_db.execute(query).fetchall()
     return render_template("completion/index.html", completions = completions)
 
 
@@ -115,8 +115,12 @@ def remove_duplicates(completions: List[List[int]], probs: List[float]) -> Dict[
     return filtered_completions
 
 
-def add_answer_to_db(connection, model_id, prompt, answer):
+def add_answer_to_db(model_name, prompt, answer):
     """Adds an answer to the database"""
+    connection = get_db()
+    # get model id
+    model_id_query = f"SELECT id FROM models WHERE name = ?"
+    model_id = connection.execute(model_id_query, (model_name)).fetchone()
     query_structure = "INSERT INTO completion (model_id, prompt, answer, user_id) VALUES (?, ?, ?, ?)"
     connection.execute(query_structure, (model_id, prompt, answer, g.user['id']))
     connection.commit()
@@ -133,26 +137,19 @@ def create():
         top_k_str = request.form['top_k']
         num_groups = request.form['num_groups']
         prompt = request.form['prompt']
-        model_id_str = request.form['model_id']
+        model_name = request.form['model_name']
+        group_size = request.form['group_size']
         num_groups_int = int(num_groups)
-        model_id = int(model_id_str)
         top_p_float = float(top_p_str)
         top_k = int(top_k_str)
-        if errors != "":
-            flash(errors)
-        else:
-            my_db = get_db()
-            model_name, group_size = my_db.execute('SELECT model_name, group_size FROM model WHERE id = ?', (model_id,)).fetchone()
-            if model_name is None or not isinstance(model_name, str):
-                errors += f'Model: {model_id} does not exist./n'
-            if "bloom" in model_name:
-                g.loaded_models[model_name] = BloomForCausalLM.from_pretrained(model_name)
-                g.loaded_tokenizers[model_name] = BloomTokenizerFast.from_pretrained(model_name)
-            completions, probabilities = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
-            if sum(probabilities) > 1:
-                errors += "The probabilities of the completions are not normalized.\n"
-            if errors == "":
-                best_completion = max(completions, key=completions.get)
-                add_answer_to_db(my_db, model_id, prompt, best_completion)
-                return redirect(url_for('completion/index.html'))
+        if "bloom" in model_name:
+            g.loaded_models[model_name] = BloomForCausalLM.from_pretrained(model_name)
+            g.loaded_tokenizers[model_name] = BloomTokenizerFast.from_pretrained(model_name)
+        completions, probabilities = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
+        if sum(probabilities) > 1:
+            errors += "The probabilities of the completions are not normalized.\n"
+        if errors == "":
+            best_completion = max(completions, key=completions.get)
+            add_answer_to_db(model_name, prompt, best_completion)
+            return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
