@@ -31,16 +31,16 @@ def index():
 def get_prob_mat(model_name, prompt, group_size):
     """Returns the probability matrix as a list of lists of floats"""
     is_bloom = "bloom" in model_name
+    model = g.loaded_models[model_name]
+    tokenizer = g.loaded_tokenizers[model_name]
     if is_bloom: 
-        model = g.loaded_models[model_name]
-        tokenizer = g.loaded_tokenizers[model_name]
         inputs = tokenizer(prompt, return_tensors="pt")
         logits_pt_tensor = model(**inputs, labels=inputs["input_ids"]).logits.squeeze(0)
         prob_tensor = Softmax(dim=1)(logits_pt_tensor)
         try:
             prob_tensor = prob_tensor[:group_size, :]
-        except IndexError as e:
-            raise [e, ValueError("Group size must be smaller than the size of the prompt in tokens")]
+        except IndexError:
+            pass
         
         prob_mat = [prob_tensor[i, :].tolist() for i in range(group_size)]
     else:
@@ -75,11 +75,12 @@ def flatten(l: list) -> List[int]:
 def complete(model_name, org_prompt, top_p, top_k, num_groups, group_size, org_prompt_prob = 1.0) -> Dict[Tuple[int], float]:
     """preprocess the prompt and completes the text
     model name: str
-    org_prompt: str"""
+    org_prompt: str
+    """
+    tokenizer = g.loaded_tokenizers[model_name]
     if isinstance(org_prompt, str):
         str_prompt = org_prompt
         if "bloom" in model_name:
-            tokenizer = g.loaded_tokenizers[model_name]
             tokenized_prompt_ten = tokenizer(str_prompt, return_tensors="pt")["input_ids"]
         tokenized_prompt_list = tokenized_prompt_ten.tolist()
     elif isinstance(org_prompt, list):
