@@ -59,14 +59,17 @@ def get_prob_mat(model_name, prompt, group_size):
     return prob_mat
 
 
-def flatten(l: list) -> List[int]:
-    # Complexity: O(len(the flatten list))
+def flatten(l: list) -> List:
+    """Gets a list where some of the elements might be lists
+    and adds every item in the inner list to the outer list.
+    example: [1, [2, 3], 4, [[5]]] -> [1, 2, 3, 4, 5]
+    Complexity: O(len(the flatten list))"""
     new_list = []
     for item in l:
-        if isinstance(item, int):
-            new_list.append(item)
-        elif isinstance(item, list):
+        if isinstance(item, list):
             new_list.extend(flatten(item))
+        else:
+            new_list.append(item)
     return new_list
 
 
