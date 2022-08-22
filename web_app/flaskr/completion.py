@@ -122,42 +122,6 @@ def add_answer_to_db(connection, model_id, prompt, answer):
     connection.commit()
 
 
-def create_page_errors(model_id_str, prompt, top_k_str, top_p_str, num_groups):
-    """Checks the inputs for the create page and return thr errors"""
-    errors = ""
-    top_k = int(top_k_str)
-    top_p_float = float(top_p_str)
-    num_groups_int = int(num_groups)
-    model_id = int(model_id_str)
-    if top_k < 1:
-        errors += "top_k must be greater than 0\n"
-    if str(top_k) != top_k_str:
-        errors += "top_k must be an integer\n"
-    if not top_p_str:
-        errors += 'Top-P is required\n'
-    if str(float(top_p_str)) != top_p_str:
-        errors += 'Top-P must be a float\n'
-    if not (0.0 <= top_p_float <= 1.0):
-        errors += 'Top-P must be between 0 and 1\n'
-    if not num_groups:
-        errors += 'Number of groups is required\n'
-    if str(num_groups_int) != num_groups:
-        errors += 'Number of groups must be an integer\n'
-    if num_groups_int < 1:
-        errors += 'Number of groups must be greater than 0\n'
-    if not prompt:
-        errors += 'Prompt is required.\n'
-    if not isinstance(prompt, str):
-        errors += 'prompt must be a string.\n'
-    if detect(prompt) != 'en':
-        errors += 'prompt must be in english.\n'
-    if not model_id_str:
-        errors += 'You must select a model.\n'
-    if int(model_id_str) != model_id or model_id < 0:
-        errors += 'Model id must be aa integer greater than 0.\n'
-    return errors
-
-
 @login_required
 @bp.route('/create', methods = ('GET', 'POST'))
 def create():
@@ -170,7 +134,6 @@ def create():
         num_groups = request.form['num_groups']
         prompt = request.form['prompt']
         model_id_str = request.form['model_id']
-        errors = create_page_errors(model_id_str, prompt, top_k_str, top_p_str, num_groups)
         num_groups_int = int(num_groups)
         model_id = int(model_id_str)
         top_p_float = float(top_p_str)
