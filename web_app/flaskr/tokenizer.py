@@ -47,7 +47,7 @@ def init_tf_tokenizer():
     return tf_tokenizer, vocab
 
 
-def tokenize_and_preprocess(text):
+def tf_preprocess_and_tokenize(text):
     """Converts string to tensor of tokens of shape [1, seq_length]."""
     ragged = g.tf_tokenizer.tokenize(text)[0, :]
     eager = ragged.to_tensor(default_value = 0, shape = [None, 1])

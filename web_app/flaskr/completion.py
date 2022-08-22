@@ -9,7 +9,7 @@ from torch.nn import Softmax
 
 from flaskr.auth import login_required
 from flaskr.db import get_db
-from flaskr.tokenizer import tokenize_and_preprocess, init_tf_tokenizer, create_tar
+from flaskr.tokenizer import tf_preprocess_and_tokenize, init_tf_tokenizer, create_tar
 from flaskr.sampling import grouped_sampling
 
 
@@ -41,8 +41,7 @@ def get_prob_mat(model_name, prompt, group_size):
         
         prob_mat = [prob_tensor[i, :].tolist() for i in range(group_size)]
     else:
-        
-        tokenized_prompt = tokenize_and_preprocess(prompt)
+        tokenized_prompt = tf_preprocess_and_tokenize(prompt)
         tar = create_tar(group_size)
         prob_ten = model([tokenized_prompt, tar], training=False)
         prob_squeezed = tf.squeeze(prob_ten)
@@ -153,7 +152,7 @@ def create():
         else:
             g.loaded_models[model_name] = AutoModelForCausalLM.from_pretrained(model_name)
             g.loaded_tokenizers[model_name] = AutoTokenizer.from_pretrained(model_name)
-            
+
         completions, probabilities = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
         if sum(probabilities) > 1:
             errors += "The probabilities of the completions are not normalized.\n"
