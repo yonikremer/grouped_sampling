@@ -3,7 +3,7 @@ import os
 from typing import List, Tuple, Dict
 
 import tensorflow as tf
-from flask import Blueprint, g, redirect, render_template, request, url_for
+from flask import Blueprint, g, redirect, render_template, request, url_for, flash
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from torch.nn import Softmax
 
@@ -153,11 +153,13 @@ def create():
             g.loaded_models[model_name] = AutoModelForCausalLM.from_pretrained(model_name)
             g.loaded_tokenizers[model_name] = AutoTokenizer.from_pretrained(model_name)
 
-        completions, probabilities = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
-        if sum(probabilities) > 1:
-            errors += "The probabilities of the completions are not normalized.\n"
-        if errors == "":
+        completions = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
+        try:
             best_completion = max(completions, key=completions.get)
-            add_answer_to_db(model_name, prompt, best_completion)
+        except ValueError:
+            flash("No completions were found, try using higher top-k or top-p or smaller group size")
+            flash("That happend because all the models had repeated tokens")
             return redirect(url_for('completion/index.html'))
+        add_answer_to_db(model_name, prompt, best_completion)
+        return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
