@@ -4,12 +4,12 @@ from typing import List, Tuple, Dict
 
 import tensorflow as tf
 from flask import Blueprint, g, redirect, render_template, request, url_for
-from transformers import BloomTokenizerFast, BloomForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from torch.nn import Softmax
 
 from flaskr.auth import login_required
 from flaskr.db import get_db
-from flaskr.tokenizer import tokenize_and_preprocess, init_tokenizer, create_tar
+from flaskr.tokenizer import tokenize_and_preprocess, init_tf_tokenizer, create_tar
 from flaskr.sampling import grouped_sampling
 
 
@@ -28,10 +28,9 @@ def index():
 
 def get_prob_mat(model_name, prompt, group_size):
     """Returns the probability matrix as a list of lists of floats"""
-    is_bloom = "bloom" in model_name
     model = g.loaded_models[model_name]
     tokenizer = g.loaded_tokenizers[model_name]
-    if is_bloom: 
+    if isinstance(model, AutoModelForCausalLM): 
         inputs = tokenizer(prompt, return_tensors="pt")
         logits_pt_tensor = model(**inputs, labels=inputs["input_ids"]).logits.squeeze(0)
         prob_tensor = Softmax(dim=1)(logits_pt_tensor)
@@ -42,14 +41,7 @@ def get_prob_mat(model_name, prompt, group_size):
         
         prob_mat = [prob_tensor[i, :].tolist() for i in range(group_size)]
     else:
-        if not hasattr(g, 'tf_tokenizer'):
-            tf_tokenizer, vocab = init_tokenizer()
-            g.tf_tokenizer = tf_tokenizer
-            g.vocab_size = len(vocab)
-        model_path = f"/flaskr/static/models/{model_name}.pb"
-        if not os.path.exists(model_path):
-            raise RuntimeError(f"Model {model_name} not found")
-        model = tf.saved_model.load(model_path)
+        
         tokenized_prompt = tokenize_and_preprocess(prompt)
         tar = create_tar(group_size)
         prob_ten = model([tokenized_prompt, tar], training=False)
@@ -83,6 +75,8 @@ def complete(model_name, org_prompt, top_p, top_k, num_groups, group_size, org_p
         str_prompt = org_prompt
         if "bloom" in model_name:
             tokenized_prompt_ten = tokenizer(str_prompt, return_tensors="pt")["input_ids"]
+        else:
+            tokenized_prompt_ten = tokenizer(str_prompt, return_tensors="pt")
         tokenized_prompt_list = tokenized_prompt_ten.tolist()
     elif isinstance(org_prompt, list):
         tokenized_prompt_list = flatten(org_prompt)
@@ -144,9 +138,22 @@ def create():
         num_groups_int = int(num_groups)
         top_p_float = float(top_p_str)
         top_k = int(top_k_str)
-        if "bloom" in model_name:
-            g.loaded_models[model_name] = BloomForCausalLM.from_pretrained(model_name)
-            g.loaded_tokenizers[model_name] = BloomTokenizerFast.from_pretrained(model_name)
+        g.loaded_tokenizers[model_name], _ = init_tf_tokenizer()
+        pb_model_path = f"/flaskr/static/models/{model_name}.pb"
+        h5_model_path = f"/flaskr/static/models/{model_name}.h5"
+
+        if os.path.exists(pb_model_path):
+            g.loaded_models[model_name] = tf.saved_model.load(pb_model_path)
+            g.loaded_tokenizers[model_name], _ = init_tf_tokenizer()
+
+        elif os.path.exists(h5_model_path):
+            g.loaded_models[model_name] = tf.keras.models.load_model(h5_model_path)
+            g.loaded_tokenizers[model_name], _ = init_tf_tokenizer()
+
+        else:
+            g.loaded_models[model_name] = AutoModelForCausalLM.from_pretrained(model_name)
+            g.loaded_tokenizers[model_name] = AutoTokenizer.from_pretrained(model_name)
+            
         completions, probabilities = complete(model_name, prompt, top_p_float, top_k, num_groups_int, group_size)
         if sum(probabilities) > 1:
             errors += "The probabilities of the completions are not normalized.\n"
