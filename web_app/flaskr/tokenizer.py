@@ -38,7 +38,7 @@ def create_tar(group_size):
     return tf.random.uniform([1, group_size], minval = 5, maxval = g.vocab_size, dtype = tf.int32)
 
 
-def init_tokenizer():
+def init_tf_tokenizer():
     """Creates and returns the tokenizer and vocabulary."""
     path = 'flaskr/static/look_up_table.txt'
     with open(path, 'r', encoding="utf-8") as file:
