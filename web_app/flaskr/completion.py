@@ -1,17 +1,15 @@
 """Contains the functions for the completion page and the completion blueprint"""
-from functools import lru_cache
 import os
 from typing import List, Tuple, Dict
 
 import tensorflow as tf
-from langdetect import detect
-from flask import Blueprint, flash, g, redirect, render_template, request, url_for
-from transformers import AutoTokenizer, AutoModel, BloomTokenizerFast, BloomForCausalLM
+from flask import Blueprint, g, redirect, render_template, request, url_for
+from transformers import BloomTokenizerFast, BloomForCausalLM
 from torch.nn import Softmax
 
 from flaskr.auth import login_required
 from flaskr.db import get_db
-from flaskr.tokenizer import tokenize_and_preprocess, init_tokenizer, token_list_to_str, create_tar
+from flaskr.tokenizer import tokenize_and_preprocess, init_tokenizer, create_tar
 from flaskr.sampling import grouped_sampling
 
 
