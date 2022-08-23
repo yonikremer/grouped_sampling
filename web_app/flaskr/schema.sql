@@ -16,7 +16,7 @@ CREATE TABLE model (
     user_id INTEGER,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     model_name TEXT UNIQUE NOT NULL,
-    group_size int
+    group_size int,
     FOREIGN KEY(user_id) REFERENCES user(id)
 );
 
