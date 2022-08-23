@@ -32,7 +32,10 @@ def get_prob_mat(model_name, prompt, group_size):
     tokenizer = g.loaded_tokenizers[model_name]
     if isinstance(model, AutoModelForCausalLM): 
         inputs = tokenizer(prompt, return_tensors="pt")
-        logits_pt_tensor = model(**inputs, labels=inputs["input_ids"]).logits.squeeze(0)
+        if "bloom" in model_name:
+            logits_pt_tensor = model(**inputs, labels=inputs["input_ids"]).logits.squeeze(0)
+        else:
+            logits_pt_tensor = model(**inputs).logits.squeeze(0)
         prob_tensor = Softmax(dim=1)(logits_pt_tensor)
         try:
             prob_tensor = prob_tensor[:group_size, :]
