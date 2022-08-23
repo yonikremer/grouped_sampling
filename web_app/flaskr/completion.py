@@ -54,7 +54,7 @@ def flatten(l: list) -> List:
     """Gets a list where some of the elements might be lists
     and adds every item in the inner list to the outer list.
     example: [1, [2, 3], 4, [[5]]] -> [1, 2, 3, 4, 5]
-    Complexity: O(len(the flatten list))"""
+    Complexity: O(len(the flatten list) + the number of diffrent lists))"""
     new_list = []
     for item in l:
         if isinstance(item, list):
@@ -68,6 +68,11 @@ def complete(model_name, org_prompt, top_p, top_k, num_groups, group_size, org_p
     """preprocess the prompt and completes the text
     model name: str
     org_prompt: str
+    top_p: float (0.0 - 1.0)
+    top_k: int > 0
+    num_groups: int > 0
+    group_size: int > 0
+    org_prompt_prob: float <= 1
     """
     tokenizer = g.loaded_tokenizers[model_name]
     if isinstance(org_prompt, str):
