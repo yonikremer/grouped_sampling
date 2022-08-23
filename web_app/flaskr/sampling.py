@@ -31,7 +31,7 @@ def seq_prob(tokens, prob_mat):
     return probability
 
 
-def grouped_sampling(prob_mat: List[List[int]], top_p, top_k, group_size) -> Tuple[List[List[int]], List[float]]:
+def grouped_sampling(prob_mat: List[List[float]], top_p, top_k, group_size) -> Tuple[List[List[int]], List[float]]:
     """given a matrix of probabilities, returns a list of lists of tokens
     the matrixs is of size group_size x vocab_size
     where matrix[i, j] is the probability of token j the i-th token in the group
