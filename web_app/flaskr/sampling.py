@@ -1,4 +1,4 @@
-from typing import List, Tuple, Iterable
+from typing import List
 
 
 def combinations(mat):
@@ -10,7 +10,8 @@ def combinations(mat):
     for i in mat[0]:
         for j in combinations(mat[1:]):
             res.append([i] + j)
-    return res
+    filtered_res = list(filter(doesnt_have_duplicates, res))
+    return filtered_res
 
 
 def doesnt_have_duplicates(my_list):
@@ -19,11 +20,11 @@ def doesnt_have_duplicates(my_list):
     return len(my_list) == len(set(my_list))
 
 
-def seq_prob(tokens, prob_mat):
+def seq_prob(tokens, prob_mat, org_prompt_prob):
     """Given the probability matrix and a list of tokens
     returns the probability of the sequence
     prob_mat[a][b] is the probability of the token with id b the a-th token in the sequence"""
-    probability = 1.0
+    probability = org_prompt_prob
     sequence_length = len(tokens)
     for i in range(sequence_length):
         curr_token = tokens[i]
@@ -31,7 +32,7 @@ def seq_prob(tokens, prob_mat):
     return probability
 
 
-def grouped_sampling(prob_mat: List[List[float]], top_p, top_k, group_size) -> Tuple[List[List[int]], List[float]]:
+def grouped_sampling(prob_mat: List[List[float]], top_p, top_k) -> List[List[int]]:
     """given a matrix of probabilities, returns a list of lists of tokens
     the matrixs is of size group_size x vocab_size
     where matrix[i, j] is the probability of token j the i-th token in the group
@@ -42,9 +43,8 @@ def grouped_sampling(prob_mat: List[List[float]], top_p, top_k, group_size) -> T
     over all complexity of the function in O(group_size * vocab_size * log(vocab_size))"""
     
     # prob_tensor.shape is now (group_size, vocab_size)
-    indices = []
-    for i in range(group_size): # group_size times
-        token_prob = prob_mat[i]  # O(1)
+    posible_tokens = []
+    for token_prob in prob_mat: # group_size times
         vocab_size = len(token_prob)  # O(1)
         indexed_prob = list(zip(token_prob, range(vocab_size)))  # O(vocab_size)
         sorted_indexed_prob = sorted(indexed_prob, key=lambda x: x[0], reverse=True)[:top_k] # O(vocab_size*log(vocab_size))
@@ -55,10 +55,8 @@ def grouped_sampling(prob_mat: List[List[float]], top_p, top_k, group_size) -> T
                 break
             total_prob += prob
             curr_indices.append(token)
-        indices.append(curr_indices)  # O(1)
-    new_sequences: List[List[int]] = combinations(indices)  # theta(prod(len(indices[i]) for i in range(group_size)))
+        posible_tokens.append(curr_indices)  # O(1)
+    new_sequences: List[List[int]] = combinations(posible_tokens)  # theta(prod(len(indices[i]) for i in range(group_size)))
     # len(indices[i]) < min(top_k, vocab_size)
     # therefore the complexity is O(min(top_k, vocab_size) * group_size)
-    filtered_sequences: Iterable[List[int]] = list(filter(doesnt_have_duplicates, new_sequences))
-    prob_list: List[Tuple[List[int], float]] = [seq_prob(seq, prob_mat) for seq in filtered_sequences]
-    return filtered_sequences, prob_list
+    return new_sequences
