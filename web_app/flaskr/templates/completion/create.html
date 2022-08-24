@@ -9,19 +9,20 @@
 {% block content %}
     <form method="post">
         <label for="model_name">Enter the name of the model you choose</label>
-        <input id="model_name" name="model_name" required value="{{ request.form['model_name'] }}">
+        <input name="model_name" id="title" value="{{ request.form['title'] }}" required>
+        <input id="model_name" name="model_name" placeholder="gpt2" type="text" value="{{ request.form['model_name']}}">
         
         <label for="num_sets">Enter the number of sets you want, positive integer</label>
-        <input id="num_sets" name="num_sets" required value="{{ request.form['num_sets'] }}" value=1>
+        <input id="num_sets" name="num_sets" placeholder=1 type="number" value="{{ request.form['num_sets']}}">
         
-        <label for="top_k">Enter top k for nucleus sampeling, positive integer</label>
-        <input id="top_k" name="top_k" required value="{{ request.form['top_k'] }}" value=1>
+        <label for="top_k">Enter top k, positive integer</label>
+        <input id="top_k" name="top_k" placeholder=1 type="number" value="{{ request.form['top_k']}}">
         
-        <label for="top_p">Enter top p for nucleus sampeling, 1>=float>0</label>
-        <input id="top_p" name="top_p" required value="{{ request.form['top_p'] }}" value=0.0>
+        <label for="top_p">Enter top p, 1 >= top p >= 0</label>
+        <input id="top_p" name="top_p" placeholder=1 type="number" value="{{ request.form['top_p']}}">
 
         <label for="prompt">Enter your prompt</label>
-        <textarea name="prompt" id="prompt" required>{{ request.form["prompt"] }}</textarea>
+        <textarea name="prompt" id="prompt">{{ request.form["prompt"] }}</textarea>
         
         <label for="save">Complete</label>
         <input type="submit" value="save" id="save">
