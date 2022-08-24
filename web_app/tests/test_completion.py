@@ -1,12 +1,28 @@
 """Tests the completion blueprint"""
 
 from sqlite3 import Connection
+from typing import List
 
 from flask import Flask
+from flask.testing import FlaskClient
 
 from flaskr.db import get_db
-from flask.testing import FlaskClient
-from typing import List
+from flaskr.completion import get_prob_mat, complete
+
+
+def test_get_prob_mat():
+    prob_mat = get_prob_mat("t5-small", "Who was the first president of the USA?", 3)
+    assert isinstance(prob_mat, list)
+    assert isinstance(prob_mat[0], list)
+    assert isinstance(prob_mat[0][0], float)
+    print(prob_mat)
+
+
+def test_complete():
+    """tests you can complete a completion"""
+    answers, probabilities = complete("t5-small", "Who was the first president of the USA?", 0.1, 3, 3, 2)
+    assert all(isinstance(a, str) for a in answers)
+    assert all(isinstance(p, float) for p in probabilities)
 
 
 def test_index(client: FlaskClient, auth) -> None:
@@ -35,3 +51,7 @@ def test_create(client: FlaskClient, auth, app: Flask) -> None:
         my_db: Connection = get_db()
         count = my_db.execute('SELECT COUNT(id) FROM completion').fetchone()[0]
         assert count == 3  # there are 3 completions in the database, two from testing_data.sql and one from the test
+
+if __name__ == '__main__':
+    test_get_prob_mat()
+    test_complete()
