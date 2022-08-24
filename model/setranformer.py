@@ -54,4 +54,5 @@ class SeTransformer(Model):
         dec_output = self.decoder(tar, enc_output, training, look_ahead_mask, padding_mask)
 
         final_output = self.emb_trans(dec_output)
+        # dec_output.shape should be (batch_size, set_size, vocab_size)
         return final_output
