@@ -10,7 +10,7 @@ class ScaledDotProductAttention(Layer):
     def __init__(self, d_model: int, **kwargs):
         super().__init__(**kwargs)
         self.scale: TensorSpec(shape=(), dtype=float_type())
-        # scale = 1 / sqrt(d_model)
+        # scale = 1 / sqrt(d_model) = d_model ^ -0.5
         self.scale = tf.math.pow(tf.cast(d_model, float_type()), -0.5)
         self.softmax = Softmax(axis=-1)
 
@@ -22,10 +22,10 @@ class ScaledDotProductAttention(Layer):
         v: Tensor of shape (batch_size, seq_len, d_model),
         mask: Optional[Tensor] of shape (batch_size, 1, 1, seq_len)
         output: Tensor of shape (batch_size, seq_len, d_model)"""
-        matmul_qk: Tensor = tf.matmul(q, k, transpose_b=True)  # (..., seq_len_q, seq_len_k)
+        matmul_qk: Tensor = tf.matmul(q, k, transpose_b=True)  # (batch_size, seq_len, seq_len)
 
         # Scaled Dot-Product Attention
-        scaled_attention_logits: Tensor = matmul_qk * self.scale  # (..., seq_len_q, seq_len_k)
+        scaled_attention_logits: Tensor = matmul_qk * self.scale  # (batch_size, seq_len, seq_len)
         # matmul_qk / sqrt(d_model)
 
         # Masking

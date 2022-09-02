@@ -9,7 +9,7 @@ class DecoderBlock(Layer):
     def __init__(self, d_model: int, num_heads: int, dff: int, rate: float, **kwargs):
         super().__init__(**kwargs)
 
-        self.mha = MyMultiHeadAttention(num_heads = num_heads, d_model = d_model)
+        self.mha = MyMultiHeadAttention(num_heads=num_heads, d_model=d_model)
 
         self.ffn = PointWiseFeedForwardNetwork(d_model, dff)
 
@@ -17,7 +17,7 @@ class DecoderBlock(Layer):
 
         self.dropout = Dropout(rate)
 
-    def call(self, x: Tensor, enc_output: Tensor, look_ahead_mask: Tensor, padding_mask: Tensor, training):
+    def call(self, x: Tensor, look_ahead_mask: Tensor, padding_mask: Tensor, training):
         # enc_output.shape should be (batch_size, input_seq_len, d_model)
 
         attn1 = self.mha(x, x, look_ahead_mask)  # (batch_size, set_size, d_model)
@@ -26,7 +26,7 @@ class DecoderBlock(Layer):
         # might be data leak
         out1 = self.layer_norm(attn1)  # (batch_size, set_size, d_model)
 
-        attn2 = self.mha(enc_output, out1, padding_mask)  # (batch_size, set_size, d_model)
+        attn2 = self.mha(out1, out1, padding_mask)  # (batch_size, set_size, d_model)
         attn2 = self.dropout(attn2, training=training)  # (batch_size, set_size, d_model)
         out2 = self.layer_norm(attn2 + out1)  # (batch_size, set_size, d_model)
 

@@ -18,19 +18,15 @@ class Decoder(Layer):
         self.dec_layers = [DecoderBlock(d_model, num_heads, dff, rate) for _ in range(num_blocks)]
         self.dropout = tf.keras.layers.Dropout(rate)
 
-    def call(self, tar: Tensor, enc_output: Tensor, training: bool,
+    def call(self, x, training: bool,
              look_ahead_mask: Tensor, padding_mask: Tensor) -> tf.Tensor:
+        # x.shape [batch_size, seq len, d_model]
+        seq_len = tf.shape(x)[1]
 
-        seq_len = tf.shape(tar)[1]
-
-        x = self.embedding(tar)  # (batch_size, set_size, d_model)
-        x *= self.scale
         x += self.pos_encoding[:, :seq_len, :]
 
-        x = self.dropout(x, training=training)
-
         for i in range(self.num_blocks):
-            x = self.dec_layers[i](x=x, enc_output=enc_output, look_ahead_mask=look_ahead_mask, 
+            x = self.dec_layers[i](x=x, look_ahead_mask=look_ahead_mask,
                                    padding_mask=padding_mask, training=training)
 
         # x.shape should be (batch_size, set_size, d_model)
