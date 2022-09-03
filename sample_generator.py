@@ -9,6 +9,7 @@ from text_generator import TextGenerator
 
 
 class SampleGen(TextGenerator):
+    """A TextGenerator that generates text using random sampling with top-k or top-p filtering."""
     def __init__(self, model_name: str, group_size: int, top_k: int, top_p: float, temp: float = 1.0):
         super().__init__(model_name, group_size, temp)
         random.seed(0)
@@ -20,6 +21,7 @@ class SampleGen(TextGenerator):
             self.sampling_method = "top p"
 
     def grouped_top_p_sampling(self, prob_mat: List[List[float]], org_used_tokens: List[int]):
+        """Generates a group of tokens using top-p sampling."""
         used_tokens = deepcopy(org_used_tokens)
         answer = []
         for curr_token_prob_list in prob_mat:
@@ -45,6 +47,7 @@ class SampleGen(TextGenerator):
         return answer
 
     def grouped_top_k_sampling(self, prob_mat: List[List[float]], org_used_tokens: List[int]):
+        """Generates a group of tokens using top-k sampling."""
         used_tokens = deepcopy(org_used_tokens)
         answer = []
         for curr_token_prob_list in prob_mat:

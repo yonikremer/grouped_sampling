@@ -7,6 +7,7 @@ from text_generator import TextGenerator
 
 
 class TreeGen(TextGenerator):
+    """A TextGenerator that generates text in a tree like fashion, without random sampling."""
     def __init__(self, model_name: str, group_size: int, top_k: int, top_p: float, temp: float = 1.0):
         super().__init__(model_name, group_size, temp)
         self.top_k = top_k
@@ -48,7 +49,7 @@ class TreeGen(TextGenerator):
         """Gets a list where some elements might be lists
         and adds every item in the inner list to the outer list.
         example: [1, [2, 3], 4, [[5]]] -> [1, 2, 3, 4, 5]
-        Complexity: O(len(the flatten list) + the number of diffrent lists))"""
+        Complexity: O(len(the flatten list) + the number of different lists)"""
         new_list = []
         for item in my_list:
             if isinstance(item, list):
@@ -80,7 +81,7 @@ class TreeGen(TextGenerator):
         samples the tokens such that for each place in the group,
         at most top_k tokens are sampled and at least one token is sampled
         and the added probability of all the tokens is less than or equal top_p
-        returns a list of where every item is a tuple of a sequense and probability
+        returns a list of where every item is a tuple of a sequence and probability
         over all complexity of the function in O(group_size * vocab_size * log(vocab_size))"""
 
         # prob_tensor.shape is now (group_size, vocab_size)

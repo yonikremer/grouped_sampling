@@ -8,9 +8,15 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 
 class TextGenerator(Callable, ABC):
-    """Generates text given a model, a prompt and some sampling parameters."""
+    """An abstract base class for
+    A callable object that given a prompt and length of wanted answer,
+    generates text
+    the text generator has a model, and some parameters"""
 
     def __init__(self, model_name: str, group_size: int, temp: float = 1.0):
+        """Model name: the name of the model used for loading from hugging face hub
+        group size: the number of tokens to be predicted at each model call
+        temp: temperature parameter for the softmax function"""
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name).cuda()
         self.vocab_size = AutoConfig.from_pretrained(model_name).vocab_size
