@@ -20,9 +20,9 @@ To use my models (Unfortunately, I don't have my web app hosted currently):
 5. Type:
   ```
   cd my_path
-  conda create -n web_app_venv
-  conda activate web_app_venv
-  pip install -q -r requirements.txt
+  conda create -n final_project_venv
+  conda activate final_project_venv
+  pip install -r requirements.txt
   set FLASK_APP=flaskr
   pytest
   flask init-db
