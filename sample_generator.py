@@ -1,7 +1,7 @@
 import random
 from copy import deepcopy
 from math import ceil
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from transformers import BatchEncoding
 
@@ -10,7 +10,10 @@ from text_generator import TextGenerator
 
 class SampleGen(TextGenerator):
     """A TextGenerator that generates text using random sampling with top-k or top-p filtering."""
-    def __init__(self, model_name: str, group_size: int, top_k: int, top_p: float, temp: float = 1.0):
+    top_p: Optional[float] = None
+    top_k: Optional[int] = None
+
+    def __init__(self, model_name: str, group_size: int, temp: float = 1.0, top_k: Optional[float] = None, top_p: Optional[float] = None):
         super().__init__(model_name, group_size, temp)
         random.seed(0)
         if top_p is None and top_k is not None:
@@ -19,6 +22,8 @@ class SampleGen(TextGenerator):
         elif top_k is None and top_p is not None:
             self.top_p = top_p
             self.sampling_method = "top p"
+        else:
+            raise ValueError("Either top_k or top_p should be set.")
 
     def grouped_top_p_sampling(self, prob_mat: List[List[float]], org_used_tokens: List[int]):
         """Generates a group of tokens using top-p sampling."""

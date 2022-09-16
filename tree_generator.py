@@ -7,6 +7,10 @@ from text_generator import TextGenerator
 
 
 class TreeGen(TextGenerator):
+    
+    top_p: float
+    top_k: int
+
     """A TextGenerator that generates text in a tree like fashion, without random sampling."""
     def __init__(self, model_name: str, group_size: int, top_k: int, top_p: float, temp: float = 1.0):
         super().__init__(model_name, group_size, temp)
