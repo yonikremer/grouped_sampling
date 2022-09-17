@@ -13,6 +13,7 @@ class TextGenerator(Callable, ABC):
     generates text
     the text generator has a model, and some parameters"""
     
+    model_name: str
     tokenizer: AutoTokenizer
     model: AutoModelForCausalLM
     vocab_size: int
@@ -25,6 +26,7 @@ class TextGenerator(Callable, ABC):
         """Model name: the name of the model used for loading from hugging face hub
         group size: the number of tokens to be predicted at each model call
         temp: temperature parameter for the softmax function"""
+        self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name).cuda()
         self.vocab_size = AutoConfig.from_pretrained(model_name).vocab_size
