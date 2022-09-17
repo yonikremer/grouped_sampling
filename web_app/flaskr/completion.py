@@ -1,15 +1,27 @@
 """Contains the functions for the completion page and the completion blueprint"""
 
-from flask import Blueprint, g, redirect, render_template, request, url_for, flash
+from dataclasses import dataclass
 
-from sample_generator import SampleGenerator
-from tree_generator import TreeGenerator
+from flask import Blueprint, g, redirect, render_template, request, url_for
+
+from text_generator import TextGenerator
+from sample_generator import SampleGen
+from tree_generator import TreeGen
 from flaskr.auth import login_required
 from flaskr.db import get_db
-from flaskr.tokenizer import init_tf_tokenizer
+from flaskr.model import add_model_to_db
 
 
 bp = Blueprint('completion', __name__)
+
+
+@dataclass
+class ComplitionData:
+    """Contains all the data for the completion page"""
+    prompt: str
+    answer: str
+    num_tokens: int
+    generator: TextGenerator
 
 
 @bp.route('/')
@@ -22,14 +34,19 @@ def index():
     return render_template("completion/index.html", completions = completions)
 
 
-def add_answer_to_db(model_name, prompt, answer):
+def add_comp_to_db(comp_data: ComplitionData):
     """Adds an answer to the database"""
+    STRUCTURE: str = """INSERT INTO completion 
+                        (user_id, model_id, prompt, answer, num_tokens, generation_type, top_p, top_k, temprature)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
     connection = get_db()
-    # get model id
-    model_id_query = f"SELECT id FROM models WHERE name = ?"
-    model_id = connection.execute(model_id_query, (model_name)).fetchone()
-    query_structure = "INSERT INTO completion (model_id, prompt, answer, user_id) VALUES (?, ?, ?, ?)"
-    connection.execute(query_structure, (model_id, prompt, answer, g.user['id']))
+    generator: TextGenerator = comp_data.generator
+    model_id: int = add_model_to_db(generator.model_name)
+    arguments = (g.user['id'], model_id, comp_data.prompt, comp_data.answer,
+                comp_data.num_tokens, generator.generation_type,
+                generator.top_p, generator.top_k,
+                generator.temperature)
+    connection.execute(STRUCTURE, arguments)
     connection.commit()
 
 
@@ -49,13 +66,12 @@ def create():
         group_size = request.form['group_size']
         generation_type = request.form['generation_type']
         temperature = request.form['temperature']
-        
-        add_answer_to_db(model_name, prompt, answer)
         if generation_type == "tree":
-            generator = TreeGenerator(model_name, group_size, top_k, top_p, temperature)
+            generator = TreeGen(model_name, group_size, top_k, top_p, temperature)
         elif generation_type == "sampling":
-            generator = SampleGenerator(model_name, group_size, top_k, top_p, temperature)
-        answer: str = generator(prompt, num_tokens) 
-        add_answer_to_db(model_name, prompt, answer)
+            generator = SampleGen(model_name, group_size, top_k, top_p, temperature)
+        answer: str = generator(prompt, num_tokens)
+        completion = ComplitionData(prompt, answer, num_tokens, generator) 
+        add_comp_to_db(completion)
         return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
