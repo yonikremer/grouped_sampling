@@ -12,6 +12,7 @@ class SampleGen(TextGenerator):
     """A TextGenerator that generates text using random sampling with top-k or top-p filtering."""
     top_p: Optional[float] = None
     top_k: Optional[int] = None
+    generation_type = "sampling"
 
     def __init__(self, model_name: str, group_size: int, temp: float = 1.0, top_k: Optional[float] = None, top_p: Optional[float] = None):
         super().__init__(model_name, group_size, temp)

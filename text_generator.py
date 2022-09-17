@@ -19,6 +19,7 @@ class TextGenerator(Callable, ABC):
     temp: float
     group_size: int
     padding_tokens: List[int]
+    generation_type: str
 
     def __init__(self, model_name: str, group_size: int, temp: float = 1.0):
         """Model name: the name of the model used for loading from hugging face hub
