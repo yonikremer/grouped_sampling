@@ -22,11 +22,16 @@ CREATE TABLE model (
 
 CREATE TABLE completion (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER NOT NULL,
     model_id INTEGER NOT NULL,
-    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     prompt TEXT NOT NULL,
     answer TEXT NOT NULL,
+    num_tokens INTEGER NOT NULL,
+    generation_type TEXT NOT NULL,
+    top_p FLOAT,
+    top_k INTEGER,
+    temperature FLOAT DEFAULT 1,
     FOREIGN KEY(user_id) REFERENCES user(id),
     FOREIGN KEY(model_id) REFERENCES model(id)
 );
