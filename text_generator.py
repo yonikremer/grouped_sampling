@@ -22,6 +22,7 @@ class TextGenerator(Callable, ABC):
     padding_tokens: List[int]
     generation_type: str
 
+
     def __init__(self, model_name: str, group_size: int, temp: float = 1.0):
         """Model name: the name of the model used for loading from hugging face hub
         group size: the number of tokens to be predicted at each model call
@@ -34,6 +35,7 @@ class TextGenerator(Callable, ABC):
         self.group_size = group_size
         pad_id = self.tokenizer.pad_token_id
         self.padding_tokens = [pad_id for _ in range(self.group_size - 1)]
+
 
     def get_prob_mat(self, prompt: Optional[str], token_list: Optional[List[int]] = None):
         """Returns the probability matrix as a list of lists of floats"""
@@ -55,25 +57,31 @@ class TextGenerator(Callable, ABC):
 
         if not isinstance(inputs, dict):
             with no_grad():
-                logits_pt_tensor = self.model(**inputs).logits.squeeze(0) / self.temp
+                outputs = self.model(**inputs)
         elif "input_ids" not in inputs.keys():
             with no_grad():
-                logits_pt_tensor = self.model(**inputs).logits.squeeze(0) / self.temp
+                outputs = self.model(**inputs)
         else:
             with no_grad():
-                logits_pt_tensor = self.model(**inputs, labels=inputs["input_ids"]).logits.squeeze(0) / self.temp
+                outputs = self.model(**inputs, labels=inputs["input_ids"])
 
-        prob_tensor = Softmax(dim=1)(logits_pt_tensor)
+        logits_tensor = outputs.logits.squeeze(0) / self.temp
+
+        prob_tensor = Softmax(dim=1)(logits_tensor)
         if self.group_size <= prob_tensor.shape[0]:
             prob_tensor = prob_tensor[-self.group_size:, :]
             prob_mat = [prob_tensor[i, :].tolist() for i in range(self.group_size)]
         else:
-            print("Warning: the group size is bigger than the length of the model's output")
-            print("If the length of the model input (in tokens) is n, n will be length of the model's output")
-            print(f"the predicted text will be {self.group_size - prob_tensor.shape[0]} tokens shorter")
+            print("Warning: the group size is bigger than")
+            print("the length of the model's output")
+            print("If the length of the model input (in tokens) is n,")
+            print("n will be length of the model's output")
+            num_tokens = self.group_size - prob_tensor.shape[0]
+            print(f"the predicted text will be {num_tokens} tokens shorter")
             prob_mat = [prob_tensor[i, :].tolist() for i in range(prob_tensor.shape[0])]
 
         return prob_mat
+
 
     @abstractmethod
     def __call__(self, prompt: str, num_new_tokens: int) -> str:
