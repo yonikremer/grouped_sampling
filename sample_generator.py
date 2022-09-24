@@ -31,23 +31,28 @@ class SampleGen(TextGenerator):
         else:
             raise ValueError("Either top_k or top_p should be set.")
 
-    def top_p_tokens(self, sorted_probs: Dict[int, float]) -> Dict[int, float]:
+    def top_p_tokens(self, sorted_probs: Dict[int, float]) \
+            -> Dict[int, float]:
         top_p_probs: Dict[int, float] = {}
         prob_sum: float = 0.0
-        for i, (curr_token, curr_prob) in enumerate(sorted_probs.items()):
+        for i, (curr_token, curr_prob) \
+                in enumerate(sorted_probs.items()):
             if i > 0 and prob_sum + curr_prob > self.top_p:
                 break
             prob_sum += curr_prob
             top_p_probs[curr_token] = curr_prob
-        weighted_probs = {k: v / prob_sum for k, v in top_p_probs.items()}
+        weighted_probs = {k: v / prob_sum
+                          for k, v in top_p_probs.items()}
         return weighted_probs
 
-    def top_k_tokens(self, sorted_probs: Dict[int, float]) -> Dict[int, float]:
+    def top_k_tokens(self, sorted_probs: Dict[int, float])\
+            -> Dict[int, float]:
         sorted_top_k_keys = list(sorted_probs.keys())[:self.top_k]
         top_k_probs: Dict[int, float]
         top_k_probs = {k: sorted_probs[k] for k in sorted_top_k_keys}
         prob_sum: float = sum(top_k_probs.values())
-        weighted_probs = {k: v / prob_sum for k, v in top_k_probs.items()}
+        weighted_probs = {k: v / prob_sum
+                          for k, v in top_k_probs.items()}
         return weighted_probs
 
     def add_group(self, prob_mat: List[List[float]],
@@ -60,12 +65,15 @@ class SampleGen(TextGenerator):
                 curr_token_probs[used_token] = 0.0
 
             indexed_prob: Dict[int, float]
-            indexed_prob = {i: prob for i, prob in enumerate(curr_token_probs)}
+            indexed_prob = {i: prob for i, prob
+                            in enumerate(curr_token_probs)}
             # O(vocab_size)
             items = indexed_prob.items()
             sorted_probs: Dict[int, float]
             # noinspection PyTypeChecker
-            sorted_probs = dict(sorted(items, key=TextGenerator.get_second_item, reverse=True))
+            sorted_probs = dict(sorted(items,
+                                       key=TextGenerator.get_second_item,
+                                       reverse=True))
             weighted_probs = self.choice_function(sorted_probs)
             keys_list = list(weighted_probs.keys())
             weights_list = list(weighted_probs.values())
@@ -76,7 +84,8 @@ class SampleGen(TextGenerator):
 
     def __call__(self, prompt: str, num_new_tokens: int) -> str:
         num_groups = ceil(num_new_tokens / self.group_size)
-        tokenized_prompt_ten = self.tokenizer(prompt, return_tensors="pt")
+        tokenized_prompt_ten = self.tokenizer(prompt,
+                                              return_tensors="pt")
         if isinstance(tokenized_prompt_ten, BatchEncoding):
             if "input_ids" in tokenized_prompt_ten.keys():
                 tokenized_prompt_ten = tokenized_prompt_ten["input_ids"]
