@@ -101,14 +101,18 @@ class TreeGen(TextGenerator):
         for token_prob in prob_mat:  # group_size times
             vocab_size = len(token_prob)  # O(1)
             indexed_prob = list(zip(token_prob, range(vocab_size)))  # O(vocab_size)
-            sorted_indexed_prob = sorted(indexed_prob, key=lambda x: x[0],
-                                         reverse=True)  # O(vocab_size*log(vocab_size))
+            sorted_indexed_prob = sorted(indexed_prob, 
+                                  TextGenerator.get_second_item,
+                                  reverse=True)  
+            # O(vocab_size*log(vocab_size))
             curr_k = 0
             total_prob = 0
             curr_indices = []
             for prob, token in sorted_indexed_prob:
                 # O(top_k)
-                if total_prob + prob > self.top_p or curr_k == self.top_k:
+                top_p_break = total_prob + prob > self.top_p
+                top_k_break = curr_k == self.top_k
+                if top_p_break or top_k_break:
                     break
                 if token not in already_predicted:
                     already_predicted.add(token)

@@ -8,9 +8,6 @@ from transformers import BatchEncoding
 from text_generator import TextGenerator
 
 
-second_item = lambda sliceable: sliceable[1]
-
-
 class SampleGen(TextGenerator):
     """A TextGenerator that generates text 
     using random sampling with top-k or top-p filtering."""
@@ -70,7 +67,7 @@ class SampleGen(TextGenerator):
             indexed_prob = {i: prob for i, prob in enumerate(curr_token_probs)}
             # O(vocab_size)
             items = indexed_prob.items()
-            sorted_probs = sorted(items, key=second_item, reverse=True)
+            sorted_probs = sorted(items, key=TextGenerator.get_second_item, reverse=True)
             weighted_probs = self.choise_function(sorted_probs)
             keys_list = list(weighted_probs.keys())
             sampled_token: int = choices(keys_list, weighted_probs.values(), k=1)[0]

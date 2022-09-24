@@ -37,6 +37,11 @@ class TextGenerator(Callable, ABC):
         self.padding_tokens = [pad_id for _ in range(self.group_size - 1)]
 
 
+    @staticmethod
+    def get_second_item(sliceable):
+        return sliceable[1]
+
+
     def get_prob_mat(self, prompt: Optional[str], token_list: Optional[List[int]] = None):
         """Returns the probability matrix as a list of lists of floats"""
         attention_len = len(token_list) + self.group_size - 1
