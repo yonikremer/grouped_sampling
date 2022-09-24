@@ -13,25 +13,23 @@ class SampleGen(TextGenerator):
     using random sampling with top-k or top-p filtering."""
     top_p: Optional[float] = None
     top_k: Optional[int] = None
-    choise_function: Callable
+    choice_function: Callable[[Dict[int, float]], Dict[int, float]]
 
     generation_type = "sampling"
 
-
-    def __init__(self, model_name: str, group_size: int, 
-                temp: float = 1.0, top_k: Optional[float] = None,
-                top_p: Optional[float] = None):
+    def __init__(self, model_name: str, group_size: int,
+                 temp: float = 1.0, top_k: Optional[int] = None,
+                 top_p: Optional[float] = None):
         super().__init__(model_name, group_size, temp)
         seed(0)
         if top_p is None and top_k is not None:
             self.top_k = top_k
-            self.choise_function = self.top_k_tokens
+            self.choice_function = self.top_k_tokens
         elif top_k is None and top_p is not None:
             self.top_p = top_p
-            self.choise_function = self.top_p_tokens
+            self.choice_function = self.top_p_tokens
         else:
             raise ValueError("Either top_k or top_p should be set.")
-
 
     def top_p_tokens(self, sorted_probs: Dict[int, float]) -> Dict[int, float]:
         top_p_probs: Dict[int, float] = {}
@@ -44,7 +42,6 @@ class SampleGen(TextGenerator):
         weighted_probs = {k: v / prob_sum for k, v in top_p_probs.items()}
         return weighted_probs
 
-    
     def top_k_tokens(self, sorted_probs: Dict[int, float]) -> Dict[int, float]:
         sorted_top_k_keys = list(sorted_probs.keys())[:self.top_k]
         top_k_probs: Dict[int, float]
@@ -53,9 +50,8 @@ class SampleGen(TextGenerator):
         weighted_probs = {k: v / prob_sum for k, v in top_k_probs.items()}
         return weighted_probs
 
-
     def add_group(self, prob_mat: List[List[float]],
-                               org_used_tokens: List[int]):
+                  org_used_tokens: List[int]):
         """Generates a group of tokens using top-k sampling."""
         used_tokens = deepcopy(org_used_tokens)
         answer = []
@@ -67,10 +63,13 @@ class SampleGen(TextGenerator):
             indexed_prob = {i: prob for i, prob in enumerate(curr_token_probs)}
             # O(vocab_size)
             items = indexed_prob.items()
-            sorted_probs = sorted(items, key=TextGenerator.get_second_item, reverse=True)
-            weighted_probs = self.choise_function(sorted_probs)
+            sorted_probs: Dict[int, float]
+            # noinspection PyTypeChecker
+            sorted_probs = dict(sorted(items, key=TextGenerator.get_second_item, reverse=True))
+            weighted_probs = self.choice_function(sorted_probs)
             keys_list = list(weighted_probs.keys())
-            sampled_token: int = choices(keys_list, weighted_probs.values(), k=1)[0]
+            weights_list = list(weighted_probs.values())
+            sampled_token: int = choices(keys_list, weights_list, k=1)[0]
             answer.append(sampled_token)
             used_tokens.append(sampled_token)
         return answer
@@ -86,7 +85,7 @@ class SampleGen(TextGenerator):
 
         for _ in range(num_groups):
             prob_mat = self.get_prob_mat(None, curr_token_list)
-            new_tokens = self.choise_function(prob_mat, curr_token_list)
+            new_tokens = self.add_group(prob_mat, curr_token_list)
             curr_token_list.extend(new_tokens)
 
         final_num_tokens = tokenized_prompt_ten.shape[1] + num_new_tokens
