@@ -11,6 +11,10 @@ from transformers import (AutoTokenizer,
                           PreTrainedModel)
 
 
+def get_second_item(sliceable):
+    return sliceable[1]
+
+
 class TextGenerator(Callable, ABC):
     """An abstract base class for
     A callable object that given a prompt
@@ -47,10 +51,6 @@ class TextGenerator(Callable, ABC):
         self.group_size = group_size
         pad_id = self.tokenizer.pad_token_id
         self.padding_tokens = [pad_id] * (self.group_size - 1)
-
-    @staticmethod
-    def get_second_item(sliceable):
-        return sliceable[1]
 
     def get_prob_mat(self, prompt: Optional[str],
                      token_list: Optional[List[int]])\
@@ -97,10 +97,11 @@ class TextGenerator(Callable, ABC):
         else:
             print("Warning: the group size is bigger than")
             print("the length of the model's output")
-            print("If the length of the model input (in tokens) is n,")
+            print("If the length of the model input is n,")
             print("n will be length of the model's output")
             num_tokens = self.group_size - prob_tensor.shape[0]
-            print(f"the predicted text will be {num_tokens} tokens shorter")
+            print(f"the predicted text will be \
+                {num_tokens} tokens shorter")
             prob_mat = [prob_tensor[i, :].tolist()
                         for i in range(prob_tensor.shape[0])]
 
