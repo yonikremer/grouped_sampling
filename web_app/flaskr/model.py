@@ -19,7 +19,7 @@ def view_all():
     return render_template("model/view_all.html", table = [data_frame.to_html()], titles = data_frame.columns.values)
 
 
-def add_model_to_db(model_name: str) -> int:
+def get_model_id(model_name: str) -> int:
     """Adds a model to the database if it doesn't exist already and returns the id of the model"""
     my_db = get_db()
     # Check if the model already exists
