@@ -1,3 +1,4 @@
+import enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List
@@ -13,6 +14,14 @@ from transformers import (AutoTokenizer,
 
 def get_second_item(sliceable):
     return sliceable[1]
+
+
+class GenerationType(enum.Enum):
+    """The type of generation to use"""
+    greedy = "greedy"
+    top_k = "top_k"
+    top_p = "top_p"
+    tree = "tree"
 
 
 class TextGenerator(Callable, ABC):
@@ -31,7 +40,7 @@ class TextGenerator(Callable, ABC):
     temp: float
     group_size: int
     padding_tokens: List[int]
-    generation_type: str
+    generation_type: GenerationType
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0):

@@ -5,7 +5,7 @@ from typing import Callable, List, Dict, Optional
 
 from transformers import BatchEncoding
 
-from text_generator import TextGenerator, get_second_item
+from text_generator import TextGenerator, get_second_item, GenerationType
 
 
 class SamplingGenerator(TextGenerator):
@@ -16,19 +16,21 @@ class SamplingGenerator(TextGenerator):
     top_k: Optional[int] = None
     filter_tokens: Callable[[Dict[int, float]], Dict[int, float]]
 
-    generation_type = "sampling"
-
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0, top_k: Optional[int] = None,
                  top_p: Optional[float] = None):
         super().__init__(model_name, group_size, temp)
         seed(0)
+        if top_k == 1 or top_p == 0:
+            self.generation_type = GenerationType.greedy
         if top_p is None and top_k is not None:
             self.top_k = top_k
             self.filter_tokens = self.top_k_tokens
+            self.generation_type = GenerationType.top_k
         elif top_k is None and top_p is not None:
             self.top_p = top_p
             self.filter_tokens = self.top_p_tokens
+            self.generation_type = GenerationType.top_p
         else:
             raise ValueError("Either top_k or top_p \
                               should be set.")

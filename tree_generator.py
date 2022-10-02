@@ -3,7 +3,7 @@ from typing import List, Dict, Union, Tuple, Sequence, Any
 
 from transformers import BatchEncoding
 
-from text_generator import TextGenerator, get_second_item
+from text_generator import TextGenerator, get_second_item, GenerationType
 
 
 class TreeGenerator(TextGenerator):
@@ -13,7 +13,7 @@ class TreeGenerator(TextGenerator):
 
     top_p: float
     top_k: int
-    generation_type = "tree"
+    generation_type = GenerationType.tree
 
     def __init__(self, model_name: str, group_size: int,
                  top_k: int, top_p: float,
