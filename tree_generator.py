@@ -8,9 +8,8 @@ from text_generator import TextGenerator, get_second_item, GenerationType
 
 class TreeGenerator(TextGenerator):
     """A TextGenerator that generates text
-     in a tree like fashion,
+     in a TREE like fashion,
      without random sampling."""
-    generation_type = GenerationType.tree
 
     def __init__(self, model_name: str, group_size: int,
                  top_k: int, top_p: float,
@@ -18,6 +17,10 @@ class TreeGenerator(TextGenerator):
         super().__init__(model_name, group_size, temp)
         self.top_k = top_k
         self.top_p = top_p
+        if top_k == 1 or top_p == 0.0:
+            self.generation_type = GenerationType.GREEDY
+        else:
+            self.generation_type = GenerationType.TREE
 
     @staticmethod
     def no_duplicates(my_sequence: List[Any]) -> bool:
@@ -105,10 +108,10 @@ class TreeGenerator(TextGenerator):
         the probability of token j the i-th token in the group
         samples the tokens such that
         for each place in the group,
-        at most top_k tokens are sampled
+        at most TOP_K tokens are sampled
         and at least one token is sampled
         and the added probability of all the tokens is
-        less than or equal top_p
+        less than or equal TOP_P
         returns a list of where every item is
          a tuple of a sequence and probability
         over all complexity of the function is
@@ -131,7 +134,7 @@ class TreeGenerator(TextGenerator):
             total_prob = 0
             curr_indices = []
             for prob, token in sorted_indexed_prob:
-                # O(top_k)
+                # O(TOP_K)
                 top_p_break = total_prob + prob > self.top_p
                 top_k_break = curr_k == self.top_k
                 if top_p_break or top_k_break:
@@ -146,16 +149,16 @@ class TreeGenerator(TextGenerator):
         new_sequences = TreeGenerator.combinations(possible_tokens)
         # theta(prod(len(indices[i])
         # for i in range(group_size)))
-        # len(indices[i]) < min(top_k, vocab_size)
+        # len(indices[i]) < min(TOP_K, vocab_size)
         # therefore the complexity is
-        # O(min(top_k, vocab_size) * group_size)
+        # O(min(TOP_K, vocab_size) * group_size)
         return new_sequences
 
     def rec_gen(self, org_prompt, num_tokens,
                 org_prompt_prob: float = 1.0) \
             -> Dict[Tuple[int], float]:
         """Recursively generates the next group of tokens
-         in a tree like behavior"""
+         in a TREE like behavior"""
         num_groups = ceil(num_tokens / self.group_size)
         is_list = isinstance(org_prompt, list)
         is_tuple = isinstance(org_prompt, tuple)

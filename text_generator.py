@@ -18,10 +18,10 @@ def get_second_item(sliceable):
 
 class GenerationType(enum.Enum):
     """The type of generation to use"""
-    greedy = "greedy"
-    top_k = "top_k"
-    top_p = "top_p"
-    tree = "tree"
+    GREEDY = "GREEDY"
+    TOP_K = "TOP_K"
+    TOP_P = "TOP_P"
+    TREE = "TREE"
 
 
 class TextGenerator(Callable, ABC):

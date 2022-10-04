@@ -20,17 +20,17 @@ class SamplingGenerator(TextGenerator):
         super().__init__(model_name, group_size, temp)
         seed(0)
         if top_k == 1 or top_p == 0:
-            self.generation_type = GenerationType.greedy
+            self.generation_type = GenerationType.GREEDY
         if top_p is None and top_k is not None:
             self.top_k = top_k
             self.filter_tokens = self.top_k_tokens
-            self.generation_type = GenerationType.top_k
+            self.generation_type = GenerationType.TOP_K
         elif top_k is None and top_p is not None:
             self.top_p = top_p
             self.filter_tokens = self.top_p_tokens
-            self.generation_type = GenerationType.top_p
+            self.generation_type = GenerationType.TOP_P
         else:
-            raise ValueError("Either top_k or top_p \
+            raise ValueError("Either TOP_K or TOP_P \
                               should be set.")
 
     def top_p_tokens(self,
@@ -38,9 +38,9 @@ class SamplingGenerator(TextGenerator):
             -> Dict[int, float]:
         """Gets a token id: probability mapping
         returns the tokens with the highest probability
-        such that their sum is <= top_p.
+        such that their sum is <= TOP_P.
         or the token with the highest probability
-        if it's higher than top_p."""
+        if it's higher than TOP_P."""
         top_p_probs: Dict[int, float] = {}
         prob_sum: float = 0.0
         for i, (curr_token, curr_prob) \
@@ -56,7 +56,7 @@ class SamplingGenerator(TextGenerator):
     def top_k_tokens(self, sorted_probs: Dict[int, float])\
             -> Dict[int, float]:
         """Gets a token id: probability mapping
-        returns the top_k tokens
+        returns the TOP_K tokens
         with the highest probability."""
 
         keys_list = list(sorted_probs.keys())
