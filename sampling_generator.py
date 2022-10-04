@@ -12,8 +12,6 @@ class SamplingGenerator(TextGenerator):
     """A TextGenerator that generates text 
     using random sampling
     with top-k or top-p filtering."""
-    top_p: Optional[float] = None
-    top_k: Optional[int] = None
     filter_tokens: Callable[[Dict[int, float]], Dict[int, float]]
 
     def __init__(self, model_name: str, group_size: int,

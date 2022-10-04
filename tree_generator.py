@@ -10,9 +10,6 @@ class TreeGenerator(TextGenerator):
     """A TextGenerator that generates text
      in a tree like fashion,
      without random sampling."""
-
-    top_p: float
-    top_k: int
     generation_type = GenerationType.tree
 
     def __init__(self, model_name: str, group_size: int,
