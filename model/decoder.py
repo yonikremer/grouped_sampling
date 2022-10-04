@@ -1,33 +1,59 @@
+from typing import List
+
 import tensorflow as tf
-from keras.layers import Layer
+from keras.layers import Layer, Dropout
 from tensorflow import Tensor
 
 from decoder_block import DecoderBlock
 
 
 class Decoder(Layer):
-    def __init__(self, pos_encoding, num_blocks: int, d_model: int, num_heads: int, dff: int,
-                 vocab_size: int, rate: float, **kwargs):
-        super().__init__(**kwargs)
+    scale: Tensor
+    num_blocks: int
+    pos_encoding: Tensor
+    decoder_blocks: List[DecoderBlock]
+    dropout: Dropout
 
-        self.scale = tf.math.sqrt(tf.cast(d_model, tf.keras.backend.floatx()))
+    def __init__(self,
+                 pos_encoding,
+                 num_blocks: int,
+                 d_model: int,
+                 num_heads: int,
+                 dff: int,
+                 rate: float,
+                 *args,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+        d_model_tensor = tf.cast(
+            d_model,
+            tf.keras.backend.floatx())
+        self.scale = tf.math.sqrt(d_model_tensor)
         self.num_blocks = num_blocks
         self.pos_encoding = pos_encoding
 
-        self.embedding = tf.keras.layers.Embedding(vocab_size, d_model)
-        self.dec_layers = [DecoderBlock(d_model, num_heads, dff, rate) for _ in range(num_blocks)]
-        self.dropout = tf.keras.layers.Dropout(rate)
+        self.dec_blocks = [DecoderBlock(d_model,
+                                        num_heads,
+                                        dff,
+                                        rate)
+                           for _ in range(num_blocks)]
+        self.dropout = Dropout(rate)
 
-    def call(self, x, training: bool,
-             look_ahead_mask: Tensor, padding_mask: Tensor) -> tf.Tensor:
+    def call(self,
+             x: Tensor,
+             training: bool,
+             look_ahead_mask: Tensor,
+             padding_mask: Tensor)\
+            -> tf.Tensor:
         # x.shape [batch_size, seq len, d_model]
         seq_len = tf.shape(x)[1]
 
         x += self.pos_encoding[:, :seq_len, :]
 
-        for i in range(self.num_blocks):
-            x = self.dec_layers[i](x=x, look_ahead_mask=look_ahead_mask,
-                                   padding_mask=padding_mask, training=training)
-
+        for decoder_block in self.dec_blocks:
+            x = decoder_block(
+                x=x,
+                look_ahead_mask=look_ahead_mask,
+                padding_mask=padding_mask,
+                training=training)
         # x.shape should be (batch_size, set_size, d_model)
         return x
