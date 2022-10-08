@@ -60,6 +60,8 @@ class TextGenerator(Callable, ABC):
         self.temp = temp
         self.group_size = group_size
         pad_id = self.tokenizer.pad_token_id
+        if not isinstance(pad_id, int):
+            pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
 
     def get_prob_mat(self, prompt: Optional[str],
