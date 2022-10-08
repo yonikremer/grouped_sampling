@@ -75,27 +75,23 @@ class TextGenerator(Callable, ABC):
         if token_list is None:
             tokenized_prompt = self.tokenizer(prompt,
                                               return_tensors="pt")
-            if isinstance(tokenized_prompt, list):
-                token_list = tokenized_prompt
-            elif isinstance(tokenized_prompt, Tensor):
-                token_list = tokenized_prompt.tolist()
-            else:
-                token_list = tokenized_prompt["input_ids"].tolist()
-        assert isinstance(token_list, list)
-        attention_len = len(token_list) + self.group_size - 1
+            with no_grad():
+                outputs = self.model(**tokenized_prompt)
+        else:
+            attention_len = len(token_list) + self.group_size - 1
 
-        longer_token_list = token_list + self.padding_tokens
-        longer_token_tensor = LongTensor([longer_token_list])
-        attention_mask = ones([1, attention_len])
-        if cuda.is_available():
-            longer_token_tensor = longer_token_tensor.cuda()
-            attention_mask = attention_mask.cuda()
-        inputs = {"input_ids": longer_token_tensor,
-                  "attention_mask": attention_mask,
-                  "labels": longer_token_tensor}
+            longer_token_list = token_list + self.padding_tokens
+            longer_token_tensor = LongTensor([longer_token_list])
+            attention_mask = ones([1, attention_len])
+            if cuda.is_available():
+                longer_token_tensor = longer_token_tensor.cuda()
+                attention_mask = attention_mask.cuda()
+            inputs = {"input_ids": longer_token_tensor,
+                      "attention_mask": attention_mask,
+                      "labels": longer_token_tensor}
 
-        with no_grad():
-            outputs = self.model(**inputs)
+            with no_grad():
+                outputs = self.model(**inputs)
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
 
