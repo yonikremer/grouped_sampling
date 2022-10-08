@@ -245,3 +245,15 @@ class TreeGenerator(TextGenerator):
         final_token_list = list(highest_prob_seq)
         decoded_prompt = self.tokenizer.decode(final_token_list)
         return decoded_prompt
+
+    def __repr__(self):
+        return f"TreeGenerator: " \
+               f"model name: {self.model_name}, " \
+               f"group size: {self.group_size}," \
+               f"temperature: {self.temp}" \
+               f"generation type: {self.generation_type}" \
+               f"top_p: {self.top_p}" \
+               f"top_k: {self.top_k}"
+
+    def __str__(self):
+        return repr(self)

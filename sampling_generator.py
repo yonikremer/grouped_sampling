@@ -129,3 +129,15 @@ class SamplingGenerator(TextGenerator):
         shorten_token_list = curr_token_list[:final_num_tokens]
         final_ans = self.tokenizer.decode(shorten_token_list)
         return final_ans
+
+    def __repr__(self):
+        return f"SamplingGenerator: " \
+               f"model name: {self.model_name}, " \
+               f"group size: {self.group_size}," \
+               f"temperature: {self.temp}" \
+               f"generation type: {self.generation_type}" \
+               f"top_p: {self.top_p}" \
+               f"top_k: {self.top_k}"
+
+    def __str__(self):
+        return repr(self)
