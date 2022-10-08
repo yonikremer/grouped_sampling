@@ -1,4 +1,4 @@
-import enum
+from enum import Enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List
@@ -16,12 +16,12 @@ def get_second_item(sliceable):
     return sliceable[1]
 
 
-class GenerationType(enum.Enum):
+class GenerationType(Enum):
     """The type of generation to use"""
-    greedy = "greedy"
-    top_k = "top_k"
-    top_p = "top_p"
-    tree = "tree"
+    GREEDY = "greedy"
+    TOP_K = "top_k"
+    TOP_P = "top_p"
+    TREE = "tree"
 
 
 class TextGenerator(Callable, ABC):
