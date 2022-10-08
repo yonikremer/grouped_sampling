@@ -50,6 +50,8 @@ class SamplingGenerator(TextGenerator):
                 break
             prob_sum += curr_prob
             top_p_probs[curr_token] = curr_prob
+        if prob_sum <= 0:
+            raise RuntimeError("They probabilities are too low, use higher temperature.")
         weighted_probs = {k: v / prob_sum
                           for k, v in top_p_probs.items()}
         return weighted_probs
