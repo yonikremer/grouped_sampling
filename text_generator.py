@@ -67,7 +67,7 @@ class TextGenerator(Callable, ABC):
         self.padding_tokens = [pad_id] * (self.group_size - 1)
 
     def get_prob_mat(self, prompt: Optional[str],
-                     token_list: Optional[List[int]])\
+                     token_list: Optional[List[int]]) \
             -> List[List[float]]:
         """Returns the probability matrix
          as a list of lists of floats"""
@@ -87,22 +87,15 @@ class TextGenerator(Callable, ABC):
         longer_token_list = token_list + self.padding_tokens
         longer_token_tensor = LongTensor([longer_token_list])
         attention_mask = ones([1, attention_len])
-        inputs = {"input_ids": longer_token_tensor,
-                  "attention_mask": attention_mask}
         if cuda.is_available():
-            inputs = {name: tensor.cuda()
-                      for name, tensor in inputs.items()}
+            longer_token_tensor = longer_token_tensor.cuda()
+            attention_mask = attention_mask.cuda()
+        inputs = {"input_ids": longer_token_tensor,
+                  "attention_mask": attention_mask,
+                  "labels": longer_token_tensor}
 
-        if not isinstance(inputs, dict):
-            with no_grad():
-                outputs = self.model(**inputs)
-        elif "input_ids" not in inputs.keys():
-            with no_grad():
-                outputs = self.model(**inputs)
-        else:
-            with no_grad():
-                outputs = self.model(**inputs,
-                                     labels=inputs["input_ids"])
+        with no_grad():
+            outputs = self.model(**inputs)
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
 
