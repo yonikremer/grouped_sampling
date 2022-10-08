@@ -125,3 +125,10 @@ class TextGenerator(Callable, ABC):
     @abstractmethod
     def __call__(self, prompt: str, num_new_tokens: int) -> str:
         pass
+    @abstractmethod
+    def __repr__(self):
+        pass
+
+    @abstractmethod
+    def __str__(self):
+        pass
