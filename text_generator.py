@@ -66,6 +66,13 @@ class TextGenerator(Callable, ABC):
             pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
 
+    def set_group_size(self, new_group_size):
+        self.group_size = new_group_size
+        pad_id = self.tokenizer.pad_token_id
+        if pad_id is None:
+            pad_id = 0
+        self.padding_tokens = [pad_id] * (self.group_size - 1)
+
     def get_prob_mat(self, prompt: Optional[str],
                      token_list: Optional[List[int]]) \
             -> List[List[float]]:
