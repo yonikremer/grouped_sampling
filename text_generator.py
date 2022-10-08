@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List
 
-from torch import LongTensor, ones, no_grad, Tensor
+from torch import LongTensor, ones, no_grad, Tensor, cuda
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
@@ -52,8 +52,9 @@ class TextGenerator(Callable, ABC):
         temperature parameter for the softmax function"""
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForCausalLM.from_pretrained(model_name)
-        self.model = model.cuda()
+        self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        if cuda.is_available():
+            self.model = self.model.cuda()
         config = AutoConfig.from_pretrained(model_name)
         self.vocab_size = config.vocab_size
         self.temp = temp
@@ -82,8 +83,9 @@ class TextGenerator(Callable, ABC):
         attention_mask = ones([1, attention_len])
         inputs = {"input_ids": longer_token_tensor,
                   "attention_mask": attention_mask}
-        inputs = {name: tensor.cuda()
-                  for name, tensor in inputs.items()}
+        if cuda.is_available():
+            inputs = {name: tensor.cuda()
+                      for name, tensor in inputs.items()}
 
         if not isinstance(inputs, dict):
             with no_grad():
