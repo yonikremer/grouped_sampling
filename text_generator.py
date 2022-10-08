@@ -18,10 +18,10 @@ def get_second_item(sliceable):
 
 class GenerationType(enum.Enum):
     """The type of generation to use"""
-    GREEDY = "GREEDY"
-    TOP_K = "TOP_K"
-    TOP_P = "TOP_P"
-    TREE = "TREE"
+    greedy = "greedy"
+    top_k = "top_k"
+    top_p = "top_p"
+    tree = "tree"
 
 
 class TextGenerator(Callable, ABC):
@@ -37,12 +37,10 @@ class TextGenerator(Callable, ABC):
     tokenizer: PreTrainedTokenizer
     model: PreTrainedModel
     vocab_size: int
-    temperature: float
+    temp: float
     group_size: int
     padding_tokens: List[int]
     generation_type: GenerationType
-    top_p: Optional[float] = None
-    top_k: Optional[int] = None
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0):
@@ -50,14 +48,15 @@ class TextGenerator(Callable, ABC):
         used for loading from hugging face hub
         group size: int
         the number of tokens to be predicted at each model call
-        temperature: float
+        temp: float
         temperature parameter for the softmax function"""
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(model_name)
+        self.model = model.cuda()
         config = AutoConfig.from_pretrained(model_name)
         self.vocab_size = config.vocab_size
-        self.temperature = temp
+        self.temp = temp
         self.group_size = group_size
         pad_id = self.tokenizer.pad_token_id
         self.padding_tokens = [pad_id] * (self.group_size - 1)
@@ -97,7 +96,7 @@ class TextGenerator(Callable, ABC):
                 outputs = self.model(**inputs,
                                      labels=inputs["input_ids"])
 
-        logits_tensor = outputs.logits.squeeze(0) / self.temperature
+        logits_tensor = outputs.logits.squeeze(0) / self.temp
 
         prob_tensor = Softmax(dim=1)(logits_tensor)
         if self.group_size <= prob_tensor.shape[0]:
