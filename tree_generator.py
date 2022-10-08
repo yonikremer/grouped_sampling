@@ -3,10 +3,15 @@ from typing import List, Dict, Union, Tuple, Sequence, Any
 
 from transformers import BatchEncoding
 
-from text_generator import TextGenerator, get_second_item, GenerationType
+from text_generator import TextGenerator, GenerationType
 
 
 tokenIDS = Union[List[int], Tuple[int]]
+
+
+class NoCompletionsFound(Exception):
+    def __int__(self, text_generator: TextGenerator):
+        super(NoCompletionsFound, self).__init__(f"test generator: {text_generator}")
 
 
 class TreeGenerator(TextGenerator):
@@ -164,6 +169,8 @@ class TreeGenerator(TextGenerator):
             possible_tokens.append(curr_indices)  # O(1)
         new_sequences: List[List[int]]
         new_sequences = TreeGenerator.combinations(possible_tokens)
+        if len(new_sequences) == 0:
+            raise NoCompletionsFound(self)
         # theta(prod(len(indices[i])
         # for i in range(group_size)))
         # len(indices[i]) < min(TOP_K, vocab_size)
@@ -186,12 +193,16 @@ class TreeGenerator(TextGenerator):
         else:
             raise TypeError("org_prompt must be a list, tuple")
         tokenized_ans_list = self.tree_grouped_sampling(prob_mat, org_prompt)
+        if len(tokenized_ans_list) == 0:
+            raise NoCompletionsFound(self)
         prob_list: List[float]
         prob_list = [TreeGenerator.seq_prob(seq, prob_mat, org_prompt_prob)
                      for seq in tokenized_ans_list]
         new_prompts: List[List[int]]
         new_prompts = [TreeGenerator.flatten(tokens_list + ans)
                        for ans in tokenized_ans_list]
+        if len(new_prompts) == 0:
+            raise NoCompletionsFound(self)
 
         completion_probs: Dict[Tuple[int], float]
         completion_probs = TreeGenerator.remove_duplicates(
@@ -220,6 +231,8 @@ class TreeGenerator(TextGenerator):
     def __call__(self, prompt: str, num_new_tokens: int) -> str:
         """given a prompt and number of tokens to generate,
         returns a string of the prompt + the generated tokens"""
+        if num_new_tokens == 0:
+            return prompt
 
         tokenizer_output = self.tokenizer(prompt,
                                           return_tensors="pt")
@@ -247,12 +260,12 @@ class TreeGenerator(TextGenerator):
         return decoded_prompt
 
     def __repr__(self):
-        return f"TreeGenerator: " \
+        return f"SamplingGenerator: " \
                f"model name: {self.model_name}, " \
-               f"group size: {self.group_size}," \
-               f"temperature: {self.temp}" \
-               f"generation type: {self.generation_type}" \
-               f"top_p: {self.top_p}" \
+               f"group size: {self.group_size}, " \
+               f"temperature: {self.temp}, " \
+               f"generation type: {self.generation_type}, " \
+               f"top_p: {self.top_p}, " \
                f"top_k: {self.top_k}"
 
     def __str__(self):
