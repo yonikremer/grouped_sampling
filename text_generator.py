@@ -41,6 +41,7 @@ class TextGenerator(Callable, ABC):
     group_size: int
     padding_tokens: List[int]
     generation_type: GenerationType
+    end_of_sentence_id: Optional[int]
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0):
@@ -60,6 +61,7 @@ class TextGenerator(Callable, ABC):
         self.temp = temp
         self.group_size = group_size
         pad_id = self.tokenizer.pad_token_id
+        self.end_of_sentence_id = self.tokenizer.eos_token_id
         if not isinstance(pad_id, int):
             pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
@@ -117,7 +119,9 @@ class TextGenerator(Callable, ABC):
                 {num_tokens} tokens shorter")
             prob_mat = [prob_tensor[i, :].tolist()
                         for i in range(prob_tensor.shape[0])]
-
+        if self.end_of_sentence_id is not None:
+            for prob_vec in prob_mat:
+                prob_vec[self.end_of_sentence_id] = 0.0
         return prob_mat
 
     @abstractmethod
