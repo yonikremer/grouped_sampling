@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List
 
-from torch import LongTensor, ones, no_grad, Tensor
+from torch import LongTensor, ones, no_grad, Tensor, cuda
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
@@ -53,7 +53,10 @@ class TextGenerator(Callable, ABC):
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForCausalLM.from_pretrained(model_name)
-        self.model = model.cuda()
+        if cuda.is_available():
+          self.model = model.cuda()
+        else:
+          self.model = model
         config = AutoConfig.from_pretrained(model_name)
         self.vocab_size = config.vocab_size
         self.temp = temp
