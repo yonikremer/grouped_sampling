@@ -77,7 +77,7 @@ class TreeGenerator(TextGenerator):
         O(m + n)"""
         new_list = []
         for item in my_list:
-            if isinstance(item, list):
+            if isinstance(item, list) or isinstance(item, tuple):
                 new_list.extend(TreeGenerator.flatten(item))
             else:
                 new_list.append(item)
@@ -154,7 +154,7 @@ class TreeGenerator(TextGenerator):
         # O(min(TOP_K, vocab_size) * group_size)
         return new_sequences
 
-    def rec_gen(self, org_prompt, num_tokens,
+    def rec_gen(self, org_prompt: Union[List[int], Tuple[int]], num_tokens,
                 org_prompt_prob: float = 1.0) \
             -> Dict[Tuple[int], float]:
         """Recursively generates the next group of tokens
@@ -163,14 +163,10 @@ class TreeGenerator(TextGenerator):
         is_list = isinstance(org_prompt, list)
         is_tuple = isinstance(org_prompt, tuple)
         if is_list or is_tuple:
-            tokens_list: List[int] = TreeGenerator.flatten(org_prompt)
-            assert all(isinstance(token, int) for token in tokens_list)
-            str_prompt = self.tokenizer.decode(tokens_list)
+            tokens_list: List[int] = list(TreeGenerator.flatten(org_prompt))
+            prob_mat = self.get_prob_mat(None, tokens_list)
         else:
-            print(org_prompt)
-            raise ValueError("org_prompt must be a string or list of ints")
-
-        prob_mat = self.get_prob_mat(str_prompt, None)
+            raise TypeError("org_prompt must be a list, tuple")
         tokenized_ans_list = self.tree_grouped_sampling(prob_mat)
         prob_list: List[float]
         prob_list = [TreeGenerator.seq_prob(seq, prob_mat, org_prompt_prob)
@@ -182,15 +178,14 @@ class TreeGenerator(TextGenerator):
         completion_probs: Dict[Tuple[int], float]
         completion_probs = TreeGenerator.remove_duplicates(
             new_prompts, prob_list)
-        items = completion_probs.items()
 
         if num_groups == 1:
-            shorten_completions = {k[:num_tokens]: v
-                                   for k, v in items}
-            return shorten_completions
+            return completion_probs
 
+        items = completion_probs.items()
         new_completions: Dict[Tuple[int], float] = dict()
         for curr_new_prompt, curr_new_prompt_prob in items:
+            curr_new_prompt: List[int]
             curr_completions: Dict[Tuple[int], float]
             new_number_tokens = num_tokens - self.group_size
             curr_completions = self.rec_gen(curr_new_prompt,
@@ -216,8 +211,6 @@ class TreeGenerator(TextGenerator):
         else:
             token_tensor = tokenizer_output
 
-        final_num_tokens = token_tensor.shape[1] + num_new_tokens
-
         tokenized_prompt: List[int]
         tokenized_prompt = token_tensor.tolist()
 
@@ -229,6 +222,6 @@ class TreeGenerator(TextGenerator):
         highest_prob_seq = max(seq_prob_dict,
                                key=seq_prob_dict.get)
         final_token_list: List[int]
-        final_token_list = list(highest_prob_seq[:final_num_tokens])
+        final_token_list = list(highest_prob_seq)
         decoded_prompt = self.tokenizer.decode(final_token_list)
         return decoded_prompt
