@@ -80,7 +80,8 @@ class TextGenerator(Callable, ABC):
             elif isinstance(tokenized_prompt, Tensor):
                 token_list = tokenized_prompt.tolist()
             else:
-                token_list = tokenized_prompt["input_ids"]
+                token_list = tokenized_prompt["input_ids"].tolist()
+        assert isinstance(token_list, list)
         attention_len = len(token_list) + self.group_size - 1
 
         longer_token_list = token_list + self.padding_tokens
