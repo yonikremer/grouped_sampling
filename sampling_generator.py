@@ -4,6 +4,7 @@ from math import ceil
 from typing import Callable, List, Dict, Optional
 
 from transformers import BatchEncoding
+from torch import tensor
 
 from text_generator import TextGenerator, get_second_item, GenerationType
 
@@ -70,7 +71,7 @@ class SamplingGenerator(TextGenerator):
         return weighted_probs
 
     def add_group(self, prob_mat: List[List[float]],
-                  org_used_tokens: List[int]):
+                  org_used_tokens: List[int]) -> List[int]:
         """Generates a group of tokens
          using the choice_function."""
         used_tokens = deepcopy(org_used_tokens)
@@ -110,8 +111,10 @@ class SamplingGenerator(TextGenerator):
             token_tensor = tokenizer_output["input_ids"]
         else:
             token_tensor = tokenizer_output
+        tokenizer_output: tensor
 
-        curr_token_list = token_tensor.squeeze().tolist()
+        curr_token_list: list[int] = token_tensor.squeeze().tolist()
+        prompt_len: int = len(curr_token_list)
 
         for _ in range(num_groups):
             prob_mat = self.get_prob_mat(None,
@@ -120,7 +123,6 @@ class SamplingGenerator(TextGenerator):
                                         curr_token_list)
             curr_token_list.extend(new_tokens)
 
-        prompt_len = tokenizer_output.shape[1]
         final_num_tokens = prompt_len + num_new_tokens
         shorten_token_list = curr_token_list[:final_num_tokens]
         final_ans = self.tokenizer.decode(shorten_token_list)
