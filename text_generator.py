@@ -71,7 +71,7 @@ class TextGenerator(Callable, ABC):
             -> List[List[float]]:
         """Returns the probability matrix
          as a list of lists of floats"""
-        attention_len = len(token_list) + self.group_size - 1
+
         if token_list is None:
             tokenized_prompt = self.tokenizer(prompt,
                                               return_tensors="pt")
@@ -81,6 +81,7 @@ class TextGenerator(Callable, ABC):
                 token_list = tokenized_prompt.tolist()
             else:
                 token_list = tokenized_prompt["input_ids"]
+        attention_len = len(token_list) + self.group_size - 1
 
         longer_token_list = token_list + self.padding_tokens
         longer_token_tensor = LongTensor([longer_token_list])
