@@ -163,7 +163,8 @@ class TreeGenerator(TextGenerator):
         is_list = isinstance(org_prompt, list)
         is_tuple = isinstance(org_prompt, tuple)
         if is_list or is_tuple:
-            tokens_list = TreeGenerator.flatten(org_prompt)
+            tokens_list: List[int] = TreeGenerator.flatten(org_prompt)
+            assert all(isinstance(token, int) for token in tokens_list)
             str_prompt = self.tokenizer.decode(tokens_list)
         else:
             print(org_prompt)
