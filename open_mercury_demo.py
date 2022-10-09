@@ -1,6 +1,5 @@
 import os
 import pip
-import webbrowser
 
 try:
     from mercury import mercury
