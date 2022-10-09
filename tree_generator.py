@@ -164,7 +164,9 @@ class TreeGenerator(TextGenerator):
             if len(curr_indices) == 0:
                 # If we didn't find any tokens to sample from,
                 # we sample the most probable token
-                curr_indices.append(sorted_indexed_prob[0][1])
+                highest_prob_token_id = sorted_indexed_prob[0][1]
+                curr_indices.append(highest_prob_token_id)
+                already_predicted.add(highest_prob_token_id)
 
             possible_tokens.append(curr_indices)  # O(1)
         new_sequences: List[List[int]]
