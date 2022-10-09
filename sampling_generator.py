@@ -6,7 +6,10 @@ from typing import Callable, List, Dict, Optional
 from transformers import BatchEncoding
 from torch import tensor
 
-from text_generator import TextGenerator, get_second_item, GenerationType
+try:
+    from text_generator import TextGenerator, get_second_item, GenerationType
+except (ImportError, ModuleNotFoundError):
+    from final_project.text_generator import TextGenerator, get_second_item, GenerationType
 
 
 class SamplingGenerator(TextGenerator):

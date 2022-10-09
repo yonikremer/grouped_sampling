@@ -3,7 +3,10 @@ from typing import List, Dict, Union, Tuple, Sequence, Any
 
 from transformers import BatchEncoding
 
-from text_generator import TextGenerator, GenerationType
+try:
+    from text_generator import TextGenerator, get_second_item, GenerationType
+except (ImportError, ModuleNotFoundError):
+    from final_project.text_generator import TextGenerator, GenerationType, get_second_item
 
 
 tokenIDS = Union[List[int], Tuple[int]]
