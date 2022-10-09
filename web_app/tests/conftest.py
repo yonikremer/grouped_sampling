@@ -1,15 +1,17 @@
 """Contains functions that configure the tests"""
 
 import os
+import sqlite3
 import tempfile
 
 import pytest
-
-from flaskr import create_app
-from flaskr.db import get_db
-from flaskr.db import init_db
 from flask import Flask
 from flask.testing import FlaskClient, TestResponse
+
+from web_app.flaskr.__init__ import DATABASE_FOLDER, DATABASE_FILE_NAME
+from web_app.flaskr import create_app
+from web_app.flaskr.database import get_db
+
 
 # read in SQL for populating test data
 with open(os.path.join(os.path.dirname(__file__), "testing_data.sql"), "rb") as f:
@@ -28,8 +30,9 @@ def app() -> Flask:
     app: Flask = create_app({"TESTING": True, "DATABASE": db_path})
 
     # create the database and load test data
+    if not os.path.exists(DATABASE_FOLDER):
+        os.makedirs(DATABASE_FOLDER)
     with app.app_context():
-        init_db()
         get_db().executescript(_data_sql)
 
     yield app  # Return app but don't exit the function.
