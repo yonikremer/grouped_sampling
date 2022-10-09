@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List
 
-from torch import LongTensor, ones, no_grad, Tensor, cuda
+from torch import LongTensor, ones, no_grad, cuda
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
