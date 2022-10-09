@@ -142,3 +142,13 @@ cython_debug/
 /documents/examples
 /model/wiki_data
 .vscode
+
+# mercury auto generated files
+celerybeat-schedule*
+celery*
+*.bak
+*.dat
+*.dir
+
+# begins with input and end with .ipynb
+input*.ipynb
