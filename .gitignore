@@ -145,11 +145,11 @@ cython_debug/
 .vscode
 
 # mercury auto generated files
-mercury_demo/celerybeat-schedule*
-mercury_demo/celery*
-*.bak
-*.dat
-*.dir
+/mercury_demo/celerybeat-schedule*
+/mercury_demo/celery*
+.bak
+.dat
+.dir
 
 # begins with input and end with .ipynb
-mercury_demo/input_*.ipynb
+/mercury_demo/input_*.ipynb
