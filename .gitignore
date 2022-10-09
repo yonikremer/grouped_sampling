@@ -99,6 +99,7 @@ ipython_config.py
 __pypackages__/
 
 # Celery stuff
+/mercury_demo/celery
 celerybeat-schedule
 celerybeat.pid
 
@@ -144,11 +145,11 @@ cython_debug/
 .vscode
 
 # mercury auto generated files
-celerybeat-schedule*
-celery*
+mercury_demo/celerybeat-schedule*
+mercury_demo/celery*
 *.bak
 *.dat
 *.dir
 
 # begins with input and end with .ipynb
-input*.ipynb
+mercury_demo/input_*.ipynb
