@@ -4,7 +4,7 @@ import pytest
 from flask import g, session, Flask, Response
 from flask.testing import FlaskClient
 
-from flaskr.db import get_db
+from web_app.flaskr.database import get_db
 
 
 def test_register(client: FlaskClient, app: Flask) -> None:

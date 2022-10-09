@@ -1,5 +1,5 @@
 """configures the tests"""
-from flaskr import create_app
+from web_app.flaskr.__init__ import create_app
 
 
 def test_config() -> None:

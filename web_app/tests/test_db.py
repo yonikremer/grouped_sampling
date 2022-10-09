@@ -3,7 +3,7 @@ import sqlite3
 from sqlite3 import Connection
 
 import pytest
-from flaskr.db import get_db
+from web_app.flaskr.database import get_db
 from flask import Flask
 
 
@@ -18,19 +18,3 @@ def test_get_close_db(app: Flask):
         my_db.execute('SELECT 1')
 
     assert 'closed' in str(error.value)
-
-
-def test_init_db_command(runner, monkeypatch):
-    """Test the init-my_db command."""
-    class Recorder:
-        """Records events."""
-        called = False
-
-    def fake_init_db():
-        """sets the Recorder.called to True."""
-        Recorder.called = True
-
-    monkeypatch.setattr('flaskr.my_db.init_db', fake_init_db)
-    result = runner.invoke(args=['init-my_db'])
-    assert 'Initialized' in result.output
-    assert Recorder.called
