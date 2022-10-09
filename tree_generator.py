@@ -258,7 +258,7 @@ class TreeGenerator(TextGenerator):
                                key=seq_prob_dict.get)
         final_token_list: List[int]
         final_token_list = list(highest_prob_seq)
-        decoded_prompt = self.tokenizer.decode(final_token_list)
+        decoded_prompt = self.tokenizer.decode(final_token_list, skip_special_tokens=True)
         return decoded_prompt
 
     def __repr__(self):

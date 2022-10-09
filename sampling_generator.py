@@ -131,7 +131,7 @@ class SamplingGenerator(TextGenerator):
 
         final_num_tokens = prompt_len + num_new_tokens
         shorten_token_list = curr_token_list[:final_num_tokens]
-        final_ans = self.tokenizer.decode(shorten_token_list)
+        final_ans = self.tokenizer.decode(shorten_token_list, skip_special_tokens=True)
         return final_ans
 
     def __repr__(self):
@@ -145,3 +145,8 @@ class SamplingGenerator(TextGenerator):
 
     def __str__(self):
         return repr(self)
+
+
+if __name__ == "__main__":
+    exm_gen = SamplingGenerator(model_name="gpt2", group_size=3, top_p=0.5, temp=0.5)
+    print(exm_gen("Hello, my name is", 10))
