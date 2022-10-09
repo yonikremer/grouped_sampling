@@ -14,6 +14,8 @@ class SamplingGenerator(TextGenerator):
     using random sampling
     with top-k or top-p filtering."""
     filter_tokens: Callable[[Dict[int, float]], Dict[int, float]]
+    top_k = None
+    top_p = None
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0, top_k: Optional[int] = None,
@@ -103,6 +105,8 @@ class SamplingGenerator(TextGenerator):
         return answer
 
     def __call__(self, prompt: str, num_new_tokens: int) -> str:
+        if num_new_tokens == 0:
+            return prompt
         num_groups = ceil(num_new_tokens / self.group_size)
         tokenizer_output = self.tokenizer(prompt,
                                           return_tensors="pt")
@@ -133,10 +137,10 @@ class SamplingGenerator(TextGenerator):
     def __repr__(self):
         return f"SamplingGenerator: " \
                f"model name: {self.model_name}, " \
-               f"group size: {self.group_size}," \
-               f"temperature: {self.temp}" \
-               f"generation type: {self.generation_type}" \
-               f"top_p: {self.top_p}" \
+               f"group size: {self.group_size}, " \
+               f"temperature: {self.temp}, " \
+               f"generation type: {self.generation_type}, " \
+               f"top_p: {self.top_p}, " \
                f"top_k: {self.top_k}"
 
     def __str__(self):
