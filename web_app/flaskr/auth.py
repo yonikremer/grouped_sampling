@@ -5,7 +5,7 @@ import functools
 from flask import (Blueprint, flash, g, redirect, render_template, request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from flaskr.db import get_db
+from .database import get_db
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -13,8 +13,8 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
     """Register a new user.
-    If the registration is successful, the user is directed to auth.login
-    else, the user is directed to auth.register recursively until a successful registration"""
+    If the registration is successful, the user is directed to auth/login
+    else, the user is directed to auth/register recursively until a successful registration"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -47,7 +47,7 @@ def register():
 def login():
     """Logs in a user.
     If the logging is successful, the user is directed to the main page
-    else, the user is directed to auth.login recursively until a successful registration"""
+    else, the user is directed to auth/login recursively until a successful registration"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']

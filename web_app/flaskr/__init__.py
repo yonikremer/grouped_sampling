@@ -4,14 +4,20 @@ import os
 
 from flask import Flask
 
+DATABASE_FILE_NAME = "flaskr.sqlite"
+DATABASE_FOLDER = "instance"
 
-def create_app(test_config = None):
+
+def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
+
+    app_folder: str = os.path.dirname(os.path.abspath(__file__))
+
     app.config.from_mapping(
-        SECRET_KEY= "dev",
-        DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
+        SECRET_KEY="dev",
+        DATABASE=os.path.join(f"{app_folder}/{DATABASE_FOLDER}", DATABASE_FILE_NAME),
     )
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -23,8 +29,7 @@ def create_app(test_config = None):
     if not os.path.exists(app.instance_path):
         os.makedirs(app.instance_path)
 
-    from flaskr import db, auth, completion, model
-    db.init_app(app)
+    from . import auth, completion, model
     app.register_blueprint(auth.bp)
     app.register_blueprint(completion.bp)
     app.register_blueprint(model.bp)
