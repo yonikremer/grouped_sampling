@@ -2,12 +2,13 @@
 import os
 import sqlite3
 
-from flask import current_app, g
+from flask import g
 
 
 DATABASE_FILE_NAME = "flaskr.sqlite"
 DATABASE_FOLDER = "instance"
 DATABASE_FULL_PATH = os.path.join(DATABASE_FOLDER, DATABASE_FILE_NAME)
+SQL_SCHEMA_SCRIPT_PATH = "flaskr/schema.sql"
 
 
 def get_db():
@@ -36,6 +37,6 @@ def init_database() -> None:
         os.makedirs(DATABASE_FOLDER)
 
     conn = sqlite3.connect(DATABASE_FULL_PATH)
-    with open("flaskr/schema.sql") as f:
+    with open(SQL_SCHEMA_SCRIPT_PATH) as f:
         conn.executescript(f.read())
     conn.close()
