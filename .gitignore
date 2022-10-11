@@ -145,8 +145,8 @@ cython_debug/
 .vscode
 
 # mercury auto generated files
-mercury_demo/celerybeat-schedule*
-mercury_demo/celery*
+celerybeat-schedule*
+celery*
 .bak
 .dat
 .dir
