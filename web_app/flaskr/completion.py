@@ -74,9 +74,9 @@ def create():
         else:
             top_k = int(request.form['top_k'])
 
-        num_tokens = int(request.form['func_num_tokens'])
+        num_tokens = int(request.form['num_tokens'])
 
-        prompt = request.form['func_prompt']
+        prompt = request.form['prompt']
 
         model_name = request.form['my_model_name']
 
