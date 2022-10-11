@@ -21,6 +21,8 @@ class TreeGenerator(TextGenerator):
     """A TextGenerator that generates text
      in a TREE like fashion,
      without random sampling."""
+    top_p: float
+    top_k: int
 
     def __init__(self, model_name: str, group_size: int,
                  top_k: int, top_p: float,
