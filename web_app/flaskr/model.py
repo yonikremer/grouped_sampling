@@ -3,6 +3,7 @@
 from flask import Blueprint, render_template, g
 import pandas as pd
 
+from .auth import is_logged_in, UnAuthorizedException
 from .database import get_db
 
 bp = Blueprint('model', __name__)
@@ -25,9 +26,12 @@ def get_model_id(my_model_name: str) -> int:
         "SELECT EXISTS(SELECT 1 FROM model WHERE model_name=? LIMIT 1)",
         (my_model_name,))
     if not model_exists:
+        if not is_logged_in():
+            raise UnAuthorizedException("add a model to the database")
         my_db.execute(
             "INSERT INTO model (model_name, user_id) VALUES (?, ?)",
-            (my_model_name, g.user['id']))
+            (my_model_name, g.user['id'])
+        )
     model_id: int = my_db.execute(
         "SELECT id FROM model WHERE model_name=?",
         (my_model_name,)

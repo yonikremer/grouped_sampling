@@ -10,6 +10,12 @@ from .database import get_db
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
+class UnAuthorizedException(Exception):
+    """Exception raised when the user is not logged in"""
+    def __init__(self, func_description):
+        super().__init__("You must be logged in to ", func_description)
+
+
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
     """Register a new user.
@@ -36,7 +42,7 @@ def register():
             except my_db.IntegrityError:
                 error = f"User {username} is already registered."
             else:
-                return redirect(url_for("auth.login"))
+                return redirect(f"/auth/login?username={username}&password={password}")
 
         flash(error)  # flash is a function that is used to display messages to the user
 
@@ -99,10 +105,16 @@ def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         """the wrapped function"""
-        if g.user is None:
+        if not is_logged_in():
             flash('Logging in is required for this page.')
             return redirect(url_for('auth.login'))
 
         return view(**kwargs)
 
     return wrapped_view
+
+
+def is_logged_in() -> bool:
+    """Checks if the user is logged in
+    returns: bool"""
+    return g.user is not None
