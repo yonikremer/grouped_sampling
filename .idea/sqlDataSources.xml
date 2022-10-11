@@ -9,5 +9,13 @@
         </node>
       </scope>
     </mapping>
+    <mapping uuid="3f02ad9d-2f26-4edb-b0bd-9f09ef2afe3c" name="flaskr.sqlite Mapping [2]">
+      <data-sources db="90eabe23-9747-4b8e-adcf-61c2533cf1ba" />
+      <scope>
+        <node kind="database" negative="1">
+          <node kind="schema" negative="1" />
+        </node>
+      </scope>
+    </mapping>
   </component>
 </project>
