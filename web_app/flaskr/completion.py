@@ -2,9 +2,11 @@
 
 from dataclasses import dataclass
 
-from flask import Blueprint, g, render_template, request
+from flask import Blueprint, g, render_template, request, redirect, url_for
 
 from text_generator import TextGenerator
+from sampling_generator import SamplingGenerator
+from tree_generator import TreeGenerator
 from .auth import login_required
 from .database import get_db
 from .model import get_model_id
@@ -39,10 +41,16 @@ def add_comp_to_db(comp_data: CompletionData):
     connection = get_db()
     generator: TextGenerator = comp_data.generator
     model_id: int = get_model_id(generator.model_name)
+    if isinstance(generator, SamplingGenerator) or isinstance(generator, TextGenerator):
+        top_k: int = generator.top_k
+        top_p: float = generator.top_p
+    else:
+        top_k = None
+        top_p = None
     arguments = (g.user['id'], model_id, comp_data.prompt, comp_data.answer,
                  comp_data.num_tokens, generator.generation_type,
-                 generator.top_p, generator.top_k,
-                 generator.temperature)
+                 top_p, top_k,
+                 generator.temp)
     connection.execute(STRUCTURE, arguments)
     connection.commit()
 
@@ -54,19 +62,48 @@ def create():
     If a completion is created successfully, directs to the main page.
     else, recursively redirect to this page (completion/create) until a successful completion"""
     if request.method == "POST":
-        print("called function create")
-        top_p = request.form['TOP_P']
-        top_k = request.form['TOP_K']
-        num_tokens = request.form['num_tokens']
+        if request.form['top_p'] == "":
+            top_p = None
+        else:
+            top_p = float(request.form['top_p'])
+        if request.form['top_k'] == "":
+            top_k = None
+        else:
+            top_k = int(request.form['top_k'])
+
+        num_tokens = int(request.form['num_tokens'])
+
         prompt = request.form['prompt']
+
         model_name = request.form['model_name']
-        group_size = request.form['group_size']
-        generation_type = request.form['generation_type']
-        temperature = request.form['temperature']
-        raise NotImplementedError
-        # TODO: create a generator based on the form data
-        # answer: str = generator(prompt, num_tokens)
-        # completion = CompletionData(prompt, answer, num_tokens, generator)
-        # add_comp_to_db(completion)
-        # return redirect(url_for('completion/index.html'))
+
+        group_size = int(request.form['group_size'])
+
+        generation_type_name = request.form['generation_type']
+
+        if request.form['temperature'] == "":
+            temperature = 1.0
+        else:
+            temperature = float(request.form['temperature'])
+
+        generation_type_names_to_classes = {"sampling": SamplingGenerator, "tree": TreeGenerator}
+
+        if generation_type_name in generation_type_names_to_classes:
+            text_generator_type = generation_type_names_to_classes[generation_type_name]
+        else:
+            raise ValueError(f"generation_type must be either one of"
+                             f" {generation_type_names_to_classes.keys()}, "
+                             f"got: {generation_type_name}"
+                             f"the full request is {request.form}")
+        text_generator: TextGenerator = text_generator_type(
+                model_name=model_name,
+                group_size=group_size,
+                top_p=top_p,
+                top_k=top_k,
+                temp=temperature
+        )
+        answer: str = text_generator(prompt, num_tokens)
+        completion = CompletionData(prompt, answer, num_tokens, text_generator)
+        add_comp_to_db(completion)
+        return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
