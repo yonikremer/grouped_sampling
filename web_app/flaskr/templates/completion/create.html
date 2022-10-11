@@ -9,7 +9,7 @@
 {% block content %}
     <form method="post">
         <label for="model_name">Enter the name of the model you choose</label>
-        <input id="model_name" name="model_name" placeholder="gpt2" type="text" value="{{ request.form['model_name']}}">
+        <input id="model_name" name="model_name" placeholder="gpt2" type="text" value="{{ request.form['my_model_name']}}">
 
         <label for="group_size">Enter the group size, positive integer</label>
         <input id="group_size" name="group_size" type="number" value="{{ request.form['group_size']}}" required min="1" step="1">
