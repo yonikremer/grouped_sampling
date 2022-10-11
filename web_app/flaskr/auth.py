@@ -41,8 +41,12 @@ def register():
                 my_db.commit()  # commit the changes to the database
             except my_db.IntegrityError:
                 error = f"User {username} is already registered."
-            else:
-                return redirect(f"/auth/login?username={username}&password={password}")
+            else:  # if no error
+                session.clear()
+                session['user_id'] = my_db.execute(
+                    "SELECT id FROM user WHERE username = ?", (username,)
+                ).fetchone()['id']
+                return redirect(url_for('index'))
 
         flash(error)  # flash is a function that is used to display messages to the user
 
