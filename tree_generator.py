@@ -3,11 +3,7 @@ from typing import List, Dict, Union, Tuple, Sequence, Any
 
 from transformers import BatchEncoding
 
-try:
-    from text_generator import TextGenerator, get_second_item, GenerationType
-except (ImportError, ModuleNotFoundError):
-    from final_project.text_generator import TextGenerator, GenerationType, get_second_item
-
+from text_generator import TextGenerator, get_second_item, GenerationType
 
 tokenIDS = Union[List[int], Tuple[int]]
 
@@ -236,8 +232,8 @@ class TreeGenerator(TextGenerator):
         return new_completions
 
     def __call__(self, prompt: str, num_new_tokens: int) -> str:
-        """given a prompt and number of tokens to generate,
-        returns a string of the prompt + the generated tokens"""
+        """given a func_prompt and number of tokens to generate,
+        returns a string of the func_prompt + the generated tokens"""
         if num_new_tokens == 0:
             return prompt
 

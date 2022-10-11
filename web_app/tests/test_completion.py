@@ -30,7 +30,7 @@ def test_create(client: FlaskClient, auth, app: Flask) -> None:
     """tests you can create a new completion"""
     auth.login()
     assert (client.get('/create').status_code == 200)
-    client.post('/create', data={'prompt': 'test prompt', 'model_id': 1})
+    client.post('/create', data={'func_prompt': 'test func_prompt', 'model_id': 1})
     with app.app_context():
         my_db: Connection = get_db()
         count = my_db.execute('SELECT COUNT(id) FROM completion').fetchone()[0]

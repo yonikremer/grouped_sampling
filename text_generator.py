@@ -26,7 +26,7 @@ class GenerationType(Enum):
 
 class TextGenerator(Callable, ABC):
     """An abstract base class for
-    A callable object that given a prompt
+    A callable object that given a func_prompt
      and length of wanted answer,
     generates text
     the text generator has a model,
