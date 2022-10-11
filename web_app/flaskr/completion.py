@@ -41,11 +41,14 @@ def add_comp_to_db(comp_data: CompletionData):
     connection = get_db()
     generator: TextGenerator = comp_data.generator
     model_id: int = get_model_id(generator.model_name)
-    if isinstance(generator, SamplingGenerator) or isinstance(generator, TextGenerator):
-        top_k: int = generator.top_k
-        top_p: float = generator.top_p
+
+    if hasattr(generator, "top_k"):
+        top_k = generator.top_k
     else:
         top_k = None
+    if hasattr(generator, "top_p"):
+        top_p = generator.top_p
+    else:
         top_p = None
     arguments = (g.user['id'], model_id, comp_data.prompt, comp_data.answer,
                  comp_data.num_tokens, generator.generation_type,
@@ -75,7 +78,7 @@ def create():
 
         prompt = request.form['prompt']
 
-        model_name = request.form['model_name']
+        model_name = request.form['my_model_name']
 
         group_size = int(request.form['group_size'])
 
@@ -102,8 +105,11 @@ def create():
                 top_k=top_k,
                 temp=temperature
         )
+        print("successfully created a text generator")
         answer: str = text_generator(prompt, num_tokens)
+        print("successfully generated an answer")
         completion = CompletionData(prompt, answer, num_tokens, text_generator)
         add_comp_to_db(completion)
+        print("successfully added the completion to the database")
         return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
