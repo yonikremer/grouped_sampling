@@ -52,8 +52,10 @@ class TextGenerator(Callable, ABC):
         temp: float
         temperature parameter for the softmax function"""
         self.model_name = model_name
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name)
         if cuda.is_available():
             self.model = self.model.cuda()
         config = AutoConfig.from_pretrained(model_name)
@@ -80,8 +82,8 @@ class TextGenerator(Callable, ABC):
          as a list of lists of floats"""
 
         if token_list is None:
-            tokenized_prompt = self.tokenizer(prompt,
-                                              return_tensors="pt")
+            tokenized_prompt = self.tokenizer(
+                prompt, return_tensors="pt")
             with no_grad():
                 outputs = self.model(**tokenized_prompt)
         else:
@@ -131,13 +133,14 @@ class TextGenerator(Callable, ABC):
         pass
 
     def __str__(self):
-        return self.__repr__()
+        return repr(self)
 
 
 class NoCompletionsFound(Exception):
-    def __init__(self,
-                 text_generator: TextGenerator,
-                 additional_info: str = ""):
+    def __init__(
+            self,
+            text_generator: TextGenerator,
+            additional_info: str = ""):
         super(NoCompletionsFound, self).__init__(
             f"text generator: {text_generator} \n"
             f"additional info: {additional_info}")

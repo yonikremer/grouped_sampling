@@ -82,14 +82,16 @@ class TreeGenerator(TextGenerator):
         new_list = []
         for item in ids:
             if isinstance(item, list) or isinstance(item, tuple):
-                new_list.extend(TreeGenerator.flatten(item))
+                new_list.extend(
+                    TreeGenerator.flatten(item))
             else:
                 new_list.append(item)
         return new_list
 
     @staticmethod
-    def remove_duplicates(completions: List[List[int]],
-                          probs: List[float])\
+    def remove_duplicates(
+            completions: List[List[int]],
+            probs: List[float])\
             -> Dict[Tuple[int], float]:
         """Given a list of tokenized answers
          and the probability of each completion,
@@ -103,8 +105,9 @@ class TreeGenerator(TextGenerator):
                 filtered_completions[curr_comp_tuple] = curr_prob
         return filtered_completions
 
-    def tree_grouped_sampling(self, prob_mat: List[List[float]], org_prompt: tokenIDS)\
-            -> List[List[int]]:
+    def tree_grouped_sampling(
+            self, prob_mat: List[List[float]],
+            org_prompt: tokenIDS) -> List[List[int]]:
         """given a matrix of probabilities,
         returns a list of lists of tokens.
         the matrix is of size group_size x vocab_size
@@ -135,12 +138,12 @@ class TreeGenerator(TextGenerator):
                 # was already predicted is 0
 
             vocab_size = len(token_prob)  # O(1)
-            indexed_prob = list(zip(token_prob,
-                                    range(vocab_size)))
+            indexed_prob = list(
+                zip(token_prob, range(vocab_size)))
             # O(vocab_size)
-            sorted_indexed_prob = sorted(indexed_prob,
-                                         key=lambda x: x[0],
-                                         reverse=True)
+            sorted_indexed_prob = sorted(
+                indexed_prob, key=lambda x: x[0],
+                reverse=True)
 
             # O(vocab_size*log(vocab_size))
             curr_k = 0
@@ -166,7 +169,8 @@ class TreeGenerator(TextGenerator):
 
             possible_tokens.append(curr_indices)  # O(1)
         new_sequences: List[List[int]]
-        new_sequences = TreeGenerator.combinations(possible_tokens)
+        new_sequences = TreeGenerator.combinations(
+            possible_tokens)
         if len(new_sequences) == 0:
             raise NoCompletionsFound(self)
         # theta(prod(len(indices[i])
@@ -186,11 +190,13 @@ class TreeGenerator(TextGenerator):
         is_list = isinstance(org_prompt, list)
         is_tuple = isinstance(org_prompt, tuple)
         if is_list or is_tuple:
-            tokens_list: List[int] = list(TreeGenerator.flatten(org_prompt))
+            tokens_list: List[int]
+            tokens_list = list(TreeGenerator.flatten(org_prompt))
             prob_mat = self.get_prob_mat(None, tokens_list)
         else:
             raise TypeError("org_prompt must be a list or a tuple")
-        tokenized_ans_list = self.tree_grouped_sampling(prob_mat, org_prompt)
+        tokenized_ans_list = self.tree_grouped_sampling(
+            prob_mat, org_prompt)
         if len(tokenized_ans_list) == 0:
             raise NoCompletionsFound(self)
         prob_list: List[float]
@@ -217,9 +223,9 @@ class TreeGenerator(TextGenerator):
             curr_new_prompt: List[int]
             curr_completions: Dict[Tuple[int], float]
             new_number_tokens = num_tokens - self.group_size
-            curr_completions = self.rec_gen(curr_new_prompt,
-                                            new_number_tokens,
-                                            curr_new_prompt_prob)
+            curr_completions = self.rec_gen(
+                curr_new_prompt, new_number_tokens,
+                curr_new_prompt_prob)
             tokens: Tuple[int]
             prob: float
             for tokens, prob in curr_completions.items():

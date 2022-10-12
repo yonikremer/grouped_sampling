@@ -34,21 +34,23 @@ class SamplingGenerator(TextGenerator):
             self.filter_tokens = self.top_p_tokens
             self.generation_type = GenerationType.TOP_P
         else:
-            raise ValueError("Either top_k or top_p \
-                              should be set.")
+            raise ValueError(
+                "Either top_k or top_p \
+                should be set.")
 
     @staticmethod
-    def highest_prob_token(sorted_probs: Dict[int, float]) \
+    def highest_prob_token(
+            sorted_probs: Dict[int, float]) \
             -> Dict[int, float]:
         """Gets a token id: probability mapping
         as a sorted dictionary
         returns the token with the highest probability.
         as a {token: 1.0} dictionary."""
-        highest_prob_token_id: int = next(iter(sorted_probs))
+        highest_prob_token_id = next(iter(sorted_probs))
         return {highest_prob_token_id: 1.0}
 
-    def top_p_tokens(self,
-                     sorted_probs: Dict[int, float]) \
+    def top_p_tokens(
+            self, sorted_probs: Dict[int, float]) \
             -> Dict[int, float]:
         """Gets a token id: probability mapping
         returns the tokens with the highest probability
@@ -65,15 +67,17 @@ class SamplingGenerator(TextGenerator):
                 continue
             break
         if prob_sum == 0:
-            raise NoCompletionsFound(self,
-                                     "The probabilities of all the tokens "
-                                     "is (rounded to) 0 . "
-                                     "Please try a higher temperature.")
-        weighted_probs = {k: v / prob_sum
-                          for k, v in top_p_probs.items()}
+            raise NoCompletionsFound(
+                self, "The probabilities of all the tokens "
+                      "is (rounded to) 0 . "
+                      "Please try a higher temperature.")
+        weighted_probs = {
+            k: v / prob_sum
+            for k, v in top_p_probs.items()}
         return weighted_probs
 
-    def top_k_tokens(self, sorted_probs: Dict[int, float])\
+    def top_k_tokens(
+            self, sorted_probs: Dict[int, float]) \
             -> Dict[int, float]:
         """Gets a token id: probability mapping
         returns the TOP_K tokens
@@ -82,15 +86,18 @@ class SamplingGenerator(TextGenerator):
         keys_list = list(sorted_probs.keys())
         sorted_top_k_keys = keys_list[:self.top_k]
         top_k_probs: Dict[int, float]
-        top_k_probs = {k: sorted_probs[k]
-                       for k in sorted_top_k_keys}
+        top_k_probs = {
+            k: sorted_probs[k]
+            for k in sorted_top_k_keys}
         prob_sum = sum(top_k_probs.values())
-        weighted_probs = {k: v / prob_sum
-                          for k, v in top_k_probs.items()}
+        weighted_probs = {
+            k: v / prob_sum
+            for k, v in top_k_probs.items()}
         return weighted_probs
 
-    def add_group(self, prob_mat: List[List[float]],
-                  org_used_tokens: List[int]) -> List[int]:
+    def add_group(
+            self, prob_mat: List[List[float]],
+            org_used_tokens: List[int]) -> List[int]:
         """Generates a group of tokens
          using the choice_function."""
         used_tokens = deepcopy(org_used_tokens)
@@ -100,21 +107,21 @@ class SamplingGenerator(TextGenerator):
                 curr_token_probs[used_token] = 0.0
 
             indexed_prob: Dict[int, float]
-            indexed_prob = {i: prob for i, prob
-                            in enumerate(curr_token_probs)}
+            indexed_prob = {
+                i: prob for i, prob
+                in enumerate(curr_token_probs)}
             # O(vocab_size)
             items = indexed_prob.items()
             sorted_probs: Dict[int, float]
             # noinspection PyTypeChecker
-            sorted_probs = dict(sorted(items,
-                                       key=get_second_item,
-                                       reverse=True))
+            sorted_probs = dict(sorted(
+                items, key=get_second_item,
+                reverse=True))
             weighted_probs = self.filter_tokens(sorted_probs)
             keys_list = list(weighted_probs.keys())
             weights_list = list(weighted_probs.values())
-            sampled_token = choices(keys_list,
-                                    weights_list,
-                                    k=1)[0]
+            sampled_token = choices(
+                keys_list, weights_list, k=1)[0]
             answer.append(sampled_token)
             used_tokens.append(sampled_token)
         return answer
@@ -126,22 +133,22 @@ class SamplingGenerator(TextGenerator):
         tokenizer_output = self.tokenizer(prompt,
                                           return_tensors="pt")
         is_dict = isinstance(tokenizer_output, dict)
-        is_batch_encoding = isinstance(tokenizer_output,
-                                       BatchEncoding)
+        is_batch_encoding = isinstance(
+            tokenizer_output, BatchEncoding)
         if is_dict or is_batch_encoding:
             token_tensor = tokenizer_output["input_ids"]
         else:
             token_tensor = tokenizer_output
         tokenizer_output: tensor
-
-        curr_token_list: list[int] = token_tensor.squeeze().tolist()
+        curr_token_list: list[int]
+        curr_token_list = token_tensor.squeeze().tolist()
         prompt_len: int = len(curr_token_list)
 
         for _ in range(num_groups):
-            prob_mat = self.get_prob_mat(None,
-                                         curr_token_list)
-            new_tokens = self.add_group(prob_mat,
-                                        curr_token_list)
+            prob_mat = self.get_prob_mat(
+                None, curr_token_list)
+            new_tokens = self.add_group(
+                prob_mat, curr_token_list)
             curr_token_list.extend(new_tokens)
 
         final_num_tokens = prompt_len + num_new_tokens
