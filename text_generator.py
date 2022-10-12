@@ -130,6 +130,14 @@ class TextGenerator(Callable, ABC):
     def __repr__(self):
         pass
 
-    @abstractmethod
     def __str__(self):
-        pass
+        return self.__repr__()
+
+
+class NoCompletionsFound(Exception):
+    def __init__(self,
+                 text_generator: TextGenerator,
+                 additional_info: str = ""):
+        super(NoCompletionsFound, self).__init__(
+            f"text generator: {text_generator} \n"
+            f"additional info: {additional_info}")

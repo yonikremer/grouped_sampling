@@ -6,7 +6,7 @@ from typing import Callable, List, Dict, Optional
 from transformers import BatchEncoding
 from torch import tensor
 
-from text_generator import TextGenerator, get_second_item, GenerationType
+from text_generator import TextGenerator, get_second_item, GenerationType, NoCompletionsFound
 
 
 class SamplingGenerator(TextGenerator):
@@ -41,19 +41,23 @@ class SamplingGenerator(TextGenerator):
             -> Dict[int, float]:
         """Gets a token id: probability mapping
         returns the tokens with the highest probability
-        such that their sum is <= TOP_P.
+        such that their sum is <= self.top_p.
         or the token with the highest probability
-        if it's higher than TOP_P."""
+        if it's higher than top_p."""
         top_p_probs: Dict[int, float] = {}
         prob_sum: float = 0.0
         for i, (curr_token, curr_prob) \
                 in enumerate(sorted_probs.items()):
-            if i > 0 and prob_sum + curr_prob > self.top_p:
-                break
-            prob_sum += curr_prob
-            top_p_probs[curr_token] = curr_prob
-        if prob_sum <= 0:
-            raise RuntimeError("They probabilities are too low, use higher temperature.")
+            if i <= 0 or curr_prob <= self.top_p:
+                prob_sum += curr_prob
+                top_p_probs[curr_token] = curr_prob
+                continue
+            break
+        if prob_sum == 0:
+            raise NoCompletionsFound(self,
+                                     "The probabilities of all the tokens "
+                                     "is (rounded to) 0 . "
+                                     "Please try a higher temperature.")
         weighted_probs = {k: v / prob_sum
                           for k, v in top_p_probs.items()}
         return weighted_probs
@@ -131,7 +135,9 @@ class SamplingGenerator(TextGenerator):
 
         final_num_tokens = prompt_len + num_new_tokens
         shorten_token_list = curr_token_list[:final_num_tokens]
-        final_ans = self.tokenizer.decode(shorten_token_list, skip_special_tokens=True)
+        final_ans = self.tokenizer.decode(
+            shorten_token_list,
+            skip_special_tokens=True)
         return final_ans
 
     def __repr__(self):
@@ -142,11 +148,3 @@ class SamplingGenerator(TextGenerator):
                f"generation type: {self.generation_type}, " \
                f"top_p: {self.top_p}, " \
                f"top_k: {self.top_k}"
-
-    def __str__(self):
-        return repr(self)
-
-
-if __name__ == "__main__":
-    exm_gen = SamplingGenerator(model_name="gpt2", group_size=3, top_p=0.5, temp=0.5)
-    print(exm_gen("Hello, my name is", 10))

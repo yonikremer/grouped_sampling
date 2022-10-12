@@ -3,14 +3,9 @@ from typing import List, Dict, Union, Tuple, Sequence, Any
 
 from transformers import BatchEncoding
 
-from text_generator import TextGenerator, get_second_item, GenerationType
+from text_generator import TextGenerator, NoCompletionsFound, GenerationType
 
 tokenIDS = Union[List[int], Tuple[int]]
-
-
-class NoCompletionsFound(Exception):
-    def __int__(self, text_generator: TextGenerator):
-        super(NoCompletionsFound, self).__init__(f"test generator: {text_generator}")
 
 
 class TreeGenerator(TextGenerator):
@@ -194,7 +189,7 @@ class TreeGenerator(TextGenerator):
             tokens_list: List[int] = list(TreeGenerator.flatten(org_prompt))
             prob_mat = self.get_prob_mat(None, tokens_list)
         else:
-            raise TypeError("org_prompt must be a list, tuple")
+            raise TypeError("org_prompt must be a list or a tuple")
         tokenized_ans_list = self.tree_grouped_sampling(prob_mat, org_prompt)
         if len(tokenized_ans_list) == 0:
             raise NoCompletionsFound(self)
@@ -259,7 +254,9 @@ class TreeGenerator(TextGenerator):
                                key=seq_prob_dict.get)
         final_token_list: List[int]
         final_token_list = list(highest_prob_seq)
-        decoded_prompt = self.tokenizer.decode(final_token_list, skip_special_tokens=True)
+        decoded_prompt = self.tokenizer.decode(
+            final_token_list,
+            skip_special_tokens=True)
         return decoded_prompt
 
     def __repr__(self):
@@ -270,6 +267,3 @@ class TreeGenerator(TextGenerator):
                f"generation type: {self.generation_type}, " \
                f"top_p: {self.top_p}, " \
                f"top_k: {self.top_k}"
-
-    def __str__(self):
-        return repr(self)
