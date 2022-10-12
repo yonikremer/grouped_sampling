@@ -78,7 +78,7 @@ def create():
 
         prompt = request.form['prompt']
 
-        model_name = request.form['my_model_name']
+        model_name = request.form['model_name']
 
         group_size = int(request.form['group_size'])
 
@@ -105,11 +105,8 @@ def create():
                 top_k=top_k,
                 temp=temperature
         )
-        print("successfully created a text generator")
         answer: str = text_generator(prompt, num_tokens)
-        print("successfully generated an answer")
         completion = CompletionData(prompt, answer, num_tokens, text_generator)
         add_comp_to_db(completion)
-        print("successfully added the completion to the database")
         return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
