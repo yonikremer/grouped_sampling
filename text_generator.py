@@ -12,10 +12,6 @@ from transformers import (AutoTokenizer,
                           PreTrainedModel)
 
 
-def get_second_item(sliceable):
-    return sliceable[1]
-
-
 class GenerationType(Enum):
     """The type of generation to use"""
     GREEDY = "greedy"

@@ -6,7 +6,7 @@ from typing import Callable, List, Dict, Optional
 from transformers import BatchEncoding
 from torch import tensor
 
-from text_generator import TextGenerator, get_second_item, GenerationType, NoCompletionsFound
+from text_generator import TextGenerator, GenerationType, NoCompletionsFound
 
 
 class SamplingGenerator(TextGenerator):
@@ -115,7 +115,7 @@ class SamplingGenerator(TextGenerator):
             sorted_probs: Dict[int, float]
             # noinspection PyTypeChecker
             sorted_probs = dict(sorted(
-                items, key=get_second_item,
+                items, key=lambda x: x[1],
                 reverse=True))
             weighted_probs = self.filter_tokens(sorted_probs)
             keys_list = list(weighted_probs.keys())
