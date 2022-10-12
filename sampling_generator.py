@@ -24,7 +24,8 @@ class SamplingGenerator(TextGenerator):
         seed(0)
         if top_k == 1 or top_p == 0:
             self.generation_type = GenerationType.GREEDY
-        if top_p is None and top_k is not None:
+            self.filter_tokens = SamplingGenerator.highest_prob_token
+        elif top_p is None and top_k is not None:
             self.top_k = top_k
             self.filter_tokens = self.top_k_tokens
             self.generation_type = GenerationType.TOP_K
@@ -33,8 +34,18 @@ class SamplingGenerator(TextGenerator):
             self.filter_tokens = self.top_p_tokens
             self.generation_type = GenerationType.TOP_P
         else:
-            raise ValueError("Either TOP_K or TOP_P \
+            raise ValueError("Either top_k or top_p \
                               should be set.")
+
+    @staticmethod
+    def highest_prob_token(sorted_probs: Dict[int, float]) \
+            -> Dict[int, float]:
+        """Gets a token id: probability mapping
+        as a sorted dictionary
+        returns the token with the highest probability.
+        as a {token: 1.0} dictionary."""
+        highest_prob_token_id: int = next(iter(sorted_probs))
+        return {highest_prob_token_id: 1.0}
 
     def top_p_tokens(self,
                      sorted_probs: Dict[int, float]) \
