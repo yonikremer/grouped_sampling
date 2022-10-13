@@ -1,7 +1,8 @@
 """Contains the functions for the completion page and the completion blueprint"""
 
 from dataclasses import dataclass
-from typing import Any, Tuple, Dict
+from sqlite3 import Row
+from typing import Any, Tuple, Dict, List
 
 from flask import Blueprint, g, render_template, request, redirect, url_for
 from werkzeug.datastructures import ImmutableMultiDict
@@ -28,10 +29,11 @@ class CompletionData:
 @bp.route('/')
 def index():
     """The page with all the completions"""
+    # TODO: fix this method so it does something
     my_db = get_db()
     # Execute a SQL query and return the results
     QUERY = "SELECT * FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC"
-    completions = my_db.execute(QUERY).fetchall()
+    completions: List[Row] = my_db.execute(QUERY).fetchall()
     return render_template("completion/index.html", completions=completions)
 
 
