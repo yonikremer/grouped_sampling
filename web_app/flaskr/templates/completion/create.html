@@ -27,8 +27,11 @@
         <input id="temperature" name="temperature" placeholder=1 type="number" value="{{ request.form['temperature']}}" min="0.01">
         {#    setting the minmum temperature to 0.01 (and not 0) to prevent underflow  #}
 
-        <input type="radio" name="generation_type" id="sampling" value="sampling"> sampling </input>
-        <input type="radio" name="generation_type" id="tree" value="tree"> tree </input>
+        <label for="generation_type">Select generation algorithm></label>>
+        <select name="generation_type" id="generation_type" required>
+            <option value="tree">Tree</option>
+            <option value="sampling">Sampling</option>
+        </select>
 
         <label for="prompt">Enter your prompt</label>
         <textarea name="prompt" id="prompt" placeholder="I had so much fun in the" required>{{ request.form["prompt"] }} </textarea>
