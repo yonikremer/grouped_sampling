@@ -1,10 +1,6 @@
 {% extends 'base.html' %}
 {% block header %}
   <h1>{% block title %}View All Models{% endblock %}</h1>
-  {% if g.user %}
-    {# if g.user is not None %}#}
-    <a class="action" href="{{ url_for('model.upload') }}">Upload your own models!</a>
-  {% endif %}
 {% endblock %}
 
 {% block content %}
