@@ -1,6 +1,7 @@
 """Contains the functions for the completion page and the completion blueprint"""
 
 from dataclasses import dataclass
+from typing import Any, Tuple, Dict
 
 from flask import Blueprint, g, render_template, request, redirect, url_for
 from werkzeug.datastructures import ImmutableMultiDict
@@ -60,30 +61,32 @@ def add_comp_to_db(comp_data: CompletionData):
     connection.commit()
 
 
-def preprocess_create_form(old_request: ImmutableMultiDict) -> dict:
+def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
     """Preprocesses the data from the create form and returns the processed arguments as a dict"""
-    DEFAULTS = {
-        "top_p": None,
-        "top_k": None,
-        "temperature": 1.0,
-        "num_tokens": 4,
-        "prompt": "I had so much fun in the",
-        "model_name": "facebook/opt-125m",
-        "group_size": 2,
-        "generation_type": "tree"
+    DEFAULTS: Dict[str, Tuple[Any, type]] = {
+        "top_p": (None, float),
+        "top_k": (None, int),
+        "temperature": (1.0, float),
+        "num_tokens": (4, int),
+        "prompt": ("I had so much fun in the", str),
+        "model_name": ("facebook/opt-125m", str),
+        "group_size": (2, int),
+        "generation_type": ("tree", str)
     }
 
     new_request: dict = {}
 
-    for input_name, default_value in DEFAULTS.items():
-        if ImmutableMultiDict(input_name) == "":
-            new_request[input_name] = DEFAULTS[input_name]
+    for input_name, (default_value, wanted_type) in DEFAULTS.items():
+        if old_request[input_name] == "":
+            new_request[input_name] = default_value
+        else:
+            new_request[input_name] = wanted_type(old_request[input_name])
 
     if new_request['top_k'] is None and new_request['top_p'] is None:
         new_request['top_k'] = 1
         new_request['top_p'] = 0.0
 
-    generation_type_names_to_classes = {"sampling": SamplingGenerator, "tree": TreeGenerator}
+    generation_type_names_to_classes: dict = {"sampling": SamplingGenerator, "tree": TreeGenerator}
 
     if new_request['generation_type'] in generation_type_names_to_classes:
         new_request['generation_type_class'] = generation_type_names_to_classes[new_request['generation_type']]
@@ -104,11 +107,11 @@ def create():
     if request.method == "POST":
         new_request = preprocess_create_form(request.form)
         text_generator: TextGenerator = new_request['generation_type_class'](
-                model_name=['model_name'],
-                group_size=['group_size'],
-                top_p=['top_p'],
-                top_k=['top_k'],
-                temp=['temperature']
+                model_name=new_request['model_name'],
+                group_size=new_request['group_size'],
+                top_p=new_request['top_p'],
+                top_k=new_request['top_k'],
+                temp=new_request['temperature']
         )
         answer: str = text_generator(prompt=new_request['prompt'], num_new_tokens=new_request['num_tokens'])
         completion = CompletionData(
