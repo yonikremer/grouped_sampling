@@ -9,13 +9,13 @@
 {% block content %}
     <form method="post">
         <label for="model_name">Enter the name of the model you choose</label>
-        <input id="model_name" name="model_name" placeholder="gpt2" type="text" value="{{ request.form['my_model_name']}}">
+        <input id="model_name" name="model_name" placeholder="facebook/opt-125m" type="text" value="{{ request.form['my_model_name']}}">
 
         <label for="group_size">Enter the group size, positive integer</label>
-        <input id="group_size" name="group_size" type="number" value="{{ request.form['group_size']}}" required min="1" step="1">
+        <input id="group_size" name="group_size" placeholder=2 type="number" value="{{ request.form['group_size']}}" required min="1" step="1">
 
         <label for="num_tokens">Enter the number of tokens of the completion, positive integer</label>
-        <input id="num_tokens" name="num_tokens" type="number" value="{{ request.form['num_tokens']}}" required min="1" step="1">
+        <input id="num_tokens" name="num_tokens" placeholder=4 type="number" value="{{ request.form['num_tokens']}}" required min="1" step="1">
 
         <label for="top_k">Enter top k, positive integer</label>
         <input id="top_k" name="top_k" type="number" value="{{ request.form['top_k']}}" min="1" step="1">
@@ -31,7 +31,7 @@
         <input type="radio" name="generation_type" id="tree" value="tree"> tree </input>
 
         <label for="prompt">Enter your prompt</label>
-        <textarea name="prompt" id="prompt" required>{{ request.form["prompt"] }} </textarea>
+        <textarea name="prompt" id="prompt" placeholder="I had so much fun in the" required>{{ request.form["prompt"] }} </textarea>
 
         <label for="save">Complete</label>
         <input type="submit" value="save" id="save">
