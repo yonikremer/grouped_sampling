@@ -7,9 +7,9 @@ from web_app.flaskr.__init__ import create_app
 
 def main():
     """Starts hosting the flask web application locally in debug mode"""
-
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    os.chdir("web_app")
+    this_files_dir = os.path.dirname(os.path.abspath(__file__))
+    web_app_path = os.path.join(this_files_dir, "web_app")
+    os.chdir(web_app_path)
 
     app: Flask = create_app()
 
