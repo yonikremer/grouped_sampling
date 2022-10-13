@@ -1,9 +1,10 @@
 """Contains the functions and blueprint to upload a model and see a list of all models"""
+from sqlite3 import Connection
 
 from flask import Blueprint, render_template, g
 import pandas as pd
 
-from .auth import is_logged_in, UnAuthorizedException
+from .auth import login_required
 from .database import get_db
 
 bp = Blueprint('model', __name__)
@@ -18,20 +19,25 @@ def view_all():
     return render_template("model/view_all.html", table=[data_frame.to_html()], titles=data_frame.columns.values)
 
 
+@login_required
+def add_model_to_db(my_model_name: str, my_db: Connection) -> None:
+    """Adds a new model to the database, assuming the model doesn't already exist"""
+    my_db.execute(
+        "INSERT INTO model (model_name, user_id) VALUES (?, ?)",
+        (my_model_name, g.user['id'])
+    )
+    my_db.commit()
+
+
 def get_model_id(my_model_name: str) -> int:
     """Adds a model to the database if it doesn't exist already and returns the id of the model"""
     my_db = get_db()
     # Check if the model already exists
     model_exists: bool = my_db.execute(
-        "SELECT EXISTS(SELECT 1 FROM model WHERE model_name=? LIMIT 1)",
+        "SELECT EXISTS(SELECT 1 FROM model WHERE model_name=?)",
         (my_model_name,))
     if not model_exists:
-        if not is_logged_in():
-            raise UnAuthorizedException("add a model to the database")
-        my_db.execute(
-            "INSERT INTO model (model_name, user_id) VALUES (?, ?)",
-            (my_model_name, g.user['id'])
-        )
+        add_model_to_db(my_model_name, my_db)
     model_id: int = my_db.execute(
         "SELECT id FROM model WHERE model_name=?",
         (my_model_name,)
