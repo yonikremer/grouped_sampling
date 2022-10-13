@@ -28,14 +28,15 @@ def index():
     """The page with all the completions"""
     my_db = get_db()
     # Execute a SQL query and return the results
-    query = "SELECT * FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC"
-    completions = my_db.execute(query).fetchall()
+    QUERY = "SELECT * FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC"
+    completions = my_db.execute(QUERY).fetchall()
     return render_template("completion/index.html", completions=completions)
 
 
+@login_required
 def add_comp_to_db(comp_data: CompletionData):
     """Adds an answer to the database"""
-    STRUCTURE: str = """INSERT INTO completion 
+    QUERY_STRUCTURE: str = """INSERT INTO completion 
                         (user_id, model_id, prompt, answer, num_tokens, generation_type, top_p, top_k, temprature)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
     connection = get_db()
@@ -54,7 +55,7 @@ def add_comp_to_db(comp_data: CompletionData):
                  comp_data.num_tokens, generator.generation_type,
                  top_p, top_k,
                  generator.temp)
-    connection.execute(STRUCTURE, arguments)
+    connection.execute(QUERY_STRUCTURE, arguments)
     connection.commit()
 
 
@@ -106,7 +107,7 @@ def create():
                 temp=temperature
         )
         answer: str = text_generator(prompt, num_tokens)
-        completion = CompletionData(prompt, answer, num_tokens, text_generator)
+        completion = CompletionData(prompt=prompt, answer=answer, num_tokens=num_tokens, generator=text_generator)
         add_comp_to_db(completion)
         return redirect(url_for('completion/index.html'))
     return render_template("completion/create.html")
