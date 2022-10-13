@@ -37,7 +37,7 @@ def index():
 def add_comp_to_db(comp_data: CompletionData):
     """Adds an answer to the database"""
     QUERY_STRUCTURE: str = """INSERT INTO completion 
-                        (user_id, model_id, prompt, answer, num_tokens, generation_type, top_p, top_k, temprature)
+                        (user_id, model_id, prompt, answer, num_tokens, generation_type, top_p, top_k, temperature)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
     connection = get_db()
     generator: TextGenerator = comp_data.generator
@@ -52,7 +52,7 @@ def add_comp_to_db(comp_data: CompletionData):
     else:
         top_p = None
     arguments = (g.user['id'], model_id, comp_data.prompt, comp_data.answer,
-                 comp_data.num_tokens, generator.generation_type,
+                 comp_data.num_tokens, str(generator.generation_type),
                  top_p, top_k,
                  generator.temp)
     connection.execute(QUERY_STRUCTURE, arguments)
@@ -109,5 +109,5 @@ def create():
         answer: str = text_generator(prompt, num_tokens)
         completion = CompletionData(prompt=prompt, answer=answer, num_tokens=num_tokens, generator=text_generator)
         add_comp_to_db(completion)
-        return redirect(url_for('completion/index.html'))
+        return redirect(url_for('completion.index'))
     return render_template("completion/create.html")
