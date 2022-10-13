@@ -16,12 +16,16 @@ class TreeGenerator(TextGenerator):
     top_k: int
 
     def __init__(self, model_name: str, group_size: int,
-                 top_k: int, top_p: float,
+                 top_k: int = 1, top_p: float = 0.0,
                  temp: float = 1.0):
         super().__init__(model_name, group_size, temp)
         self.top_k = top_k
         self.top_p = top_p
-        if top_k == 1 or top_p == 0.0:
+        if top_p is None:
+            self.top_p = 0.0
+        if top_k is None:
+            self.top_k = 1
+        if self.top_k == 1 or self.top_p == 0.0:
             self.generation_type = GenerationType.GREEDY
         else:
             self.generation_type = GenerationType.TREE
@@ -212,7 +216,7 @@ class TreeGenerator(TextGenerator):
         completion_probs = TreeGenerator.remove_duplicates(
             new_prompts, prob_list)
         if len(completion_probs) == 0:
-            raise ValueError("No completions found")
+            raise NoCompletionsFound(self)
 
         if num_groups == 1:
             return completion_probs
