@@ -1,0 +1,5 @@
+tensorflow~=2.9
+tensorflow_text~=2.9
+keras~=2.9.0
+numpy~=1.21.5
+pandas
