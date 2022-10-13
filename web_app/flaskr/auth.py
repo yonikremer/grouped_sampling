@@ -107,13 +107,13 @@ def login_required(view):
     args: view: function
     returns: function"""
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(*args, **kwargs):
         """the wrapped function"""
         if not is_logged_in():
             flash('Logging in is required for this page.')
             return redirect(url_for('auth.login'))
 
-        return view(**kwargs)
+        return view(*args, **kwargs)
 
     return wrapped_view
 
