@@ -1,4 +1,1 @@
-transformers
-torch
 mljar-mercury
-pip
