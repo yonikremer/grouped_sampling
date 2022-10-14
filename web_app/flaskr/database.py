@@ -5,12 +5,26 @@ import sqlite3
 from flask import g
 
 
-DATABASE_FILE_NAME = "flaskr.sqlite"
-DATABASE_FOLDER = "instance"
-DATABASE_FULL_PATH = os.path.join(DATABASE_FOLDER, DATABASE_FILE_NAME)
-SQL_SCHEMA_SCRIPT_PATH = "flaskr/schema.sql"
-TESTING_DATABASE_PATH = os.path.join(os.path.dirname(__file__), "testing_data.sqlite")
-TESTING_DATA_PATH = os.path.join(os.path.dirname(__file__), "tests", "testing_data.sql")
+def parent_directory(original_directory: str) -> str:
+    """Returns the parent directory of the original directory."""
+    return os.path.abspath(os.path.join(original_directory, os.pardir))
+
+
+this_files_dir = os.path.dirname(__file__)
+# C:\yoni\final_project\final_project\web_app\flaskr
+this_dir_parent = parent_directory(this_files_dir)
+# C:\yoni\final_project\final_project\web_app
+
+DATABASE_FOLDER = os.path.join(this_dir_parent, "instance")
+# C:\yoni\final_project\final_project\web_app\instance
+DATABASE_FULL_PATH = os.path.join(DATABASE_FOLDER, "flaskr.sqlite")
+# C:\yoni\final_project\final_project\web_app\instance\flaskr.sqlite
+TESTING_DATABASE_PATH = os.path.join(DATABASE_FOLDER, "testing_data.sqlite")
+# C:\yoni\final_project\final_project\web_app\flaskr\testing_data.sqlite
+SQL_SCHEMA_SCRIPT_PATH = os.path.join(this_files_dir, "schema.sql")
+# C:\yoni\final_project\final_project\web_app\flaskr\schema.sql
+TESTING_DATA_PATH = os.path.join(this_dir_parent, "tests", "testing_data.sql")
+# C:\yoni\final_project\final_project\web_app\tests\testing_data.sql
 
 
 def get_db(testing: bool = False) -> sqlite3.Connection:
