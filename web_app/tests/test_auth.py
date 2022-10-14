@@ -17,7 +17,7 @@ def test_register(client: FlaskClient, app: Flask) -> None:
 
     # test that the user was inserted into the database
     with app.app_context():
-        connection = get_db().execute("SELECT * FROM user WHERE username = 'a'").fetchone()
+        connection = get_db(testing=True).execute("SELECT * FROM user WHERE username = 'a'").fetchone()
         assert connection is not None
 
 

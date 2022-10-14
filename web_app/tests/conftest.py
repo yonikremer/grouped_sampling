@@ -1,45 +1,20 @@
 """Contains functions that configure the tests"""
 
-import os
-import sqlite3
-import tempfile
-
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient, TestResponse
 
-from web_app.flaskr.__init__ import DATABASE_FOLDER, DATABASE_FILE_NAME
 from web_app.flaskr import create_app
-from web_app.flaskr.database import get_db
-
-
-# read in SQL for populating test data
-with open(os.path.join(os.path.dirname(__file__), "testing_data.sql"), "rb") as f:
-    _data_sql: str = f.read().decode("utf8")
 
 
 @pytest.fixture
 def app() -> Flask:
     """Create and configure a new app instance for each test.
     return type: """
-    # create a temporary file to isolate the database for each test
-    db_fd: int
-    db_path: str
-    db_fd, db_path = tempfile.mkstemp()
     # create the app with common test config
-    app: Flask = create_app({"TESTING": True, "DATABASE": db_path})
-
-    # create the database and load test data
-    if not os.path.exists(DATABASE_FOLDER):
-        os.makedirs(DATABASE_FOLDER)
-    with app.app_context():
-        get_db().executescript(_data_sql)
+    app: Flask = create_app({"TESTING": True})
 
     yield app  # Return app but don't exit the function.
-
-    # close and remove the temporary database
-    os.close(db_fd)
-    os.unlink(db_path)
 
 
 @pytest.fixture
