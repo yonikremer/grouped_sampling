@@ -8,12 +8,13 @@ except (ImportError, ModuleNotFoundError):
     pip.main(['install', 'mljar-mercury'])
     exit("Please run this script again.")
 
-NOTEBOOK_FULL_PATH = "C:/yoni/final_project/mercury_demo/mercury_demo.ipynb"
+this_scripts_dir = os.path.dirname(os.path.abspath(__file__))
+NOTEBOOK_FULL_PATH = os.path.join(this_scripts_dir, "/mercury_demo/mercury_demo.ipynb")
 
 
 def main():
     """Opens Mercury demo in your browser."""
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(this_scripts_dir)
     url = "http://127.0.0.1:8000/"
 
     os.system(f"mercury add {NOTEBOOK_FULL_PATH}")
