@@ -25,6 +25,7 @@ CREATE TABLE completion (
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER NOT NULL,
     model_id INTEGER NOT NULL,
+    group_size INTEGER NOT NULL,
     prompt TEXT NOT NULL,
     answer TEXT NOT NULL,
     num_tokens INTEGER NOT NULL,
