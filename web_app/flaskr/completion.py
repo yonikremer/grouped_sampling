@@ -30,33 +30,24 @@ class CompletionData:
 @bp.route('/')
 def index():
     """The page with all the completions"""
-    # TODO: fix this method so it does something
     my_db: Connection = get_db()
     # Execute a SQL query and return the results
-    QUERY = "SELECT " \
-            "username, " \
-            "created, " \
-            "prompt, " \
-            "answer, " \
-            "num_tokens, " \
-            "generation_type, " \
-            "top_p, " \
-            "top_k, " \
-            "temperature " \
-            "FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC"
+    columns = ("username, created, prompt, answer, num_tokens, model_name,"
+               " group_size, generation_type, top_p, top_k, temperature")
+    join_statement = "completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id"
+    QUERY = ("SELECT "
+             f"{columns}"
+             f"FROM {join_statement} ORDER BY created ")
     df = pd.read_sql_query(QUERY, my_db)
-    print("dataframe: ", df)
-    html_table = df.to_html(classes='data', header="true")
-    print("html table: ", html_table)
+    html_table = df.to_html(classes='data', header="true", border=0, index=False)
     return render_template("completion/index.html", table=html_table)
 
 
 @login_required
 def add_comp_to_db(comp_data: CompletionData):
     """Adds an answer to the database"""
-    QUERY_STRUCTURE: str = """INSERT INTO completion 
-                        (user_id, model_id, prompt, answer, num_tokens, generation_type, top_p, top_k, temperature)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+    columns = "user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature"
+    QUERY_STRUCTURE: str = f"""INSERT INTO completion {columns} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
     connection = get_db()
     generator: TextGenerator = comp_data.generator
     model_id: int = get_model_id(generator.model_name)
@@ -69,9 +60,16 @@ def add_comp_to_db(comp_data: CompletionData):
         top_p = generator.top_p
     else:
         top_p = None
-    arguments = (g.user['id'], model_id, comp_data.prompt, comp_data.answer,
-                 comp_data.num_tokens, str(generator.generation_type),
-                 top_p, top_k,
+    #     user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature
+    arguments = (g.user['id'],
+                 comp_data.prompt,
+                 comp_data.answer,
+                 comp_data.num_tokens,
+                 model_id,
+                 generator.group_size,
+                 generator.generation_type.value,
+                 top_p,
+                 top_k,
                  generator.temp)
     connection.execute(QUERY_STRUCTURE, arguments)
     connection.commit()
