@@ -2,7 +2,8 @@
 
 import pytest
 from flask import Flask
-from flask.testing import FlaskClient, TestResponse
+from flask.testing import FlaskClient
+from werkzeug.test import TestResponse
 
 from web_app.flaskr import create_app
 
