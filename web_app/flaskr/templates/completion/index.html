@@ -7,17 +7,6 @@
     <a class="action" href="{{ url_for('completion.create') }}">Try It yourself!</a>
   {% endif %}
 {% endblock %}
-
-{% block body %}
-    {% for completion in completions %}
-        <article class="completion">
-            <div class="about">by {{ completion['username'] }} on {{ completion['created'].strftime('%d/%m/%y %H:%M') }}</div>
-            <div class="prompt">{{ completion['prompt'] }}</div>
-            <div class="answer">{{ completion['answer'] }}</div>
-        </article>
-        {% if not loop.last %}
-            <!-- add a horizontal line -->
-            <hr>
-        {% endif %}
-    {% endfor %}
+{% block content %}
+    {{ table|safe }}
 {% endblock %}

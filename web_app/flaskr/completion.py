@@ -1,11 +1,12 @@
 """Contains the functions for the completion page and the completion blueprint"""
 
 from dataclasses import dataclass
-from sqlite3 import Row
-from typing import Any, Tuple, Dict, List
+from sqlite3 import Connection
+from typing import Any, Tuple, Dict
 
 from flask import Blueprint, g, render_template, request, redirect, url_for
 from werkzeug.datastructures import ImmutableMultiDict
+import pandas as pd
 
 from text_generator import TextGenerator
 from sampling_generator import SamplingGenerator
@@ -30,11 +31,24 @@ class CompletionData:
 def index():
     """The page with all the completions"""
     # TODO: fix this method so it does something
-    my_db = get_db()
+    my_db: Connection = get_db()
     # Execute a SQL query and return the results
-    QUERY = "SELECT * FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC"
-    completions: List[Row] = my_db.execute(QUERY).fetchall()
-    return render_template("completion/index.html", completions=completions)
+    QUERY = "SELECT " \
+            "username, " \
+            "created, " \
+            "prompt, " \
+            "answer, " \
+            "num_tokens, " \
+            "generation_type, " \
+            "top_p, " \
+            "top_k, " \
+            "temperature " \
+            "FROM completion c JOIN user u ON c.user_id = u.id ORDER BY created DESC"
+    df = pd.read_sql_query(QUERY, my_db)
+    print("dataframe: ", df)
+    html_table = df.to_html(classes='data', header="true")
+    print("html table: ", html_table)
+    return render_template("completion/index.html", table=html_table)
 
 
 @login_required
