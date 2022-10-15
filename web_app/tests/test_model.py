@@ -2,8 +2,10 @@
 from typing import List
 from flask.testing import FlaskClient
 
+from web_app.tests.conftest import AuthActions
 
-def test_view_all(client: FlaskClient, auth) -> None:
+
+def test_view_all(client: FlaskClient, auth: AuthActions) -> None:
     """Tests that the view_all function returns the correct data."""
     response = client.get('model/view_all')
     assert response.status_code == 200
@@ -40,7 +42,7 @@ def test_view_all(client: FlaskClient, auth) -> None:
         assert bytes(component) in response.data
 
 
-def test_model_errors(client: FlaskClient, auth) -> None:
+def test_model_errors(client: FlaskClient, auth: AuthActions) -> None:
     """Tests the model errors function"""
     raise NotImplementedError
 

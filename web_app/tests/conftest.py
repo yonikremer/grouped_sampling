@@ -47,6 +47,6 @@ class AuthActions:
 
 
 @pytest.fixture
-def auth(client: FlaskClient):
+def auth(client: FlaskClient) -> AuthActions:
     """tests login and logout for an existing user"""
     return AuthActions(client)

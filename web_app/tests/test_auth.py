@@ -5,6 +5,7 @@ from flask import g, session, Flask, Response
 from flask.testing import FlaskClient
 
 from web_app.flaskr.database import get_db
+from web_app.tests.conftest import AuthActions
 
 
 def test_register(client: FlaskClient, app: Flask) -> None:
@@ -41,7 +42,7 @@ def test_register_validate_input(client: FlaskClient, username: str, password: s
     assert message in response.data
 
 
-def test_login(client: FlaskClient, auth):
+def test_login(client: FlaskClient, auth: AuthActions):
     """Tests you can login"""
     # test that viewing the page renders without template errors
     assert client.get("/auth/login").status_code == 200
@@ -62,13 +63,13 @@ def test_login(client: FlaskClient, auth):
     ("username", "password", "message"),
     (("a", "test", 'Incorrect username'), ("test", "a", 'Incorrect password')),
 )
-def test_login_validate_input(auth, username: str, password: str, message: bytes) -> None:
+def test_login_validate_input(auth: AuthActions, username: str, password: str, message: bytes) -> None:
     """Tests you can't log in to none existing users or with wrong password"""
     response: Response = auth.login(username, password)
     assert message in response.get_data(as_text=True)
 
 
-def test_logout(client: FlaskClient, auth):
+def test_logout(client: FlaskClient, auth: AuthActions):
     """Tests the logout feature"""
     auth.login()
 
@@ -81,7 +82,7 @@ def test_logout(client: FlaskClient, auth):
     ("valid_username", "valid_password"),
     (("a", "a"), ("this_is_a_test", "this_is_also_a_test")),
 )
-def test_register_logout_login(client: FlaskClient, auth, valid_username, valid_password):
+def test_register_logout_login(client: FlaskClient, auth: AuthActions, valid_username, valid_password):
     """Tests that you can register, logout and login again with the same username and password."""
     assert client.get("/").status_code == 200
     client.post("/auth/register", data={"username": valid_username, "password": valid_password})
