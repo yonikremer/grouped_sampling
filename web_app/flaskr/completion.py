@@ -96,10 +96,6 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
         else:
             new_request[input_name] = wanted_type(old_request[input_name])
 
-    if new_request['top_k'] is None and new_request['top_p'] is None:
-        new_request['top_k'] = 1
-        new_request['top_p'] = 0.0
-
     generation_type_names_to_classes: dict = {"sampling": SamplingGenerator, "tree": TreeGenerator}
 
     if new_request['generation_type'] in generation_type_names_to_classes:
