@@ -32,12 +32,12 @@ def index():
     """The page with all the completions"""
     my_db: Connection = get_db()
     # Execute a SQL query and return the results
-    columns = ("username, created, prompt, answer, num_tokens, model_name,"
-               " group_size, generation_type, top_p, top_k, temperature")
-    join_statement = "completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id"
+    columns = (" username, c.created, prompt, answer, num_tokens, model_name,"
+               " group_size, generation_type, top_p, top_k, temperature ")
+    join_statement = " completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id "
     QUERY = ("SELECT "
-             f"{columns}"
-             f"FROM {join_statement} ORDER BY created ")
+             f" {columns} "
+             f" FROM {join_statement} ORDER BY c.created")
     df = pd.read_sql_query(QUERY, my_db)
     html_table = df.to_html(classes='data', header="true", border=0, index=False)
     return render_template("completion/index.html", table=html_table)
