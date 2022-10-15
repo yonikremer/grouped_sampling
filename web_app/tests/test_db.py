@@ -10,8 +10,8 @@ from flask import Flask
 def test_and_get_close_db(app: Flask):
     """Test that the close my_db is called when app is terminated."""
     with app.app_context():
-        my_db: Connection = get_db(testing=True)
-        assert my_db is get_db(testing=True)  # Assert that get_db()
+        my_db: Connection = get_db()
+        assert my_db is get_db()  # Assert that get_db()
         # returns a pointer to the same database every time
 
 
@@ -22,7 +22,7 @@ def test_and_get_close_db(app: Flask):
 def test_tables_are_not_empty(app: Flask, table_name: str):
     """Test that the tables of the database are not empty."""
     with app.app_context():
-        my_db: Connection = get_db(testing=True)
+        my_db: Connection = get_db()
         my_cursor = my_db.cursor()
         my_cursor.execute(f"SELECT * FROM {table_name}")
         assert my_cursor.fetchone()
