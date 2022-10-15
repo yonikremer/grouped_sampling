@@ -1,5 +1,5 @@
 from math import ceil
-from typing import List, Dict, Union, Tuple, Sequence, Any
+from typing import List, Dict, Union, Tuple, Sequence, Any, Optional
 
 from transformers import BatchEncoding
 
@@ -16,19 +16,29 @@ class TreeGenerator(TextGenerator):
     top_k: int
 
     def __init__(self, model_name: str, group_size: int,
-                 top_k: int = 1, top_p: float = 0.0,
-                 temp: float = 1.0):
+                 top_k: Optional[int], top_p: Optional[float], temp: float = 1.0,):
         super().__init__(model_name, group_size, temp)
-        self.top_k = top_k
-        self.top_p = top_p
-        if top_p is None:
+
+        if top_p is None and top_k is None:
             self.top_p = 0.0
-        if top_k is None:
             self.top_k = 1
-        if self.top_k == 1 or self.top_p == 0.0:
+            self.generation_type = GenerationType.GREEDY
+        elif top_k is None:
+            self.generation_type = GenerationType.TREE
+            self.top_k = self.vocab_size
+            self.top_p = top_p
+        elif top_p is None:
+            self.generation_type = GenerationType.TREE
+            self.top_k = top_k
+            self.top_p = 1.0
+        elif top_k == 1 or top_p == 0.0:
+            self.top_p = 0.0
+            self.top_k = 1
             self.generation_type = GenerationType.GREEDY
         else:
             self.generation_type = GenerationType.TREE
+            self.top_k = top_k
+            self.top_p = top_p
 
     @staticmethod
     def no_duplicates(my_sequence: List[Any]) -> bool:
