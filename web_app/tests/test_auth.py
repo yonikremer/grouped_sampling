@@ -75,3 +75,21 @@ def test_logout(client: FlaskClient, auth):
     with client:
         auth.logout()
         assert "user_id" not in session
+
+
+@pytest.mark.parametrize(
+    ("valid_username", "valid_password"),
+    (("a", "a"), ("this_is_a_test", "this_is_also_a_test")),
+)
+def test_register_logout_login(client: FlaskClient, auth, valid_username, valid_password):
+    """Tests that you can register, logout and login again with the same username and password."""
+    assert client.get("/").status_code == 200
+    client.post("/auth/register", data={"username": valid_username, "password": valid_password})
+    assert client.get("/").status_code == 200
+    auth.logout()
+    assert client.get("/").status_code == 200
+    client.post("/auth/login", data={"username": valid_username, "password": valid_password})
+    assert client.get("/").status_code == 200
+    with client:
+        client.get("/")
+        assert g.user["username"] == valid_username
