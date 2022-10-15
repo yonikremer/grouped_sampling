@@ -5,6 +5,8 @@ from flask import g, session, Flask, Response
 from flask.testing import FlaskClient
 
 from web_app.flaskr.database import get_db
+from web_app.flaskr.auth import is_logged_in
+from web_app.tests.conftest import AuthActions
 
 
 def test_register(client: FlaskClient, app: Flask) -> None:
@@ -17,8 +19,9 @@ def test_register(client: FlaskClient, app: Flask) -> None:
 
     # test that the user was inserted into the database
     with app.app_context():
-        connection = get_db(testing=True).execute("SELECT * FROM user WHERE username = 'a'").fetchone()
-        assert connection is not None
+        my_db = get_db(testing=True)
+        row = my_db.execute("SELECT * FROM user WHERE username = 'a'").fetchone()
+        assert row is not None
 
 
 @pytest.mark.parametrize(
@@ -59,12 +62,12 @@ def test_login(client: FlaskClient, auth):
 
 @pytest.mark.parametrize(
     ("username", "password", "message"),
-    (("a", "test", b'Incorrect username.'), ("test", "a", b'Incorrect password.')),
+    (("a", "test", 'Incorrect username'), ("test", "a", 'Incorrect password')),
 )
 def test_login_validate_input(auth, username: str, password: str, message: bytes) -> None:
     """Tests you can't log in to none existing users or with wrong password"""
     response: Response = auth.login(username, password)
-    assert message in response.data
+    assert message in response.get_data(as_text=True)
 
 
 def test_logout(client: FlaskClient, auth):

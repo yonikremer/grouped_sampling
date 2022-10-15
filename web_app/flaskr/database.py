@@ -2,7 +2,7 @@
 import os
 import sqlite3
 
-from flask import g
+from flask import g, current_app
 
 
 def parent_directory(original_directory: str) -> str:
@@ -27,8 +27,9 @@ TESTING_DATA_PATH = os.path.join(this_dir_parent, "tests", "testing_data.sql")
 # C:\yoni\final_project\final_project\web_app\tests\testing_data.sql
 
 
-def get_db(testing: bool = False) -> sqlite3.Connection:
+def get_db() -> sqlite3.Connection:
     """Opens a new database connection if there is none yet for the"""
+    testing: bool = current_app.config["TESTING"]
     wanted_db_path = TESTING_DATABASE_PATH if testing else DATABASE_FULL_PATH
     if "my_db" not in g:
         g.my_db = sqlite3.connect(wanted_db_path)
