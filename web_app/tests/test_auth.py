@@ -5,8 +5,6 @@ from flask import g, session, Flask, Response
 from flask.testing import FlaskClient
 
 from web_app.flaskr.database import get_db
-from web_app.flaskr.auth import is_logged_in
-from web_app.tests.conftest import AuthActions
 
 
 def test_register(client: FlaskClient, app: Flask) -> None:
@@ -15,11 +13,11 @@ def test_register(client: FlaskClient, app: Flask) -> None:
 
     # test that successful registration redirects to the login page
     response = client.post("/auth/register", data={"username": "a", "password": "a"})
-    assert response.headers["Location"] == "/auth/login"
+    assert response.headers["Location"] == "/"
 
     # test that the user was inserted into the database
     with app.app_context():
-        my_db = get_db(testing=True)
+        my_db = get_db()
         row = my_db.execute("SELECT * FROM user WHERE username = 'a'").fetchone()
         assert row is not None
 
