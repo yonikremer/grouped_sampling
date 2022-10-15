@@ -18,6 +18,7 @@ class GenerationType(Enum):
     TOP_K = "top_k"
     TOP_P = "top_p"
     TREE = "tree"
+    RANDOM = "random"
 
 
 class TextGenerator(Callable, ABC):

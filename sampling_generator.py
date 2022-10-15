@@ -22,7 +22,10 @@ class SamplingGenerator(TextGenerator):
                  top_p: Optional[float] = None):
         super().__init__(model_name, group_size, temp)
         seed(0)
-        if top_k == 1 or top_p == 0:
+        if top_k is None and top_p is None or top_p == 1.0 or top_k >= self.vocab_size:
+            self.generation_type = GenerationType.RANDOM
+            self.filter_tokens = SamplingGenerator.all_tokens
+        elif top_k == 1 or top_p == 0:
             self.generation_type = GenerationType.GREEDY
             self.filter_tokens = SamplingGenerator.highest_prob_token
         elif top_p is None and top_k is not None:
@@ -37,6 +40,13 @@ class SamplingGenerator(TextGenerator):
             raise ValueError(
                 "Either top_k or top_p \
                 should be set.")
+
+    @staticmethod
+    def all_tokens(sorted_probs: Dict[int, float]) \
+            -> Dict[int, float]:
+        """A filtering function that doesn't filter any tokens.
+        returns all the tokens with their probabilities."""
+        return sorted_probs
 
     @staticmethod
     def highest_prob_token(
