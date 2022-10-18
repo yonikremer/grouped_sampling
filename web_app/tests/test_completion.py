@@ -1,8 +1,9 @@
 """Tests the completion blueprint"""
-
+from collections.abc import Generator
 from sqlite3 import Connection
-from typing import List
+from typing import Dict
 
+from pytest import mark
 from flask import Flask
 from flask.testing import FlaskClient
 
@@ -12,27 +13,74 @@ from web_app.flaskr.database import get_db
 def test_index(client: FlaskClient, auth) -> None:
     """Tests completion.html contains everything it supposed to"""
     response = client.get('/')
-    assert (b'Log In' in response.data)
-    assert (b'Register' in response.data)
-    assert not (b'Log Out' in response.data)
+    assert response.status_code == 200
+    lower_html_str = response.get_data(as_text=True).lower()
+    assert ("log in" in lower_html_str or "login" in lower_html_str)
+    assert ("register" in lower_html_str)
+    assert not ("log out" in lower_html_str or "logout" in lower_html_str)
 
     auth.login()
     response = client.get('/')
-    components: List[bytes] = [b'Log Out', b'test title', b'by test on 01/01/18 00:00',
-                               b'Is this a test?', b'Of course it is just a test!', b'Try It yourself!']
-    for com in components:
-        assert (com in response.data)
-    assert not (b'Log In' in response.data)
-    assert not (b'Register' in response.data)
+    assert response.status_code == 200
+    lower_html_str = response.get_data(as_text=True).lower()
+    assert ("log out" in lower_html_str or "logout" in lower_html_str)
+    assert not ("log in" in lower_html_str or "login" in lower_html_str)
+    assert not ("register" in lower_html_str)
 
 
-def test_create(client: FlaskClient, auth, app: Flask) -> None:
-    """tests you can create a new completion"""
-    auth.login()
-    assert (client.get('/create').status_code == 200)
-    client.post('/create', data={'func_prompt': 'test func_prompt', 'model_id': 1})
+def count_completions(app: Flask) -> int:
+    """Counts the number of completions in the database"""
     with app.app_context():
         my_db: Connection = get_db()
-        count = my_db.execute('SELECT COUNT(id) FROM completion').fetchone()[0]
-        assert (count == 3)
-        # there are 3 completions in the database, two from testing_data.sql and one from the test
+        return my_db.execute('SELECT COUNT(id) FROM completion').fetchone()[0]
+
+
+def valid_completion_create_requests() -> Generator[Dict[str, str]]:
+    """Returns a generator of good completion create requests"""
+    fields = ("prompt", "num_tokens", "model_name", "group_size", "generation_type", "top_p", "top_k", "temperature")
+    request: Dict[str, str] = {f: "" for f in fields}
+    # start with all default arguments
+    yield request
+    new_field_val_mapping = {
+        "prompt": "This is a test prompt",
+        "model_name": "gpt2",
+        "group_size": "1",
+        "num_tokens": "10",
+        "generation_type": "sampling",
+        "top_p": "0.9",
+        "top_k": "10",
+        "temperature": "0.9"
+    }
+    for field, val in new_field_val_mapping.items():
+        request[field] = val
+        yield request
+
+    # now create sampling requests
+    request["generation_type"] = "sampling"
+    top_ps = ("0", "", "1", "0.2")
+    top_ks = ("", "", "1", "10")
+    request["top_p"] = ""
+    for top_k in top_ks:
+        request["top_k"] = top_k
+        yield request
+    request["top_k"] = ""
+    for top_p in top_ps:
+        request["top_p"] = top_p
+        yield request
+
+
+def test_get_create(client: FlaskClient, app: Flask) -> None:
+    """Tests the get request to the create page"""
+    with client:
+        response = client.get('/create')
+        assert response.status_code == 200
+
+
+@mark.parametrize(
+    "curr_request",
+    valid_completion_create_requests(),
+)
+def test_create(client: FlaskClient, auth, app: Flask, curr_request: Dict[str, str]) -> None:
+    """tests you can create a new completion if you provide a valid request."""
+    auth.login()
+    client.post('/create', data=curr_request)
