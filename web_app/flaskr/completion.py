@@ -47,7 +47,7 @@ def index():
 def add_comp_to_db(comp_data: CompletionData):
     """Adds an answer to the database"""
     columns = "user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature"
-    QUERY_STRUCTURE: str = f"""INSERT INTO completion {columns} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+    QUERY_STRUCTURE: str = f"""INSERT INTO completion (f{columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
     connection = get_db()
     generator: TextGenerator = comp_data.generator
     model_id: int = get_model_id(generator.model_name)
