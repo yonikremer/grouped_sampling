@@ -119,7 +119,7 @@ class TreeGenerator(TextGenerator):
                 filtered_completions[curr_comp_tuple] = curr_prob
         return filtered_completions
 
-    def tree_grouped_sampling(
+    def generate_group(
             self, prob_mat: List[List[float]],
             org_prompt: tokenIDS) -> List[List[int]]:
         """given a matrix of probabilities,
@@ -129,10 +129,10 @@ class TreeGenerator(TextGenerator):
         the probability of token j the i-th token in the group
         samples the tokens such that
         for each place in the group,
-        at most TOP_K tokens are sampled
+        at most top_k tokens are sampled
         and at least one token is sampled
         and the added probability of all the tokens is
-        less than or equal TOP_P
+        less than or equal top_p
         returns a list of where every item is
          a tuple of a sequence and probability
         over all complexity of the function is
@@ -209,7 +209,7 @@ class TreeGenerator(TextGenerator):
             prob_mat = self.get_prob_mat(None, tokens_list)
         else:
             raise TypeError("org_prompt must be a list or a tuple")
-        tokenized_ans_list = self.tree_grouped_sampling(
+        tokenized_ans_list = self.generate_group(
             prob_mat, org_prompt)
         if len(tokenized_ans_list) == 0:
             raise NoCompletionsFound(self)
