@@ -17,6 +17,21 @@ class TestTextGenerator(TestCase):
     PROMPT = "Hello, world!"
 
     def create_text_generators(self) -> Generator[TextGenerator, None, None]:
+        curr_tree_gen = TreeGenerator(model_name=self.MODEL_NAMES[0],
+                                      group_size=self.GROUP_SIZES[0],
+                                      top_k=self.TOP_KS[0],
+                                      top_p=self.TOP_PS[0],
+                                      temp=self.TEMPERATURES[0],
+                                      end_of_sentence_stop=True)
+        top_p_sampling_gen = SamplingGenerator(model_name=self.MODEL_NAMES[0],
+                                               group_size=self.GROUP_SIZES[0],
+                                               top_k=None,
+                                               top_p=self.TOP_PS[0],
+                                               temp=self.TEMPERATURES[0],
+                                               end_of_sentence_stop=True)
+        yield top_p_sampling_gen
+        yield curr_tree_gen
+
         for model_name in self.MODEL_NAMES:
             if self.MODEL_NAMES.index(model_name) > 0:
                 del top_p_sampling_gen, top_k_sampling_gen, curr_tree_gen

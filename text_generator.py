@@ -39,9 +39,10 @@ class TextGenerator(Callable, ABC):
     padding_tokens: List[int]
     generation_type: GenerationType
     end_of_sentence_id: Optional[int]
+    end_of_sentence_stop: bool
 
     def __init__(self, model_name: str, group_size: int,
-                 temp: float = 1.0):
+                 temp: float = 1.0, end_of_sentence_stop: bool = False):
         """Model name: the name of the model
         used for loading from hugging face hub
         group size: int
@@ -64,6 +65,7 @@ class TextGenerator(Callable, ABC):
         if not isinstance(pad_id, int):
             pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
+        self.end_of_sentence_stop = end_of_sentence_stop
 
     def set_group_size(self, new_group_size):
         self.group_size = new_group_size
@@ -116,7 +118,7 @@ class TextGenerator(Callable, ABC):
                 {num_tokens} tokens shorter")
             prob_mat = [prob_tensor[i, :].tolist()
                         for i in range(prob_tensor.shape[0])]
-        if self.end_of_sentence_id is not None:
+        if (not self.end_of_sentence_stop) and self.end_of_sentence_id is not None:
             for prob_vec in prob_mat:
                 prob_vec[self.end_of_sentence_id] = 0.0
         return prob_mat

@@ -19,8 +19,12 @@ class SamplingGenerator(TextGenerator):
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0, top_k: Optional[int] = None,
-                 top_p: Optional[float] = None):
-        super().__init__(model_name, group_size, temp)
+                 top_p: Optional[float] = None, end_of_sentence_stop: bool = False):
+        super().__init__(
+            model_name=model_name,
+            group_size=group_size,
+            temp=temp,
+            end_of_sentence_stop=end_of_sentence_stop)
         seed(0)
         if top_k is None and top_p is None:
             self.top_p = 1.0
@@ -112,13 +116,13 @@ class SamplingGenerator(TextGenerator):
             for k, v in top_k_probs.items()}
         return weighted_probs
 
-    def add_group(
+    def generate_group(
             self, prob_mat: List[List[float]],
             org_used_tokens: List[int]) -> List[int]:
         """Generates a group of tokens
          using the choice_function."""
         used_tokens = deepcopy(org_used_tokens)
-        answer = []
+        new_group = []
         for curr_token_probs in prob_mat:
             for used_token in used_tokens:
                 curr_token_probs[used_token] = 0.0
@@ -137,11 +141,13 @@ class SamplingGenerator(TextGenerator):
             weighted_probs = self.filter_tokens(sorted_probs)
             keys_list = list(weighted_probs.keys())
             weights_list = list(weighted_probs.values())
-            sampled_token = choices(
+            sampled_token: int = choices(
                 keys_list, weights_list, k=1)[0]
-            answer.append(sampled_token)
+            new_group.append(sampled_token)
+            if sampled_token == self.end_of_sentence_id:
+                return new_group
             used_tokens.append(sampled_token)
-        return answer
+        return new_group
 
     def __call__(self, prompt: str, num_new_tokens: int) -> str:
         if num_new_tokens == 0:
@@ -164,15 +170,23 @@ class SamplingGenerator(TextGenerator):
         for _ in range(num_groups):
             prob_mat = self.get_prob_mat(
                 None, curr_token_list)
-            new_tokens = self.add_group(
+            new_tokens = self.generate_group(
                 prob_mat, curr_token_list)
+            if self.end_of_sentence_id in new_tokens:
+                end_of_sentence_index = new_tokens.index(self.end_of_sentence_id)
+                new_tokens = new_tokens[:end_of_sentence_index]
+                curr_token_list.extend(new_tokens)
+                break
             curr_token_list.extend(new_tokens)
 
         final_num_tokens = prompt_len + num_new_tokens
-        shorten_token_list = curr_token_list[:final_num_tokens]
+        if len(curr_token_list) > final_num_tokens:
+            shorten_token_list = curr_token_list[:final_num_tokens]
+        else:
+            shorten_token_list = curr_token_list
         final_ans = self.tokenizer.decode(
             shorten_token_list,
-            skip_special_tokens=True)
+            skip_special_tokens=True, )
         return final_ans
 
     def __repr__(self):
