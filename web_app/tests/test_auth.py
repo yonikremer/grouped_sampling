@@ -1,6 +1,6 @@
 """Test the auth blueprint"""
 
-import pytest
+from pytest import mark
 from flask import g, session, Flask, Response
 from flask.testing import FlaskClient
 
@@ -23,7 +23,7 @@ def test_register(client: FlaskClient, app: Flask) -> None:
         assert row is not None
 
 
-@pytest.mark.parametrize(
+@mark.parametrize(
     ("username", "password", "message"),
     (
         ("", "", b'Username is required.'),
@@ -59,7 +59,7 @@ def test_login(client: FlaskClient, auth: AuthActions):
         assert g.user["username"] == "test"
 
 
-@pytest.mark.parametrize(
+@mark.parametrize(
     ("username", "password", "message"),
     (("a", "test", 'Incorrect username'), ("test", "a", 'Incorrect password')),
 )
@@ -78,7 +78,7 @@ def test_logout(client: FlaskClient, auth: AuthActions):
         assert "user_id" not in session
 
 
-@pytest.mark.parametrize(
+@mark.parametrize(
     ("valid_username", "valid_password"),
     (("a", "a"), ("this_is_a_test", "this_is_also_a_test")),
 )
