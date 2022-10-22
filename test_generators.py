@@ -87,32 +87,36 @@ class TestTextGenerator(TestCase):
                                                                 f"curr_text_generator: {str(curr_text_generator)}")
 
     repeating_prompt: str = "This is a very long text. " * 2
+    long_prompt: str = "This is a very long text. " * 2048
+    edge_cases = [long_prompt, repeating_prompt]
 
-    def test_calling_generators_repeating_prompt(self):
+    def test_edge_cases(self):
         """Tests the generators with long inputs. (an edge case)"""
-        special_generators = [TreeGenerator(model_name=self.MODEL_NAMES[0],
-                                            group_size=self.GROUP_SIZES[0],
-                                            top_k=None,
-                                            top_p=1.0,
-                                            temp=1000.0),
-                              SamplingGenerator(model_name=self.MODEL_NAMES[0],
-                                                group_size=self.GROUP_SIZES[0],
-                                                top_k=None,
-                                                top_p=1.0,
-                                                temp=1000.0)
-                              ]
+        special_generators = [
+            SamplingGenerator(model_name=self.MODEL_NAMES[0],
+                              group_size=self.GROUP_SIZES[0],
+                              top_k=None,
+                              top_p=0.9,
+                              temp=10.0),
+            TreeGenerator(model_name=self.MODEL_NAMES[0],
+                          group_size=self.GROUP_SIZES[0],
+                          top_k=2,
+                          top_p=1.0,
+                          temp=1),
+        ]
 
-        for curr_generator in special_generators:
-            with self.subTest(curr_generator=str(curr_generator)):
-                answer = curr_generator(self.repeating_prompt, curr_generator.group_size * 2)
-                self.assertIsInstance(answer, str, f"{answer} is not a string. "
-                                                   f"curr_generator: {str(curr_generator)}")
-                self.assertGreater(len(answer), len(self.repeating_prompt), f"{answer} is not a not longer than "
-                                                                            f"{self.repeating_prompt}. "
-                                                                            f"curr_generator: {str(curr_generator)}")
-                self.assertTrue(answer.startswith(self.repeating_prompt[:-1]), f"{answer} doesn't start with "
-                                                                               f"{self.repeating_prompt}. "
-                                                                               f"curr_generator: {str(curr_generator)}")
+        for prompt in self.edge_cases:
+            for curr_generator in special_generators:
+                with self.subTest(prompt=prompt, curr_generator=str(curr_generator)):
+                    answer = curr_generator(prompt, curr_generator.group_size * 2)
+                    self.assertIsInstance(answer, str, f"{answer} is not a string. "
+                                                       f"curr_generator: {str(curr_generator)}")
+                    self.assertGreater(len(answer), len(prompt), f"{answer} is not a not longer than "
+                                                                 f"{prompt}. "
+                                                                 f"curr_generator: {str(curr_generator)}")
+                    self.assertTrue(answer.startswith(prompt[:-1]), f"{answer} doesn't start with "
+                                                                    f"{prompt}. "
+                                                                    f"curr_generator: {str(curr_generator)}")
 
 
 if __name__ == '__main__':

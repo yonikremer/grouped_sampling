@@ -40,6 +40,7 @@ class TextGenerator(Callable, ABC):
     generation_type: GenerationType
     end_of_sentence_id: Optional[int]
     end_of_sentence_stop: bool
+    maximum_length: int
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0, end_of_sentence_stop: bool = False):
@@ -66,6 +67,7 @@ class TextGenerator(Callable, ABC):
             pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
         self.end_of_sentence_stop = end_of_sentence_stop
+        self.maximum_length = self.tokenizer.model_max_length
 
     def set_group_size(self, new_group_size):
         self.group_size = new_group_size
@@ -81,8 +83,11 @@ class TextGenerator(Callable, ABC):
 
         attention_len = len(token_list) + self.group_size - 1
 
-        longer_token_list = token_list + self.padding_tokens
-        longer_token_tensor = LongTensor([longer_token_list])
+        padded_token_list = token_list + self.padding_tokens
+        if len(padded_token_list) > self.maximum_length:
+            padded_token_list = padded_token_list[-self.maximum_length:]
+            attention_len = self.maximum_length
+        longer_token_tensor = LongTensor([padded_token_list])
         attention_mask = ones([1, attention_len])
         if cuda.is_available():
             longer_token_tensor = longer_token_tensor.cuda()
