@@ -210,7 +210,7 @@ class TreeGenerator(TextGenerator):
         if is_list or is_tuple:
             tokens_list: List[int]
             tokens_list = list(TreeGenerator.flatten(org_prompt))
-            prob_mat = self.get_prob_mat(None, tokens_list)
+            prob_mat = self.get_prob_mat(tokens_list)
         else:
             raise TypeError("org_prompt must be a list or a tuple")
         tokenized_ans_list = self.generate_group(

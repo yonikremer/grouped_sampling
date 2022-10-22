@@ -168,8 +168,7 @@ class SamplingGenerator(TextGenerator):
         prompt_len: int = len(curr_token_list)
 
         for _ in range(num_groups):
-            prob_mat = self.get_prob_mat(
-                None, curr_token_list)
+            prob_mat = self.get_prob_mat(curr_token_list)
             new_tokens = self.generate_group(
                 prob_mat, curr_token_list)
             if self.end_of_sentence_id in new_tokens:

@@ -74,32 +74,25 @@ class TextGenerator(Callable, ABC):
             pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
 
-    def get_prob_mat(self, prompt: Optional[str],
-                     token_list: Optional[List[int]]) \
+    def get_prob_mat(self, token_list: List[int]) \
             -> List[List[float]]:
         """Returns the probability matrix
          as a list of lists of floats"""
 
-        if token_list is None:
-            tokenized_prompt = self.tokenizer(
-                prompt, return_tensors="pt")
-            with no_grad():
-                outputs = self.model(**tokenized_prompt)
-        else:
-            attention_len = len(token_list) + self.group_size - 1
+        attention_len = len(token_list) + self.group_size - 1
 
-            longer_token_list = token_list + self.padding_tokens
-            longer_token_tensor = LongTensor([longer_token_list])
-            attention_mask = ones([1, attention_len])
-            if cuda.is_available():
-                longer_token_tensor = longer_token_tensor.cuda()
-                attention_mask = attention_mask.cuda()
-            inputs = {"input_ids": longer_token_tensor,
-                      "attention_mask": attention_mask,
-                      "labels": longer_token_tensor}
+        longer_token_list = token_list + self.padding_tokens
+        longer_token_tensor = LongTensor([longer_token_list])
+        attention_mask = ones([1, attention_len])
+        if cuda.is_available():
+            longer_token_tensor = longer_token_tensor.cuda()
+            attention_mask = attention_mask.cuda()
+        inputs = {"input_ids": longer_token_tensor,
+                  "attention_mask": attention_mask,
+                  "labels": longer_token_tensor}
 
-            with no_grad():
-                outputs = self.model(**inputs)
+        with no_grad():
+            outputs = self.model(**inputs)
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
 
