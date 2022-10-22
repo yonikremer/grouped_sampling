@@ -122,6 +122,31 @@ class TextGenerator(Callable, ABC):
                 prob_vec[self.end_of_sentence_id] = 0.0
         return prob_mat
 
+    def postprocess(
+            self,
+            token_ids: Union[List[int], Tuple[int]],
+            num_new_tokens: int,
+            prompt_len: int,
+            return_text: bool,
+            return_tensors: bool,
+            return_full_text: bool
+    ):
+        final_num_tokens = prompt_len + num_new_tokens
+        if len(token_ids) > final_num_tokens:
+            shorten_token_list = token_ids[:final_num_tokens]
+        else:
+            shorten_token_list = token_ids
+        if not return_full_text:
+            shorten_token_list = shorten_token_list[prompt_len:]
+        final_ans = {}
+        if return_tensors:
+            final_ans["generated_token_ids"] = tensor(shorten_token_list)
+        if return_text:
+            final_ans["generated_text"] = self.tokenizer.decode(
+                shorten_token_list,
+                skip_special_tokens=True)
+        return final_ans
+
     @abstractmethod
     def __call__(
             self,

@@ -185,21 +185,14 @@ class SamplingGenerator(TextGenerator):
                 break
             curr_token_list.extend(new_tokens)
 
-        final_num_tokens = prompt_len + num_new_tokens
-        if len(curr_token_list) > final_num_tokens:
-            shorten_token_list = curr_token_list[:final_num_tokens]
-        else:
-            shorten_token_list = curr_token_list
-        if not return_full_text:
-            shorten_token_list = shorten_token_list[prompt_len:]
-        final_ans = {}
-        if return_tensors:
-            final_ans["generated_token_ids"] = tensor(shorten_token_list)
-        if return_text:
-            final_ans["generated_text"] = self.tokenizer.decode(
-                shorten_token_list,
-                skip_special_tokens=True)
-        return final_ans
+        return self.postprocess(
+            token_ids=curr_token_list,
+            num_new_tokens=num_new_tokens,
+            prompt_len=prompt_len,
+            return_text=return_text,
+            return_tensors=return_tensors,
+            return_full_text=return_full_text,
+        )
 
     def __repr__(self):
         return f"SamplingGenerator: " \

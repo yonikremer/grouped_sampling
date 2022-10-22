@@ -296,18 +296,14 @@ class TreeGenerator(TextGenerator):
         highest_prob_seq: Tuple[int]
         highest_prob_seq = max(seq_prob_dict,
                                key=seq_prob_dict.get)
-        final_token_list: List[int]
-        final_token_list = list(highest_prob_seq)
-        if not return_full_text:
-            final_token_list = final_token_list[prompt_len:]
-        final_ans = {}
-        if return_tensors:
-            final_ans["generated_token_ids"] = tensor(final_token_list)
-        if return_text:
-            final_ans["generated_text"] = self.tokenizer.decode(
-                final_token_list,
-                skip_special_tokens=True)
-        return final_ans
+        return self.postprocess(
+            token_ids=highest_prob_seq,
+            num_new_tokens=num_new_tokens,
+            prompt_len=prompt_len,
+            return_text=return_text,
+            return_tensors=return_tensors,
+            return_full_text=return_full_text,
+        )
 
     def __repr__(self):
         return f"TreeGenerator: " \
