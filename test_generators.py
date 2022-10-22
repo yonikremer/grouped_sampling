@@ -78,7 +78,7 @@ class TestTextGenerator(TestCase):
     def test_calling_generators(self):
         for curr_text_generator in self.create_text_generators():
             with self.subTest(curr_text_generator=str(curr_text_generator)):
-                answer = curr_text_generator(self.PROMPT, curr_text_generator.group_size * 2)
+                answer = curr_text_generator(self.PROMPT, curr_text_generator.group_size * 2)["generated_text"]
                 self.assertIsInstance(answer, str, f"{answer} is not a string. "
                                                    f"curr_text_generator: {str(curr_text_generator)}")
                 self.assertGreater(len(answer), len(self.PROMPT), f"{answer} is not a not longer than {self.PROMPT}. "
@@ -108,7 +108,7 @@ class TestTextGenerator(TestCase):
         for prompt in self.edge_cases:
             for curr_generator in special_generators:
                 with self.subTest(prompt=prompt, curr_generator=str(curr_generator)):
-                    answer = curr_generator(prompt, curr_generator.group_size * 2)
+                    answer = curr_generator(prompt, curr_generator.group_size * 2)["generated_text"]
                     self.assertIsInstance(answer, str, f"{answer} is not a string. "
                                                        f"curr_generator: {str(curr_generator)}")
                     self.assertGreater(len(answer), len(prompt), f"{answer} is not a not longer than "

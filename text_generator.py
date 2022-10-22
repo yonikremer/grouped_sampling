@@ -1,9 +1,10 @@
+import timeit
 from enum import Enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Optional, List
+from typing import Optional, List, Union, Dict
 
-from torch import LongTensor, ones, no_grad, cuda
+from torch import LongTensor, ones, no_grad, cuda, tensor
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
@@ -122,7 +123,13 @@ class TextGenerator(Callable, ABC):
         return prob_mat
 
     @abstractmethod
-    def __call__(self, prompt: str, num_new_tokens: int) -> str:
+    def __call__(
+            self,
+            prompt: str,
+            num_new_tokens: int,
+            return_text: bool = True,
+            return_tensors: bool = False
+    ) -> Dict[str, Union[str, tensor]]:
         pass
 
     @abstractmethod

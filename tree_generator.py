@@ -1,6 +1,7 @@
 from math import ceil
 from typing import List, Dict, Union, Tuple, Sequence, Any, Optional
 
+from torch import tensor
 from transformers import BatchEncoding
 
 from text_generator import TextGenerator, NoCompletionsFound, GenerationType
@@ -259,7 +260,13 @@ class TreeGenerator(TextGenerator):
                 new_completions[tokens] = prob
         return new_completions
 
-    def __call__(self, prompt: str, num_new_tokens: int) -> str:
+    def __call__(
+            self,
+            prompt: str,
+            num_new_tokens: int,
+            return_text: bool = True,
+            return_tensors: bool = False
+    ) -> Dict[str, Union[str, tensor]]:
         """given a func_prompt and number of tokens to generate,
         returns a string of the func_prompt + the generated tokens"""
         if num_new_tokens == 0:
@@ -291,10 +298,14 @@ class TreeGenerator(TextGenerator):
         final_token_list: List[int]
         final_token_list = list(highest_prob_seq)
         assert (final_token_list[:len(tokenized_prompt)] == tokenized_prompt)
-        decoded_prompt = self.tokenizer.decode(
-            final_token_list,
-            skip_special_tokens=True)
-        return decoded_prompt
+        final_ans = {}
+        if return_tensors:
+            final_ans["generated_token_ids"] = tensor(final_token_list)
+        if return_text:
+            final_ans["generated_text"] = self.tokenizer.decode(
+                final_token_list,
+                skip_special_tokens=True)
+        return final_ans
 
     def __repr__(self):
         return f"TreeGenerator: " \

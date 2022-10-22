@@ -123,7 +123,10 @@ def create():
                 top_k=new_request['top_k'],
                 temp=new_request['temperature']
         )
-        answer: str = text_generator(prompt=new_request['prompt'], num_new_tokens=new_request['num_tokens'])
+        answer: str = text_generator(
+            prompt=new_request['prompt'],
+            num_new_tokens=new_request['num_tokens']
+        )["generated_text"]
         completion = CompletionData(
             prompt=new_request['prompt'],
             answer=answer,

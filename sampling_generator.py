@@ -1,7 +1,7 @@
 from random import choices, seed
 from copy import deepcopy
 from math import ceil
-from typing import Callable, List, Dict, Optional
+from typing import Callable, List, Dict, Optional, Union
 
 from transformers import BatchEncoding
 from torch import tensor
@@ -149,7 +149,13 @@ class SamplingGenerator(TextGenerator):
             used_tokens.append(sampled_token)
         return new_group
 
-    def __call__(self, prompt: str, num_new_tokens: int) -> str:
+    def __call__(
+            self,
+            prompt: str,
+            num_new_tokens: int,
+            return_text: bool = True,
+            return_tensors: bool = False
+    ) -> Dict[str, Union[str, tensor]]:
         if num_new_tokens == 0:
             return prompt
         num_groups = ceil(num_new_tokens / self.group_size)
@@ -183,9 +189,13 @@ class SamplingGenerator(TextGenerator):
             shorten_token_list = curr_token_list[:final_num_tokens]
         else:
             shorten_token_list = curr_token_list
-        final_ans = self.tokenizer.decode(
-            shorten_token_list,
-            skip_special_tokens=True, )
+        final_ans = {}
+        if return_tensors:
+            final_ans["generated_token_ids"] = tensor(shorten_token_list)
+        if return_text:
+            final_ans["generated_text"] = self.tokenizer.decode(
+                shorten_token_list,
+                skip_special_tokens=True)
         return final_ans
 
     def __repr__(self):
