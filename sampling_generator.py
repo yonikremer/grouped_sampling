@@ -154,7 +154,8 @@ class SamplingGenerator(TextGenerator):
             prompt: str,
             num_new_tokens: int,
             return_text: bool = True,
-            return_tensors: bool = False
+            return_tensors: bool = False,
+            return_full_text: bool = True,
     ) -> Dict[str, Union[str, tensor]]:
         if num_new_tokens == 0:
             return prompt
@@ -189,6 +190,8 @@ class SamplingGenerator(TextGenerator):
             shorten_token_list = curr_token_list[:final_num_tokens]
         else:
             shorten_token_list = curr_token_list
+        if not return_full_text:
+            shorten_token_list = shorten_token_list[prompt_len:]
         final_ans = {}
         if return_tensors:
             final_ans["generated_token_ids"] = tensor(shorten_token_list)

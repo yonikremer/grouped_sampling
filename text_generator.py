@@ -128,7 +128,8 @@ class TextGenerator(Callable, ABC):
             prompt: str,
             num_new_tokens: int,
             return_text: bool = True,
-            return_tensors: bool = False
+            return_tensors: bool = False,
+            return_full_text: bool = True,
     ) -> Dict[str, Union[str, tensor]]:
         pass
 

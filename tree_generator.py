@@ -265,7 +265,8 @@ class TreeGenerator(TextGenerator):
             prompt: str,
             num_new_tokens: int,
             return_text: bool = True,
-            return_tensors: bool = False
+            return_tensors: bool = False,
+            return_full_text: bool = True,
     ) -> Dict[str, Union[str, tensor]]:
         """given a func_prompt and number of tokens to generate,
         returns a string of the func_prompt + the generated tokens"""
@@ -297,7 +298,8 @@ class TreeGenerator(TextGenerator):
                                key=seq_prob_dict.get)
         final_token_list: List[int]
         final_token_list = list(highest_prob_seq)
-        assert (final_token_list[:len(tokenized_prompt)] == tokenized_prompt)
+        if not return_full_text:
+            final_token_list = final_token_list[prompt_len:]
         final_ans = {}
         if return_tensors:
             final_ans["generated_token_ids"] = tensor(final_token_list)
