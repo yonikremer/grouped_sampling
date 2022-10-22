@@ -160,20 +160,10 @@ class SamplingGenerator(TextGenerator):
     ) -> Dict[str, Union[str, tensor]]:
         if num_new_tokens == 0:
             return prompt
-        num_groups = ceil(num_new_tokens / self.group_size)
-        tokenizer_output = self.tokenizer(prompt,
-                                          return_tensors="pt")
-        is_dict = isinstance(tokenizer_output, dict)
-        is_batch_encoding = isinstance(
-            tokenizer_output, BatchEncoding)
-        if is_dict or is_batch_encoding:
-            token_tensor = tokenizer_output["input_ids"]
-        else:
-            token_tensor = tokenizer_output
-        tokenizer_output: tensor
-        curr_token_list: list[int]
-        curr_token_list = token_tensor.squeeze().tolist()
-        prompt_len: int = len(curr_token_list)
+        curr_token_list, prompt_len, num_groups = self.preprocess(
+            prompt=prompt,
+            num_new_tokens=num_new_tokens
+        )
 
         for _ in range(num_groups):
             prob_mat = self.get_prob_mat(curr_token_list)

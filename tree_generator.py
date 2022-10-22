@@ -273,25 +273,13 @@ class TreeGenerator(TextGenerator):
         returns a string of the func_prompt + the generated tokens"""
         if num_new_tokens == 0:
             return prompt
-
-        tokenizer_output = self.tokenizer(prompt,
-                                          return_tensors="pt")
-        is_dict = isinstance(tokenizer_output, dict)
-        is_batch_encoding = isinstance(tokenizer_output,
-                                       BatchEncoding)
-        if is_dict or is_batch_encoding:
-            token_tensor = tokenizer_output["input_ids"]
-        else:
-            token_tensor = tokenizer_output
-
-        while token_tensor.shape[0] == 1:
-            token_tensor = token_tensor[0]
-
-        tokenized_prompt: List[int]
-        tokenized_prompt = token_tensor.tolist()
+        curr_token_list, prompt_len, _ = self.preprocess(
+            prompt=prompt,
+            num_new_tokens=num_new_tokens
+        )
 
         seq_prob_dict: Dict[Tuple[int], float]
-        seq_prob_dict = self.rec_gen(tokenized_prompt,
+        seq_prob_dict = self.rec_gen(curr_token_list,
                                      num_new_tokens)
 
         highest_prob_seq: Tuple[int]

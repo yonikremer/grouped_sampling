@@ -9,6 +9,7 @@ from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
                           AutoConfig,
+                          BatchEncoding,
                           PreTrainedTokenizer,
                           PreTrainedModel)
 
@@ -121,6 +122,34 @@ class TextGenerator(Callable, ABC):
             for prob_vec in prob_mat:
                 prob_vec[self.end_of_sentence_id] = 0.0
         return prob_mat
+
+    def preprocess(
+            self,
+            prompt: str,
+            num_new_tokens: int,
+
+    ) -> Tuple[List[int], int, int]:
+        if num_new_tokens == 0:
+            return prompt
+
+        tokenizer_output = self.tokenizer(prompt,
+                                          return_tensors="pt")
+        is_dict = isinstance(tokenizer_output, dict)
+        is_batch_encoding = isinstance(tokenizer_output,
+                                       BatchEncoding)
+        if is_dict or is_batch_encoding:
+            token_tensor = tokenizer_output["input_ids"]
+        else:
+            token_tensor = tokenizer_output
+
+        while token_tensor.shape[0] == 1:
+            token_tensor = token_tensor[0]
+
+        tokenized_prompt: List[int]
+        tokenized_prompt = token_tensor.tolist()
+        num_groups = ceil(num_new_tokens / self.group_size)
+        prompt_length = len(tokenized_prompt)
+        return tokenized_prompt, prompt_length, num_groups
 
     def postprocess(
             self,
