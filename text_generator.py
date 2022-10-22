@@ -129,7 +129,8 @@ class TextGenerator(Callable, ABC):
             prompt_len: int,
             return_text: bool,
             return_tensors: bool,
-            return_full_text: bool
+            return_full_text: bool,
+            clean_up_tokenization_spaces: bool
     ):
         final_num_tokens = prompt_len + num_new_tokens
         if len(token_ids) > final_num_tokens:
@@ -144,7 +145,9 @@ class TextGenerator(Callable, ABC):
         if return_text:
             final_ans["generated_text"] = self.tokenizer.decode(
                 shorten_token_list,
-                skip_special_tokens=True)
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces
+            )
         return final_ans
 
     @abstractmethod
@@ -155,6 +158,7 @@ class TextGenerator(Callable, ABC):
             return_text: bool = True,
             return_tensors: bool = False,
             return_full_text: bool = True,
+            clean_up_tokenization_spaces: bool = False
     ) -> Dict[str, Union[str, tensor]]:
         pass
 

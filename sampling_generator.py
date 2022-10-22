@@ -156,6 +156,7 @@ class SamplingGenerator(TextGenerator):
             return_text: bool = True,
             return_tensors: bool = False,
             return_full_text: bool = True,
+            clean_up_tokenization_spaces: bool = False
     ) -> Dict[str, Union[str, tensor]]:
         if num_new_tokens == 0:
             return prompt
@@ -192,6 +193,7 @@ class SamplingGenerator(TextGenerator):
             return_text=return_text,
             return_tensors=return_tensors,
             return_full_text=return_full_text,
+            clean_up_tokenization_spaces=clean_up_tokenization_spaces
         )
 
     def __repr__(self):
