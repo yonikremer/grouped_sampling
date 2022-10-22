@@ -45,13 +45,14 @@ class TreeGenerator(TextGenerator):
             self.top_p = top_p
 
     @staticmethod
-    def no_duplicates(my_sequence: List[Any]) -> bool:
+    def no_duplicates(my_sequence: List[Any], prompt_length: int) -> bool:
         """Return if there isn't a repetition in the sequence
         complexity: O(n) where n is the length of the sequence"""
-        return len(my_sequence) == len(set(my_sequence))
+        generated_tokens = my_sequence[prompt_length:]
+        return len(generated_tokens) == len(set(generated_tokens))
 
     @staticmethod
-    def combinations(mat: Sequence[Sequence[Any]]) \
+    def combinations(mat: Sequence[Sequence[Any]], prompt_length: int) \
             -> List[List[Any]]:
         """Returns all the lists such that list[j] is in mat[j]
         runtime function:
@@ -61,11 +62,11 @@ class TreeGenerator(TextGenerator):
                     for i in range(len(mat[0]))]
         res: List[List[Any]] = []
         for i in mat[0]:
-            for j in TreeGenerator.combinations(mat[1:]):
+            for j in TreeGenerator.combinations(mat[1:], prompt_length):
                 res.append([i] + j)
         filtered_res: List[List[Any]]
         filtered_res = list(filter(
-            TreeGenerator.no_duplicates,
+            lambda x: TreeGenerator.no_duplicates(x, prompt_length),
             res))
         return filtered_res
 
@@ -106,11 +107,12 @@ class TreeGenerator(TextGenerator):
                 new_list.append(item)
         return new_list
 
-    @staticmethod
     def remove_duplicates(
+            self,
             completions: List[List[int]],
-            probs: List[float])\
-            -> Dict[Tuple[int], float]:
+            probs: List[float],
+            prompt_length: int
+    ) -> Dict[Tuple[int], float]:
         """Given a list of tokenized answers
          and the probability of each completion,
         removes every repeated completion
@@ -118,7 +120,12 @@ class TreeGenerator(TextGenerator):
         filtered_completions: Dict[Tuple[int], float]
         filtered_completions = dict()
         for curr_comp, curr_prob in zip(completions, probs):
-            if len(curr_comp) == len(set(curr_comp)):
+            if self.end_of_sentence_id in curr_comp:
+                end_of_sentence_index = curr_comp.index(self.end_of_sentence_id)
+                completion_body = curr_comp[prompt_length:end_of_sentence_index]
+            else:
+                completion_body = curr_comp[prompt_length:]
+            if len(completion_body) == len(set(completion_body)):
                 curr_comp_tuple = tuple(curr_comp)
                 filtered_completions[curr_comp_tuple] = curr_prob
         return filtered_completions
@@ -188,7 +195,8 @@ class TreeGenerator(TextGenerator):
             possible_tokens.append(curr_indices)  # O(1)
         new_sequences: List[List[int]]
         new_sequences = TreeGenerator.combinations(
-            possible_tokens)
+            possible_tokens, len(org_prompt)
+        )
         if len(new_sequences) == 0:
             raise NoCompletionsFound(self)
         # theta(prod(len(indices[i])
@@ -209,11 +217,11 @@ class TreeGenerator(TextGenerator):
         is_tuple = isinstance(org_prompt, tuple)
         if is_list or is_tuple:
             tokens_list: List[int]
-            tokens_list = list(TreeGenerator.flatten(org_prompt))
+            tokens_list = TreeGenerator.flatten(org_prompt)
             prob_mat = self.get_prob_mat(tokens_list)
         else:
             raise TypeError("org_prompt must be a list or a tuple")
-        tokenized_ans_list = self.generate_group(
+        tokenized_ans_list: List[List[int]] = self.generate_group(
             prob_mat, org_prompt)
         if len(tokenized_ans_list) == 0:
             raise NoCompletionsFound(self)
@@ -221,14 +229,15 @@ class TreeGenerator(TextGenerator):
         prob_list = [TreeGenerator.seq_prob(seq, prob_mat, org_prompt_prob)
                      for seq in tokenized_ans_list]
         new_prompts: List[List[int]]
-        new_prompts = [TreeGenerator.flatten(tokens_list + ans)
+        ans: List[int]
+        new_prompts = [tokens_list + TreeGenerator.flatten(ans)
                        for ans in tokenized_ans_list]
         if len(new_prompts) == 0:
             raise NoCompletionsFound(self)
 
         completion_probs: Dict[Tuple[int], float]
-        completion_probs = TreeGenerator.remove_duplicates(
-            new_prompts, prob_list)
+        completion_probs = self.remove_duplicates(
+            new_prompts, prob_list, len(org_prompt))
         if len(completion_probs) == 0:
             raise NoCompletionsFound(self)
 
@@ -266,6 +275,9 @@ class TreeGenerator(TextGenerator):
         else:
             token_tensor = tokenizer_output
 
+        while token_tensor.shape[0] == 1:
+            token_tensor = token_tensor[0]
+
         tokenized_prompt: List[int]
         tokenized_prompt = token_tensor.tolist()
 
@@ -278,13 +290,14 @@ class TreeGenerator(TextGenerator):
                                key=seq_prob_dict.get)
         final_token_list: List[int]
         final_token_list = list(highest_prob_seq)
+        assert (final_token_list[:len(tokenized_prompt)] == tokenized_prompt)
         decoded_prompt = self.tokenizer.decode(
             final_token_list,
             skip_special_tokens=True)
         return decoded_prompt
 
     def __repr__(self):
-        return f"SamplingGenerator: " \
+        return f"TreeGenerator: " \
                f"model name: {self.model_name}, " \
                f"group size: {self.group_size}, " \
                f"temperature: {self.temp}, " \
