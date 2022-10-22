@@ -86,6 +86,34 @@ class TestTextGenerator(TestCase):
                 self.assertTrue(answer.startswith(self.PROMPT), f"{answer} doesn't start with {self.PROMPT}. "
                                                                 f"curr_text_generator: {str(curr_text_generator)}")
 
+    repeating_prompt: str = "This is a very long text. " * 2
+
+    def test_calling_generators_repeating_prompt(self):
+        """Tests the generators with long inputs. (an edge case)"""
+        special_generators = [TreeGenerator(model_name=self.MODEL_NAMES[0],
+                                            group_size=self.GROUP_SIZES[0],
+                                            top_k=None,
+                                            top_p=1.0,
+                                            temp=1000.0),
+                              SamplingGenerator(model_name=self.MODEL_NAMES[0],
+                                                group_size=self.GROUP_SIZES[0],
+                                                top_k=None,
+                                                top_p=1.0,
+                                                temp=1000.0)
+                              ]
+
+        for curr_generator in special_generators:
+            with self.subTest(curr_generator=str(curr_generator)):
+                answer = curr_generator(self.repeating_prompt, curr_generator.group_size * 2)
+                self.assertIsInstance(answer, str, f"{answer} is not a string. "
+                                                   f"curr_generator: {str(curr_generator)}")
+                self.assertGreater(len(answer), len(self.repeating_prompt), f"{answer} is not a not longer than "
+                                                                            f"{self.repeating_prompt}. "
+                                                                            f"curr_generator: {str(curr_generator)}")
+                self.assertTrue(answer.startswith(self.repeating_prompt[:-1]), f"{answer} doesn't start with "
+                                                                               f"{self.repeating_prompt}. "
+                                                                               f"curr_generator: {str(curr_generator)}")
+
 
 if __name__ == '__main__':
     main()
