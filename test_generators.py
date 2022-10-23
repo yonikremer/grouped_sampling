@@ -152,6 +152,18 @@ class TestTextGenerator(TestCase):
         self.assertNotEqual(answer["generated_token_ids"].tolist()[:len(prompt_tokens)], prompt_tokens,
                             f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
 
+    def test_prefix(self):
+        """Tests that the prefix option of the methods __call__ and preprocess works"""
+        generator: TextGenerator = next(self.create_text_generators())
+        prompt: str = "test prompt"
+        prefix = "This is a"
+        answer: Dict[str, Union[str, Tensor]] = generator(
+            prompt, 10, return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
+        )
+        self.assertTrue(answer["generated_text"].startswith(prefix),
+                        f"{answer['generated_text']} doesn't start with {prefix}")
+        self.assertIn(prompt, answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}")
+
 
 if __name__ == '__main__':
     main()
