@@ -1,12 +1,47 @@
+from collections.abc import Iterator
 from random import choices, seed
 from copy import deepcopy
-from math import ceil
-from typing import Callable, List, Dict, Optional, Union
-
-from transformers import BatchEncoding
-from torch import tensor
+from typing import Callable, List, Dict, Optional
 
 from text_generator import TextGenerator, GenerationType, NoCompletionsFound
+
+
+class ChangingSeed(Iterator):
+    """Context manager for changing the seed of the random module.
+    How to use:
+    with ChangingSeed(first_seed, number_of_different_seeds) as changing_seed:
+        for _ in changing_seed:
+            # do something with random module"""
+    default_seed: int
+    curr_seed: int
+    max_num_calls: int
+    curr_num_calls: int
+
+    def __init__(self, default_seed: int, max_num_calls: int):
+        self.default_seed = default_seed
+        self.curr_seed = self.default_seed
+        self.max_num_calls = max_num_calls
+
+    def __enter__(self):
+        self.curr_num_calls = 0
+        self.curr_seed = self.default_seed
+        return self
+
+    def __exit__(self, *args):
+        self.curr_seed = self.default_seed
+        seed(self.default_seed)
+
+    def __iter__(self):
+        self.curr_seed = self.default_seed
+        self.default_seed = self.default_seed
+        return self
+
+    def __next__(self):
+        self.curr_seed += 1
+        seed(self.curr_seed)
+        self.curr_num_calls += 1
+        if self.curr_num_calls > self.max_num_calls:
+            raise StopIteration
 
 
 class SamplingGenerator(TextGenerator):
@@ -16,6 +51,8 @@ class SamplingGenerator(TextGenerator):
     filter_tokens: Callable[[Dict[int, float]], Dict[int, float]]
     top_k: Optional[int] = None
     top_p: Optional[float] = None
+    default_seed: int = 0
+    seed(default_seed)
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0, top_k: Optional[int] = None,
@@ -25,7 +62,6 @@ class SamplingGenerator(TextGenerator):
             group_size=group_size,
             temp=temp,
             end_of_sentence_stop=end_of_sentence_stop)
-        seed(0)
         if top_k is None and top_p is None:
             self.top_p = 1.0
             self.top_k = self.vocab_size
