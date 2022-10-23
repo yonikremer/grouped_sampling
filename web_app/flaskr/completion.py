@@ -124,8 +124,8 @@ def create():
                 temp=new_request['temperature']
         )
         answer: str = text_generator(
-            prompt=new_request['prompt'],
-            num_new_tokens=new_request['num_tokens']
+            prompt_s=new_request['prompt'],
+            max_new_tokens=new_request['num_tokens']
         )["generated_text"]
         completion = CompletionData(
             prompt=new_request['prompt'],
