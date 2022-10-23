@@ -149,7 +149,7 @@ class SamplingGenerator(TextGenerator):
             used_tokens.append(sampled_token)
         return new_group
 
-    def generate_groups(
+    def _forward(
             self,
             curr_token_list: List[int],
             num_new_tokens: int,

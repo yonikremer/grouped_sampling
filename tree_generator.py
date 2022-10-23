@@ -260,7 +260,7 @@ class TreeGenerator(TextGenerator):
                 new_completions[tokens] = prob
         return new_completions
 
-    def generate_groups(
+    def _forward(
             self,
             tokenized_prompt: List[int],
             num_new_tokens: int,

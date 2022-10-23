@@ -159,7 +159,7 @@ class TextGenerator(Callable, ABC):
         return tokenized_prompt
 
     @abstractmethod
-    def generate_groups(
+    def _forward(
             self,
             tokenized_prompt: List[int],
             num_new_tokens: int,
@@ -267,7 +267,7 @@ class TextGenerator(Callable, ABC):
 
         prompt_len: int = len(curr_token_list)
         tokenized_ans: Union[List[int], Tuple[int]]
-        tokenized_ans = self.generate_groups(
+        tokenized_ans = self._forward(
             curr_token_list,
             num_new_tokens
         )
