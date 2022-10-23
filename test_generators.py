@@ -1,5 +1,7 @@
 from unittest import TestCase, main
-from typing import Generator
+from typing import Generator, Union, Dict, List
+
+from torch import Tensor
 
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
@@ -117,6 +119,38 @@ class TestTextGenerator(TestCase):
                     self.assertTrue(answer.startswith(prompt[:-1]), f"{answer} doesn't start with "
                                                                     f"{prompt}. "
                                                                     f"curr_generator: {str(curr_generator)}")
+
+    def test_post_process(self):
+        """Tests the different returning options"""
+        generator: TextGenerator = next(self.create_text_generators())
+        prompt: str = "This is a test prompt"
+        answer: Dict[str, Union[str, Tensor]] = generator(
+            prompt, 10, return_tensors=True, return_text=True, return_full_text=True
+        )
+        self.assertIsInstance(answer, dict,
+                              f"{answer} is not a dict")
+        self.assertIn("generated_text", answer.keys(),
+                      f"{answer} doesn't contain 'generated_text'")
+        self.assertIn("generated_token_ids", answer.keys(),
+                      f"{answer} doesn't contain 'generated_token_ids'")
+        self.assertIsInstance(answer["generated_text"], str,
+                              f"{answer['generated_text']} is not a string")
+        self.assertIsInstance(answer["generated_token_ids"], Tensor,
+                              f"{answer['generated_token_ids']} is not a list")
+        self.assertTrue(answer["generated_text"].startswith(prompt),
+                        f"{answer['generated_text']} doesn't start with {prompt}")
+        prompt_tokens: List[int] = generator.preprocess(prompt)
+        self.assertEqual(answer["generated_token_ids"].tolist()[:len(prompt_tokens)], prompt_tokens,
+                         f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
+
+        answer: Dict[str, Union[str, Tensor]] = generator(
+            prompt, 10, return_tensors=True, return_text=True, return_full_text=False
+        )
+        self.assertFalse(answer["generated_text"].startswith(prompt),
+                         f"{answer['generated_text']} doesn't start with {prompt}")
+        prompt_tokens: List[int] = generator.preprocess(prompt)
+        self.assertNotEqual(answer["generated_token_ids"].tolist()[:len(prompt_tokens)], prompt_tokens,
+                            f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
 
 
 if __name__ == '__main__':
