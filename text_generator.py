@@ -2,7 +2,7 @@ import timeit
 from enum import Enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Optional, List, Union, Dict
+from typing import Optional, List, Union, Dict, Tuple
 
 from torch import LongTensor, ones, no_grad, cuda, tensor
 from torch.nn import Softmax
@@ -125,12 +125,13 @@ class TextGenerator(Callable, ABC):
 
     def preprocess(
             self,
-            prompt: str,
-            num_new_tokens: int,
-
-    ) -> Tuple[List[int], int, int]:
-        if num_new_tokens == 0:
-            return prompt
+            prompt: str
+    ) -> List[int]:
+        """A helper method for __call__ that tokenize the prompt
+        Args:
+            prompt: str the prompt as sent to the __call__ method
+        Returns:
+            the tokenized prompt as a list of ints"""
 
         tokenizer_output = self.tokenizer(prompt,
                                           return_tensors="pt")
@@ -147,9 +148,22 @@ class TextGenerator(Callable, ABC):
 
         tokenized_prompt: List[int]
         tokenized_prompt = token_tensor.tolist()
-        num_groups = ceil(num_new_tokens / self.group_size)
-        prompt_length = len(tokenized_prompt)
-        return tokenized_prompt, prompt_length, num_groups
+        return tokenized_prompt
+
+    @abstractmethod
+    def generate_groups(
+            self,
+            tokenized_prompt: List[int],
+            num_new_tokens: int,
+    ) -> Union[List[int], Tuple[int]]:
+        """A helper method for __call__ that generates the new tokens
+        Has a unique implementation for each subclass
+        Args:
+            tokenized_prompt: List[int] - the tokenized prompt from the preprocess method
+            num_new_tokens: int - the number of new tokens to generate from the __call__ method
+        Returns:
+            the prompt + generated text as a list/tuple of ints"""
+        pass
 
     def postprocess(
             self,
@@ -161,6 +175,24 @@ class TextGenerator(Callable, ABC):
             return_full_text: bool,
             clean_up_tokenization_spaces: bool
     ):
+
+        """A helper method for __call__ that converts the token ids to dictionary
+        Args:
+            token_ids: Union[List[int], Tuple[int]] - the token ids from the generate_groups method
+            num_new_tokens: int - the number of new tokens to generate from the __call__ method
+            prompt_len: int - the number of tokens in the prompt
+            return_text: bool - whether to return the generated string
+            return_tensors: bool - whether to return the generated token ids
+            return_full_text: bool - whether to return the full text
+                (prompt + generated text)
+                (if false, it will return only the generated text)
+            clean_up_tokenization_spaces: bool - whether to clean up tokenization spaces
+                This parameter is forwarded to the decode function of the AutoTokenizer class
+        Returns:
+            A dictionary with the generated text and/or the generated token ids
+                The generated text is returned as a string
+                The generated token ids are returned as a pytorch tensor of type long
+        """
         final_num_tokens = prompt_len + num_new_tokens
         if len(token_ids) > final_num_tokens:
             shorten_token_list = token_ids[:final_num_tokens]
@@ -179,7 +211,6 @@ class TextGenerator(Callable, ABC):
             )
         return final_ans
 
-    @abstractmethod
     def __call__(
             self,
             prompt: str,
@@ -189,7 +220,42 @@ class TextGenerator(Callable, ABC):
             return_full_text: bool = True,
             clean_up_tokenization_spaces: bool = False
     ) -> Dict[str, Union[str, tensor]]:
-        pass
+        """The function that outside code should call to generate text
+        Args:
+            prompt: str - the prompt to start the generation from
+                (the text given by the user)
+            num_new_tokens: int > 0 - the number of tokens to generate
+            return_text: bool - whether to return the generated string
+            return_tensors: bool - whether to return the generated token ids
+            return_full_text: bool - whether to return the full text
+                (prompt + generated text)
+                (if false, it will return only the generated text)
+            clean_up_tokenization_spaces: bool - whether to clean up tokenization spaces
+                This parameter is forwarded to the decode function of the AutoTokenizer class
+        Returns:
+            A dictionary with the generated text and/or the generated token ids
+                The generated text is returned as a string
+                The generated token ids are returned as a pytorch tensor of type long
+            """
+
+        curr_token_list = self.preprocess(prompt=prompt)
+
+        prompt_len = len(curr_token_list)
+
+        tokenized_ans = self.generate_groups(
+            curr_token_list,
+            num_new_tokens
+        )
+
+        return self.postprocess(
+            token_ids=tokenized_ans,
+            num_new_tokens=num_new_tokens,
+            prompt_len=prompt_len,
+            return_text=return_text,
+            return_tensors=return_tensors,
+            return_full_text=return_full_text,
+            clean_up_tokenization_spaces=clean_up_tokenization_spaces
+        )
 
     @abstractmethod
     def __repr__(self):

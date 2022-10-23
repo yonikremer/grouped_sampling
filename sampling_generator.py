@@ -149,22 +149,12 @@ class SamplingGenerator(TextGenerator):
             used_tokens.append(sampled_token)
         return new_group
 
-    def __call__(
+    def generate_groups(
             self,
-            prompt: str,
+            curr_token_list: List[int],
             num_new_tokens: int,
-            return_text: bool = True,
-            return_tensors: bool = False,
-            return_full_text: bool = True,
-            clean_up_tokenization_spaces: bool = False
-    ) -> Dict[str, Union[str, tensor]]:
-        if num_new_tokens == 0:
-            return prompt
-        curr_token_list, prompt_len, num_groups = self.preprocess(
-            prompt=prompt,
-            num_new_tokens=num_new_tokens
-        )
-
+    ) -> List[int]:
+        num_groups = num_new_tokens // self.group_size
         for _ in range(num_groups):
             prob_mat = self.get_prob_mat(curr_token_list)
             new_tokens = self.generate_group(
@@ -175,16 +165,7 @@ class SamplingGenerator(TextGenerator):
                 curr_token_list.extend(new_tokens)
                 break
             curr_token_list.extend(new_tokens)
-
-        return self.postprocess(
-            token_ids=curr_token_list,
-            num_new_tokens=num_new_tokens,
-            prompt_len=prompt_len,
-            return_text=return_text,
-            return_tensors=return_tensors,
-            return_full_text=return_full_text,
-            clean_up_tokenization_spaces=clean_up_tokenization_spaces
-        )
+        return curr_token_list
 
     def __repr__(self):
         return f"SamplingGenerator: " \
