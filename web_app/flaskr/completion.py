@@ -126,7 +126,7 @@ def create():
         answer: str = text_generator(
             prompt_s=new_request['prompt'],
             max_new_tokens=new_request['num_tokens']
-        )["generated_text"]
+        )[0]["generated_text"]
         completion = CompletionData(
             prompt=new_request['prompt'],
             answer=answer,
