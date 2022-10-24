@@ -1,3 +1,4 @@
+from itertools import islice
 from unittest import TestCase, main
 from typing import Generator, Union, Dict, List
 
@@ -94,21 +95,9 @@ class TestTextGenerator(TestCase):
 
     def test_edge_cases(self):
         """Tests the generators with long inputs. (an edge case)"""
-        special_generators = [
-            SamplingGenerator(model_name=self.MODEL_NAMES[0],
-                              group_size=self.GROUP_SIZES[0],
-                              top_k=None,
-                              top_p=0.9,
-                              temp=10.0),
-            TreeGenerator(model_name=self.MODEL_NAMES[0],
-                          group_size=self.GROUP_SIZES[0],
-                          top_k=2,
-                          top_p=1.0,
-                          temp=1),
-        ]
 
         for prompt in self.edge_cases:
-            for curr_generator in special_generators:
+            for curr_generator in islice(self.create_text_generators(), 2):
                 with self.subTest(prompt=prompt, curr_generator=str(curr_generator)):
                     answer = curr_generator(prompt, curr_generator.group_size * 2)[0]["generated_text"]
                     self.assertIsInstance(answer, str, f"{answer} is not a string. "
@@ -163,6 +152,32 @@ class TestTextGenerator(TestCase):
         self.assertTrue(answer["generated_text"].startswith(prefix),
                         f"{answer['generated_text']} doesn't start with {prefix}")
         self.assertIn(prompt, answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}")
+
+    def test_num_return_sequences(self):
+        """Tests that the num_return_sequences option of the methods __call__ and preprocess works"""
+        tree_gen = TreeGenerator(model_name=self.MODEL_NAMES[0],
+                                 group_size=2,
+                                 top_k=3,
+                                 top_p=None,
+                                 end_of_sentence_stop=False)
+        top_p_sampling_gen = SamplingGenerator(model_name=self.MODEL_NAMES[0],
+                                               group_size=self.GROUP_SIZES[0],
+                                               top_k=None,
+                                               top_p=self.TOP_PS[0],
+                                               temp=self.TEMPERATURES[0],
+                                               end_of_sentence_stop=False)
+        for generator in (tree_gen, top_p_sampling_gen):
+            with self.subTest(generator=str(generator)):
+                prompt: str = "I was to happy to see that "
+                num_return_sequences = 2
+                answer: List[Dict[str, Union[str, Tensor]]] = generator(
+                    prompt, 8, return_tensors=False, return_text=True,
+                    return_full_text=True, num_return_sequences=num_return_sequences
+                )
+                self.assertEqual(len(answer), num_return_sequences, f"len(answer) is not {num_return_sequences}")
+                for curr_answer in answer:
+                    self.assertIn(prompt, curr_answer["generated_text"],
+                                  f"{curr_answer['generated_text']} doesn't contain {prompt}")
 
 
 if __name__ == '__main__':

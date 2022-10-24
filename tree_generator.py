@@ -1,9 +1,6 @@
 from math import ceil
 from typing import List, Dict, Union, Tuple, Sequence, Any, Optional
 
-from torch import tensor
-from transformers import BatchEncoding
-
 from text_generator import TextGenerator, NoCompletionsFound, GenerationType
 
 tokenIDS = Union[List[int], Tuple[int]]
@@ -264,15 +261,22 @@ class TreeGenerator(TextGenerator):
             self,
             tokenized_prompt: List[int],
             num_new_tokens: int,
-    ) -> Tuple[int]:
+            num_return_sequences: int,
+    ) -> List[Tuple[int]]:
         seq_prob_dict: Dict[Tuple[int], float]
-        seq_prob_dict = self.rec_gen(tokenized_prompt,
-                                     num_new_tokens)
-
-        highest_prob_seq: Tuple[int]
-        highest_prob_seq = max(seq_prob_dict,
-                               key=seq_prob_dict.get)
-        return highest_prob_seq
+        seq_prob_dict = self.rec_gen(
+            tokenized_prompt, num_new_tokens)
+        if len(seq_prob_dict) < num_return_sequences:
+            raise NoCompletionsFound(self,
+                                     f"Not enough completions found, {len(seq_prob_dict)} found"
+                                     f" but {num_return_sequences} requested")
+        sorted_seq_prob_dict = sorted(
+            seq_prob_dict.items(), key=lambda x: x[1], reverse=True
+        )
+        highest_prob_answers = sorted_seq_prob_dict[:num_return_sequences]
+        assert len(highest_prob_answers) == num_return_sequences
+        return [tokens for tokens, prob
+                in highest_prob_answers]
 
     def __repr__(self):
         return f"TreeGenerator: " \

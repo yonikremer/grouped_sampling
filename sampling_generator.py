@@ -21,6 +21,7 @@ class ChangingSeed(Iterator):
         self.default_seed = default_seed
         self.curr_seed = self.default_seed
         self.max_num_calls = max_num_calls
+        self.curr_num_calls = 0
 
     def __enter__(self):
         self.curr_num_calls = 0
@@ -45,7 +46,7 @@ class ChangingSeed(Iterator):
 
 
 class SamplingGenerator(TextGenerator):
-    """A TextGenerator that generates text 
+    """A TextGenerator that generates text
     using random sampling
     with top-k or top-p filtering."""
     filter_tokens: Callable[[Dict[int, float]], Dict[int, float]]
@@ -189,19 +190,23 @@ class SamplingGenerator(TextGenerator):
             self,
             curr_token_list: List[int],
             num_new_tokens: int,
-    ) -> List[int]:
-        num_groups = num_new_tokens // self.group_size
-        for _ in range(num_groups):
-            prob_mat = self.get_prob_mat(curr_token_list)
-            new_tokens = self.generate_group(
-                prob_mat, curr_token_list)
-            if self.end_of_sentence_id in new_tokens:
-                end_of_sentence_index = new_tokens.index(self.end_of_sentence_id)
-                new_tokens = new_tokens[:end_of_sentence_index]
+            num_return_sequences: int,
+    ) -> List[List[int]]:
+        answers: List[List[int]] = []
+        for _ in ChangingSeed(default_seed=self.default_seed, max_num_calls=num_return_sequences):
+            num_groups = num_new_tokens // self.group_size
+            for _ in range(num_groups):
+                prob_mat = self.get_prob_mat(curr_token_list)
+                new_tokens = self.generate_group(
+                    prob_mat, curr_token_list)
+                if self.end_of_sentence_id in new_tokens:
+                    end_of_sentence_index = new_tokens.index(self.end_of_sentence_id)
+                    new_tokens = new_tokens[:end_of_sentence_index]
+                    curr_token_list.extend(new_tokens)
+                    break
                 curr_token_list.extend(new_tokens)
-                break
-            curr_token_list.extend(new_tokens)
-        return curr_token_list
+            answers.append(curr_token_list)
+        return answers
 
     def __repr__(self):
         return f"SamplingGenerator: " \

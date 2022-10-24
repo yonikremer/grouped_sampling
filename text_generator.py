@@ -166,7 +166,8 @@ class TextGenerator(Callable, ABC):
             self,
             tokenized_prompt: List[int],
             num_new_tokens: int,
-    ) -> TokenIDS:
+            num_return_sequences: int,
+    ) -> List[TokenIDS]:
         """A helper method for __call__ that generates the new tokens
         Has a unique implementation for each subclass
         Args:
@@ -231,6 +232,7 @@ class TextGenerator(Callable, ABC):
             return_full_text: bool = True,
             clean_up_tokenization_spaces: bool = False,
             prefix: str = "",
+            num_return_sequences: int = 1,
     ) -> Union[List[Dict[str, Union[str, tensor]]], List[List[Dict[str, Union[str, tensor]]]]]:
         """The function that outside code should call to generate text
         Args:
@@ -249,6 +251,10 @@ class TextGenerator(Callable, ABC):
                 This parameter is forwarded to the decode function of the AutoTokenizer class
             prefix (`str`, defaults to an empty string):
                 Prefix added to prompt.
+            num_return_sequences (`int`, defaults to 1):
+                The number of independently generated answers to return for each prompt.
+                For SamplingGenerator: each answer will be generated with different seed.
+                For TreeGenerator: the num_return_sequences with the highest scores will be returned.
         Returns:
             Each result comes as a dictionary with the following keys:
 
@@ -256,6 +262,7 @@ class TextGenerator(Callable, ABC):
             - "generated_token_ids" (`torch.tensor`, present when `return_tensors=True`) -- The token
               ids of the generated text.
             """
+        # TODO: add support for num_return_sequences > 1
 
         if isinstance(prompt_s, list):
             return [self.__call__(
@@ -271,21 +278,24 @@ class TextGenerator(Callable, ABC):
             prompt=prompt_s, prefix=prefix)
 
         prompt_len: int = len(curr_token_list)
-        tokenized_ans: TokenIDS
-        tokenized_ans = self._forward(
+        tokenized_answers: List[TokenIDS]
+        tokenized_answers = self._forward(
             curr_token_list,
-            max_new_tokens
+            max_new_tokens,
+            num_return_sequences
         )
 
+        assert len(tokenized_answers) == num_return_sequences
+
         return [self.postprocess(
-            token_ids=tokenized_ans,
+            token_ids=tokenized_answer,
             num_new_tokens=max_new_tokens,
             prompt_len=prompt_len,
             return_text=return_text,
             return_tensors=return_tensors,
             return_full_text=return_full_text,
             clean_up_tokenization_spaces=clean_up_tokenization_spaces
-        )]
+        ) for tokenized_answer in tokenized_answers]
 
     @abstractmethod
     def __repr__(self):
