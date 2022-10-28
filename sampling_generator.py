@@ -2,7 +2,7 @@ import itertools
 from collections.abc import Iterator
 from random import choices, seed
 from copy import deepcopy
-from typing import Callable, List, Dict, Optional
+from typing import Callable, List, Dict, Optional, Any
 
 from text_generator import TextGenerator, GenerationType, NoCompletionsFound
 
@@ -222,3 +222,14 @@ class SamplingGenerator(TextGenerator):
                f"generation type: {self.generation_type}, " \
                f"top_p: {self.top_p}, " \
                f"top_k: {self.top_k}"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "model_name": self.model_name,
+            "group_size": self.group_size,
+            "temperature": self.temp,
+            "generation_type": self.generation_type,
+            "top_p": self.top_p,
+            "top_k": self.top_k,
+
+        }

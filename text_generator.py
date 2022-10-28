@@ -2,7 +2,7 @@ import timeit
 from enum import Enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Optional, List, Union, Dict, Tuple
+from typing import Optional, List, Union, Dict, Tuple, Any
 
 from torch import LongTensor, ones, no_grad, cuda, tensor
 from torch.nn import Softmax
@@ -307,6 +307,10 @@ class TextGenerator(Callable, ABC):
 
     def __str__(self):
         return repr(self)
+
+    @abstractmethod
+    def to_dict(self) -> Dict[str, Any]:
+        pass
 
 
 class NoCompletionsFound(Exception):
