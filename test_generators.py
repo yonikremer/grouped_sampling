@@ -84,7 +84,7 @@ class TestTextGenerator(TestCase):
                 answer = curr_text_generator(
                     prompt_s=self.PROMPT,
                     max_new_tokens=curr_text_generator.group_size * 2,
-                )[0]["generated_text"]
+                )["generated_text"]
                 self.assertIsInstance(answer, str, f"{answer} is not a string. "
                                                    f"curr_text_generator: {str(curr_text_generator)}")
                 self.assertGreater(len(answer), len(self.PROMPT), f"{answer} is not a not longer than {self.PROMPT}. "
@@ -100,12 +100,13 @@ class TestTextGenerator(TestCase):
         """Tests the generators with long inputs. (an edge case)"""
 
         for prompt in self.edge_cases:
-            for curr_generator in islice(self.create_text_generators(), 2):
+            for curr_generator in islice(self.create_text_generators(), 3, 5):
                 with self.subTest(prompt=prompt, curr_generator=str(curr_generator)):
                     answer = curr_generator(
-                        prompt_s=self.PROMPT,
+                        prompt_s=prompt,
                         max_new_tokens=curr_generator.group_size * 2,
-                    )[0]["generated_text"]
+                        return_full_text=True,
+                    )["generated_text"]
                     self.assertIsInstance(answer, str, f"{answer} is not a string. "
                                                        f"curr_generator: {str(curr_generator)}")
                     self.assertGreater(len(answer), len(prompt), f"{answer} is not a not longer than "
@@ -125,7 +126,7 @@ class TestTextGenerator(TestCase):
             return_tensors=True,
             return_text=True,
             return_full_text=True
-        )[0]
+        )
         self.assertIsInstance(answer, dict,
                               f"{answer} is not a dict")
         self.assertIn("generated_text", answer.keys(),
@@ -145,7 +146,7 @@ class TestTextGenerator(TestCase):
         answer: Dict[str, Union[str, Tensor]] = generator(
             prompt_s=prompt, max_new_tokens=10,
             return_tensors=True, return_text=True, return_full_text=False
-        )[0]
+        )
         self.assertFalse(answer["generated_text"].startswith(prompt),
                          f"{answer['generated_text']} doesn't start with {prompt}")
         prompt_tokens: List[int] = generator.preprocess(prompt)
@@ -160,7 +161,7 @@ class TestTextGenerator(TestCase):
         answer: Dict[str, Union[str, Tensor]] = generator(
             prompt_s=prompt, max_new_tokens=10,
             return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
-        )[0]
+        )
         self.assertTrue(answer["generated_text"].startswith(prefix),
                         f"{answer['generated_text']} doesn't start with {prefix}")
         self.assertIn(prompt, answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}")
@@ -210,7 +211,7 @@ class TestTextGenerator(TestCase):
             answer: Dict[str, Union[str, Tensor]] = generator(
                 prompt_s=prompt, max_new_tokens=None,
                 return_tensors=True, return_text=True, return_full_text=True
-            )[0]
+            )
             self.assertIsInstance(answer, dict,
                                   f"{answer} is not a dict")
             self.assertIn("generated_text", answer.keys(),

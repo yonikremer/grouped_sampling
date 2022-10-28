@@ -15,6 +15,7 @@ from transformers import (AutoTokenizer,
 from transformers.tokenization_utils_base import TruncationStrategy
 
 TokenIDS = Union[List[int], Tuple[int]]
+SingleAnswer = Dict[str, Union[str, tensor]]
 
 
 class GenerationType(Enum):
@@ -226,7 +227,7 @@ class TextGenerator(Callable, ABC):
             prefix: str = "",
             num_return_sequences: int = 1,
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
-    ) -> Union[List[Dict[str, Union[str, tensor]]], List[List[Dict[str, Union[str, tensor]]]]]:
+    ) -> Union[SingleAnswer, List[SingleAnswer], List[List[SingleAnswer]]]:
         """The function that outside code should call to generate text
         Args:
             prompt_s: str or list of str - the prompt(s) to start the generation from
@@ -252,7 +253,6 @@ class TextGenerator(Callable, ABC):
             truncation: TruncationStrategy - whether to truncate the prompt
         Returns:
             Each result comes as a dictionary with the following keys:
-
             - "generated_text" (`str`, present when `return_text=True`) -- The generated text.
             - "generated_token_ids" (`torch.tensor`, present when `return_tensors=True`) -- The token
               ids of the generated text.
@@ -280,17 +280,26 @@ class TextGenerator(Callable, ABC):
             num_return_sequences
         )
 
-        assert len(tokenized_answers) == num_return_sequences
-
-        return [self.postprocess(
-            token_ids=tokenized_answer,
-            num_new_tokens=max_new_tokens,
-            prompt_len=prompt_len,
-            return_text=return_text,
-            return_tensors=return_tensors,
-            return_full_text=return_full_text,
-            clean_up_tokenization_spaces=clean_up_tokenization_spaces
-        ) for tokenized_answer in tokenized_answers]
+        if num_return_sequences > 1:
+            return [self.postprocess(
+                token_ids=tokenized_answer,
+                num_new_tokens=max_new_tokens,
+                prompt_len=prompt_len,
+                return_text=return_text,
+                return_tensors=return_tensors,
+                return_full_text=return_full_text,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces
+            ) for tokenized_answer in tokenized_answers]
+        else:
+            return self.postprocess(
+                token_ids=tokenized_answers[0],
+                num_new_tokens=max_new_tokens,
+                prompt_len=prompt_len,
+                return_text=return_text,
+                return_tensors=return_tensors,
+                return_full_text=return_full_text,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces
+            )
 
     @abstractmethod
     def __repr__(self):
