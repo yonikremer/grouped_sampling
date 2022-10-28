@@ -1,3 +1,4 @@
+import itertools
 from collections.abc import Iterator
 from random import choices, seed
 from copy import deepcopy
@@ -188,14 +189,19 @@ class SamplingGenerator(TextGenerator):
 
     def _forward(
             self,
-            curr_token_list: List[int],
-            num_new_tokens: int,
-            num_return_sequences: int,
+            tokenized_prompt: List[int],
+            num_new_tokens: Optional[int] = None,
+            num_return_sequences: int = 1,
     ) -> List[List[int]]:
         answers: List[List[int]] = []
+        curr_token_list = tokenized_prompt
         for _ in ChangingSeed(default_seed=self.default_seed, max_num_calls=num_return_sequences):
-            num_groups = num_new_tokens // self.group_size
-            for _ in range(num_groups):
+            if num_new_tokens is None:
+                the_range = itertools.count()
+            else:
+                num_groups = num_new_tokens // self.group_size
+                the_range = range(num_groups)
+            for _ in the_range:
                 prob_mat = self.get_prob_mat(curr_token_list)
                 new_tokens = self.generate_group(
                     prob_mat, curr_token_list)

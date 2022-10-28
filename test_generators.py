@@ -191,6 +191,42 @@ class TestTextGenerator(TestCase):
                     self.assertIn(prompt, curr_answer["generated_text"],
                                   f"{curr_answer['generated_text']} doesn't contain {prompt}")
 
+    def test_max_new_tokens_is_none(self):
+        """test the __call__ function when max_new_tokens is None
+        and end_of_sentence_stop is True"""
+        tree_gen = TreeGenerator(model_name=self.MODEL_NAMES[0],
+                                 group_size=2,
+                                 top_k=1,
+                                 top_p=None,
+                                 end_of_sentence_stop=True)
+        top_p_sampling_gen = SamplingGenerator(model_name=self.MODEL_NAMES[0],
+                                               group_size=self.GROUP_SIZES[0],
+                                               top_k=None,
+                                               top_p=self.TOP_PS[0],
+                                               temp=self.TEMPERATURES[0],
+                                               end_of_sentence_stop=True)
+        for generator in (top_p_sampling_gen, tree_gen):
+            prompt: str = "This is a very short prompt"
+            answer: Dict[str, Union[str, Tensor]] = generator(
+                prompt_s=prompt, max_new_tokens=None,
+                return_tensors=True, return_text=True, return_full_text=True
+            )[0]
+            self.assertIsInstance(answer, dict,
+                                  f"{answer} is not a dict")
+            self.assertIn("generated_text", answer.keys(),
+                          f"{answer} doesn't contain 'generated_text'")
+            self.assertIn("generated_token_ids", answer.keys(),
+                          f"{answer} doesn't contain 'generated_token_ids'")
+            self.assertIsInstance(answer["generated_text"], str,
+                                  f"{answer['generated_text']} is not a string")
+            self.assertIsInstance(answer["generated_token_ids"], Tensor,
+                                  f"{answer['generated_token_ids']} is not a list")
+            self.assertTrue(answer["generated_text"].startswith(prompt),
+                            f"{answer['generated_text']} doesn't start with {prompt}")
+            prompt_tokens: List[int] = generator.preprocess(prompt)
+            self.assertEqual(answer["generated_token_ids"].tolist()[:len(prompt_tokens)], prompt_tokens,
+                             f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
+
 
 if __name__ == '__main__':
     main()

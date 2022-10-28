@@ -165,8 +165,8 @@ class TextGenerator(Callable, ABC):
     def _forward(
             self,
             tokenized_prompt: List[int],
-            num_new_tokens: int,
-            num_return_sequences: int,
+            num_new_tokens: Optional[int] = None,
+            num_return_sequences: int = 1,
     ) -> List[TokenIDS]:
         """A helper method for __call__ that generates the new tokens
         Has a unique implementation for each subclass
@@ -180,7 +180,7 @@ class TextGenerator(Callable, ABC):
     def postprocess(
             self,
             token_ids: TokenIDS,
-            num_new_tokens: int,
+            num_new_tokens: Optional[int],
             prompt_len: int,
             return_text: bool,
             return_tensors: bool,
@@ -194,11 +194,14 @@ class TextGenerator(Callable, ABC):
         prompt_len - the length of the tokenized prompt
         the rest of the arguments are the arguments from the __call__ method
         """
-        final_num_tokens = prompt_len + num_new_tokens
-        if len(token_ids) > final_num_tokens:
-            shorten_token_list = token_ids[:final_num_tokens]
-        else:
+        if num_new_tokens is None:
             shorten_token_list = token_ids
+        else:
+            final_num_tokens = prompt_len + num_new_tokens
+            if len(token_ids) > final_num_tokens:
+                shorten_token_list = token_ids[:final_num_tokens]
+            else:
+                shorten_token_list = token_ids
         if not return_full_text:
             shorten_token_list = shorten_token_list[prompt_len:]
         final_ans = {}
@@ -215,7 +218,7 @@ class TextGenerator(Callable, ABC):
     def __call__(
             self,
             prompt_s: Union[str, List[str]],
-            max_new_tokens: int,
+            max_new_tokens: Optional[int] = None,
             return_tensors: bool = False,
             return_text: bool = True,
             return_full_text: bool = True,
@@ -231,7 +234,8 @@ class TextGenerator(Callable, ABC):
                 if many prompts are given as a list,
                 the function process each one independently and returns them as a list.
                 (the same as calling [__call__(prompt, *args, **kwargs) for prompt in prompts])])
-            max_new_tokens: int > 0 - the number of tokens to generate
+            max_new_tokens: Optional[int] > 0 - the number of tokens to generate
+                if None, the function will generate tokens until one of them is the end of sentence token
             return_tensors: bool - whether to return the generated token ids
             return_text: bool - whether to return the generated string
             return_full_text: bool - whether to return the full text
@@ -253,6 +257,8 @@ class TextGenerator(Callable, ABC):
             - "generated_token_ids" (`torch.tensor`, present when `return_tensors=True`) -- The token
               ids of the generated text.
             """
+        if max_new_tokens is None and not self.end_of_sentence_stop:
+            raise ValueError("max_new_tokens must be given if end_of_sentence_stop is False")
         if isinstance(prompt_s, list):
             return [self.__call__(
                 prompt_s=prompt,

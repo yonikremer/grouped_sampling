@@ -205,12 +205,18 @@ class TreeGenerator(TextGenerator):
 
         return new_sequences
 
-    def rec_gen(self, org_prompt: tokenIDS, num_tokens,
+    def rec_gen(self, org_prompt: tokenIDS, num_tokens: Optional[int],
                 org_prompt_prob: float = 1.0) \
             -> Dict[Tuple[int], float]:
         """Recursively generates the next group of tokens
          in a TREE like behavior"""
-        num_groups = ceil(num_tokens / self.group_size)
+        if self.end_of_sentence_id in org_prompt:
+            return {tuple(org_prompt): org_prompt_prob}
+        num_groups: Optional[int]
+        if num_tokens is None:
+            num_groups = None
+        else:
+            num_groups = ceil(num_tokens / self.group_size)
         is_list = isinstance(org_prompt, list)
         is_tuple = isinstance(org_prompt, tuple)
         if is_list or is_tuple:
@@ -241,13 +247,19 @@ class TreeGenerator(TextGenerator):
 
         if num_groups == 1:
             return completion_probs
+        if all([self.end_of_sentence_id in tokenized_ans
+                for tokenized_ans in completion_probs.keys()]):
+            return completion_probs
 
         items = completion_probs.items()
         new_completions: Dict[Tuple[int], float] = dict()
         for curr_new_prompt, curr_new_prompt_prob in items:
             curr_new_prompt: List[int]
             curr_completions: Dict[Tuple[int], float]
-            new_number_tokens = num_tokens - self.group_size
+            if num_tokens is None:
+                new_number_tokens = None
+            else:
+                new_number_tokens = num_tokens - self.group_size
             curr_completions = self.rec_gen(
                 curr_new_prompt, new_number_tokens,
                 curr_new_prompt_prob)
@@ -260,9 +272,9 @@ class TreeGenerator(TextGenerator):
     def _forward(
             self,
             tokenized_prompt: List[int],
-            num_new_tokens: int,
-            num_return_sequences: int,
-    ) -> List[Tuple[int]]:
+            num_new_tokens: Optional[int] = None,
+            num_return_sequences: int = 1,
+    ) -> List[List[int]]:
         seq_prob_dict: Dict[Tuple[int], float]
         seq_prob_dict = self.rec_gen(
             tokenized_prompt, num_new_tokens)
