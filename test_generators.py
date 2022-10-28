@@ -81,7 +81,10 @@ class TestTextGenerator(TestCase):
     def test_calling_generators(self):
         for curr_text_generator in self.create_text_generators():
             with self.subTest(curr_text_generator=str(curr_text_generator)):
-                answer = curr_text_generator(self.PROMPT, curr_text_generator.group_size * 2)[0]["generated_text"]
+                answer = curr_text_generator(
+                    prompt_s=self.PROMPT,
+                    max_new_tokens=curr_text_generator.group_size * 2,
+                )[0]["generated_text"]
                 self.assertIsInstance(answer, str, f"{answer} is not a string. "
                                                    f"curr_text_generator: {str(curr_text_generator)}")
                 self.assertGreater(len(answer), len(self.PROMPT), f"{answer} is not a not longer than {self.PROMPT}. "
@@ -99,7 +102,10 @@ class TestTextGenerator(TestCase):
         for prompt in self.edge_cases:
             for curr_generator in islice(self.create_text_generators(), 2):
                 with self.subTest(prompt=prompt, curr_generator=str(curr_generator)):
-                    answer = curr_generator(prompt, curr_generator.group_size * 2)[0]["generated_text"]
+                    answer = curr_generator(
+                        prompt_s=self.PROMPT,
+                        max_new_tokens=curr_generator.group_size * 2,
+                    )[0]["generated_text"]
                     self.assertIsInstance(answer, str, f"{answer} is not a string. "
                                                        f"curr_generator: {str(curr_generator)}")
                     self.assertGreater(len(answer), len(prompt), f"{answer} is not a not longer than "
@@ -114,7 +120,11 @@ class TestTextGenerator(TestCase):
         generator: TextGenerator = next(self.create_text_generators())
         prompt: str = "This is a test prompt"
         answer: Dict[str, Union[str, Tensor]] = generator(
-            prompt, 10, return_tensors=True, return_text=True, return_full_text=True
+            prompt_s=prompt,
+            max_new_tokens=10,
+            return_tensors=True,
+            return_text=True,
+            return_full_text=True
         )[0]
         self.assertIsInstance(answer, dict,
                               f"{answer} is not a dict")
@@ -133,7 +143,8 @@ class TestTextGenerator(TestCase):
                          f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
 
         answer: Dict[str, Union[str, Tensor]] = generator(
-            prompt, 10, return_tensors=True, return_text=True, return_full_text=False
+            prompt_s=prompt, max_new_tokens=10,
+            return_tensors=True, return_text=True, return_full_text=False
         )[0]
         self.assertFalse(answer["generated_text"].startswith(prompt),
                          f"{answer['generated_text']} doesn't start with {prompt}")
@@ -147,7 +158,8 @@ class TestTextGenerator(TestCase):
         prompt: str = "test prompt"
         prefix = "This is a"
         answer: Dict[str, Union[str, Tensor]] = generator(
-            prompt, 10, return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
+            prompt_s=prompt, max_new_tokens=10,
+            return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
         )[0]
         self.assertTrue(answer["generated_text"].startswith(prefix),
                         f"{answer['generated_text']} doesn't start with {prefix}")
@@ -171,7 +183,7 @@ class TestTextGenerator(TestCase):
                 prompt: str = "I was to happy to see that "
                 num_return_sequences = 2
                 answer: List[Dict[str, Union[str, Tensor]]] = generator(
-                    prompt, 8, return_tensors=False, return_text=True,
+                    prompt_s=prompt, max_new_tokens=8, return_tensors=False, return_text=True,
                     return_full_text=True, num_return_sequences=num_return_sequences
                 )
                 self.assertEqual(len(answer), num_return_sequences, f"len(answer) is not {num_return_sequences}")

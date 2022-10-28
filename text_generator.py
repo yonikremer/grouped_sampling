@@ -254,8 +254,14 @@ class TextGenerator(Callable, ABC):
               ids of the generated text.
             """
         if isinstance(prompt_s, list):
-            return [self.__call__(prompt, max_new_tokens, return_text, return_tensors, return_full_text,
-                                  clean_up_tokenization_spaces, truncation) for prompt in prompt_s]
+            return [self.__call__(
+                prompt_s=prompt,
+                max_new_tokens=max_new_tokens,
+                return_text=return_text,
+                return_tensors=return_tensors,
+                return_full_text=return_full_text,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                truncation=truncation) for prompt in prompt_s]
 
         curr_token_list: List[int] = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation)
