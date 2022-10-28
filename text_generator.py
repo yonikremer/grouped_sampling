@@ -189,21 +189,10 @@ class TextGenerator(Callable, ABC):
     ):
 
         """A helper method for __call__ that converts the token ids to dictionary
-        Args:
-            token_ids: Union[List[int], Tuple[int]] - the token ids from the generate_groups method
-            num_new_tokens: int - the number of new tokens to generate from the __call__ method
-            prompt_len: int - the number of tokens in the prompt
-            return_text: bool - whether to return the generated string
-            return_tensors: bool - whether to return the generated token ids
-            return_full_text: bool - whether to return the full text
-                (prompt + generated text)
-                (if false, it will return only the generated text)
-            clean_up_tokenization_spaces: bool - whether to clean up tokenization spaces
-                This parameter is forwarded to the decode function of the AutoTokenizer class
-        Returns:
-            A dictionary with the generated text and/or the generated token ids
-                The generated text is returned as a string
-                The generated token ids are returned as a pytorch tensor of type long
+        all the arguments are sent directly from the __call__ method
+        token_ids - the token ids from the _forward method
+        prompt_len - the length of the tokenized prompt
+        the rest of the arguments are the arguments from the __call__ method
         """
         final_num_tokens = prompt_len + num_new_tokens
         if len(token_ids) > final_num_tokens:
