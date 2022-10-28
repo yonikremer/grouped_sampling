@@ -12,7 +12,7 @@ from transformers import (AutoTokenizer,
                           BatchEncoding,
                           PreTrainedTokenizer,
                           PreTrainedModel)
-
+from transformers.tokenization_utils_base import TruncationStrategy
 
 TokenIDS = Union[List[int], Tuple[int]]
 
@@ -131,11 +131,10 @@ class TextGenerator(Callable, ABC):
             self,
             prompt: str,
             prefix: str = "",
+            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
     ) -> List[int]:
         """A helper method for __call__ that tokenize the prompt
-        Args:
-            prompt: str the prompt as sent to the __call__ method
-            prefix: str the prefix as sent to the __call__ method
+        all the arguments are sent directly from the __call__ method
         Returns:
             the tokenized prompt as a list of ints"""
 
@@ -145,6 +144,7 @@ class TextGenerator(Callable, ABC):
             return_tensors=self.framework,
             padding=False,
             add_special_tokens=False,
+            truncation=truncation,
         )
         is_dict = isinstance(tokenizer_output, dict)
         is_batch_encoding = isinstance(tokenizer_output,
@@ -233,6 +233,7 @@ class TextGenerator(Callable, ABC):
             clean_up_tokenization_spaces: bool = False,
             prefix: str = "",
             num_return_sequences: int = 1,
+            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
     ) -> Union[List[Dict[str, Union[str, tensor]]], List[List[Dict[str, Union[str, tensor]]]]]:
         """The function that outside code should call to generate text
         Args:
@@ -255,6 +256,7 @@ class TextGenerator(Callable, ABC):
                 The number of independently generated answers to return for each prompt.
                 For SamplingGenerator: each answer will be generated with different seed.
                 For TreeGenerator: the num_return_sequences with the highest scores will be returned.
+            truncation: TruncationStrategy - whether to truncate the prompt
         Returns:
             Each result comes as a dictionary with the following keys:
 
@@ -262,20 +264,12 @@ class TextGenerator(Callable, ABC):
             - "generated_token_ids" (`torch.tensor`, present when `return_tensors=True`) -- The token
               ids of the generated text.
             """
-        # TODO: add support for num_return_sequences > 1
-
         if isinstance(prompt_s, list):
-            return [self.__call__(
-                prompt,
-                max_new_tokens,
-                return_text,
-                return_tensors,
-                return_full_text,
-                clean_up_tokenization_spaces
-            ) for prompt in prompt_s]
+            return [self.__call__(prompt, max_new_tokens, return_text, return_tensors, return_full_text,
+                                  clean_up_tokenization_spaces, truncation) for prompt in prompt_s]
 
         curr_token_list: List[int] = self.preprocess(
-            prompt=prompt_s, prefix=prefix)
+            prompt=prompt_s, prefix=prefix, truncation=truncation)
 
         prompt_len: int = len(curr_token_list)
         tokenized_answers: List[TokenIDS]
