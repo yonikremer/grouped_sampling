@@ -153,3 +153,6 @@ celery*
 
 # begins with input and end with .ipynb
 mercury_demo/input_*.ipynb
+
+# api key
+evaluation/comet_ml_api_key.txt
