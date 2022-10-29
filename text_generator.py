@@ -112,10 +112,8 @@ class TextGenerator(Callable, ABC):
         try:
             prob_tensor = Softmax(dim=1)(logits_tensor)
         except RuntimeError:
-            reserved_gpu_memory = cuda.memory_reserved(0)
-            allocated_gpu_memory = cuda.memory_allocated(0)
-            free_gpu_memory = reserved_gpu_memory - allocated_gpu_memory
-            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = f"<max_split_size_mb:{free_gpu_memory}>"
+            # move logits_tensor to cpu
+            logits_tensor = logits_tensor.cpu()
             prob_tensor = Softmax(dim=1)(logits_tensor)
         if self.group_size <= prob_tensor.shape[0]:
             prob_tensor = prob_tensor[-self.group_size:, :]
