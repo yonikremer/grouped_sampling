@@ -1,3 +1,4 @@
+import sys
 from math import ceil
 from typing import List, Dict, Union, Tuple, Sequence, Any, Optional
 
@@ -275,6 +276,11 @@ class TreeGenerator(TextGenerator):
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[List[int]]:
+
+        if num_new_tokens is not None:
+            num_groups = ceil(num_new_tokens / self.group_size)
+            if num_groups >= sys.getrecursionlimit():
+                sys.setrecursionlimit(num_groups + 100)
         seq_prob_dict: Dict[Tuple[int], float]
         seq_prob_dict = self.rec_gen(
             tokenized_prompt, num_new_tokens)
