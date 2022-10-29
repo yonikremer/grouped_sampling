@@ -94,6 +94,7 @@ class TextGenerator(Callable, ABC):
         padded_token_list = token_list + self.padding_tokens
         if len(padded_token_list) > self.maximum_length:
             padded_token_list = padded_token_list[-self.maximum_length:]
+            assert len(padded_token_list) == self.maximum_length
             attention_len = self.maximum_length
         longer_token_tensor = LongTensor([padded_token_list])
         attention_mask = ones([1, attention_len])
@@ -103,13 +104,14 @@ class TextGenerator(Callable, ABC):
         inputs = {"input_ids": longer_token_tensor,
                   "attention_mask": attention_mask,
                   "labels": longer_token_tensor}
+        for key, value in inputs.items():
+            assert value.shape[-1] <= self.maximum_length
 
         try:
             outputs = self.model(**inputs)
         except RuntimeError as e:
             print("The inputs that caused the error:")
-            for key, value in inputs.items():
-                print(key, value.to_list())
+            print(len(longer_token_tensor), len(attention_mask))
             raise e
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
