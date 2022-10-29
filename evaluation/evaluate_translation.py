@@ -39,7 +39,16 @@ class ExperimentHandler:
     experiment: Experiment
 
     def __init__(self, generator: TextGenerator):
-        self.experiment = Experiment(api_key=COMET_ML_API_KEY, project_name=PROJECT_NAME)
+        self.experiment = Experiment(
+            api_key=COMET_ML_API_KEY,
+            project_name=PROJECT_NAME,
+            auto_param_logging=False,
+            auto_metric_logging=False,
+            log_code=False,
+            log_env_details=False,
+            log_git_metadata=False,
+            log_git_patch=False,
+        )
         self.experiment.log_parameters(generator.to_dict())
         self.start_time = datetime.now()
 
