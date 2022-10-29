@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
 
-from torch import LongTensor, ones, cuda, tensor
+from torch import LongTensor, ones, cuda, tensor, no_grad
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
@@ -123,7 +123,8 @@ class TextGenerator(Callable, ABC):
         for key, value in inputs.items():
             assert value.shape[-1] <= self.maximum_length
 
-        outputs = self.model(**inputs)
+        with no_grad():
+            outputs = self.model(**inputs)
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
         if logits_tensor.shape[1] >= self.vocab_size:
