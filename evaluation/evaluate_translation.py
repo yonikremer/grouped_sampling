@@ -65,8 +65,8 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
         model_name="facebook/opt-125m",
         group_size=8,
         temp=1.0,
-        top_k=3,
-        top_p=None,
+        top_k=None,
+        top_p=0.7,
         end_of_sentence_stop=True,
     )
 
