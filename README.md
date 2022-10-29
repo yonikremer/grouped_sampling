@@ -1,33 +1,55 @@
-# final_project
+# Grouped Text Generation
 
-My high school research project is about changes to the Transformer architecture.
+My high school research project.
+## The research question:
+> Can we use generate n tokens using less than n calls to a causal language model with decoder only transformer architecture?
+> If yes, How? How the text generated in this way different from the text generated using n calls?
+> If no, Why?
+> I show that such an algorithm is possible,
+> and the text generated using this algorithm is different from the text generated using n calls.
+> I will also so significant improvement in the runtime of my algorithm.
 
-To create a new model from the same architecture:
+# Project OverView:
 
-1. Download the [dataset](https://www.kaggle.com/datasets/urbanbricks/wikipedia-promotional-articles) to your google drive
-2. Download model/final_project.ipynb to drive
-3. Run the imports & installs
-4. Restart your notebook
-5. Make sure you use GPU/TPU acceleration
-6. Run all cells in an order
+## The project paper:
+Is written in Hebrew in [documents\העבודה עצמה.docx](documents\העבודה עצמה.docx)
 
-To use my models (Unfortunately, I don't have my web app hosted currently):
+## The code:
 
-1. Make sure you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) installed and updated
-2. [Add conda to PATH](https://stackoverflow.com/questions/44597662/conda-command-is-not-recognized-on-windows-10)
-3. Download /webapp to my_path
-4. Open **windows cmd** 
-5. Type:
-  ```
-  cd my_path
-  conda create -n final_project_venv
-  conda activate final_project_venv
-  pip install -r requirements.txt
-  set FLASK_APP=flaskr
-  pytest
-  flask init-db
-  flask run
-  ```
-6. Enter http://127.0.0.1:5000/register
+### Before running any of the code:
+Please make sure U have python 3 (3.9 is recommended) installed in your system and Internet connection.
+install the requirements using `python -m pip install -r requirements.txt`
 
-If you have any issues with the project, contact me at yoni.kremer@gmail.com
+### The Algorithm Itself:
+Is implemented in the 'text_generator.py', 'sampling_generator.py' and 'tree_generator.py' files.
+To use it:
+import sampling_generator\tree_generator
+create SamplingGenerator\TreeGenerator object and call the '__call__' method.
+
+### The Web App:
+Is implemented in the web_app folder.
+To use it:
+install the requirements using `python -m pip install -r requirements.txt` and `python -m pip install -r web_app/web_app_requirements.txt`
+run the app locally using `python open_web_app.py`
+
+### The demos
+Are a simple user interfaces for the algorithm.
+to run the demo on colab:
+enter [This Link](https://colab.research.google.com/github/yonikremer/final_project/blob/master/colab_demo.ipynb) and run all the cells.
+to run it locally:
+install the requirements using `python -m pip install -r \mercury_demo\mercury_demo_requirements.txt`
+run the demo using `python open_mercury_demo.py`
+
+### Evaluation:
+As of today, the evaluation is only checking the [bertscore](https://arxiv.org/abs/1904.09675) on the [news commentary dataset](https://opus.nlpl.eu/News-Commentary.php).
+More evaluation options will be added in the future.
+Is implemented in the evaluation folder.
+To evaluate the algorithm:
+make sure you have an account in [comet machine learning](https://www.comet.com/site/)
+create a project called 'grouped-sampling-evaluation'
+copy your api key to the 'evaluation\comet_api_key.txt' file
+install the requirements using `python -m pip install -r evaluation/evaluation_requirements.txt`
+run the evaluation using `python evaluation\evaluate_translation.py`
+
+### Training Causal Language Models:
+The code for training the NORMAL causal language models is in the 'model' folder.
