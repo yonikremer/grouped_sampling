@@ -258,10 +258,11 @@ class TextGenerator(Callable, ABC):
             except TypeError as e:
                 print(str(e))
                 if "sequence item " in str(e):
-                    # str(e) == "sequence item problematic_index: expected str instance, int found"
-                    problematic_index: int = int(str(e).split(" ")[2])
-                    print(f"problematic index: {problematic_index}")
                     print(f"token ids: {shorten_token_list}")
+                    # str(e) == "sequence item problematic_index: expected str instance, int found"
+                    problematic_index_string = str(e).split(" ")[2][:-2]
+                    problematic_index: int = int(problematic_index_string)
+                    print(f"problematic index: {problematic_index}")
         return final_ans
 
     def __call__(
