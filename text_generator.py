@@ -13,6 +13,7 @@ from transformers import (AutoTokenizer,
                           PreTrainedTokenizer,
                           PreTrainedModel)
 from transformers.tokenization_utils_base import TruncationStrategy
+from tqdm import tqdm
 
 TokenIDS = Union[List[int], Tuple[int]]
 SingleAnswer = Dict[str, Union[str, tensor]]
@@ -122,7 +123,7 @@ class TextGenerator(Callable, ABC):
             print(f"padded token list: {padded_token_list}")
             print(f"length of token list: {len(token_list)}")
             print(f"length of padded token list: {len(padded_token_list)}")
-            print("maximum length:" ,self.maximum_length)
+            print("maximum length:", self.maximum_length)
             print("attention length:", attention_len)
             print("group size:", self.group_size)
             print("padding tokens:", self.padding_tokens)
@@ -299,7 +300,7 @@ class TextGenerator(Callable, ABC):
                 return_tensors=return_tensors,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                truncation=truncation) for prompt in prompt_s]
+                truncation=truncation) for prompt in tqdm(prompt_s)]
 
         curr_token_list: List[int] = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation)
