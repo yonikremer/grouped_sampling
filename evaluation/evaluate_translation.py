@@ -25,14 +25,17 @@ else:
 PROJECT_NAME = "grouped-sampling-evaluation"
 
 
-class BertScoresHandler:
+class ExperimentHandler:
     per_example_f1: List[float] = []
     per_example_precision: List[float] = []
     per_example_recall: List[float] = []
     num_examples: int = 0
     start_time: datetime
+    experiment: Experiment
 
-    def __init__(self):
+    def __init__(self, generator: TextGenerator):
+        self.experiment = Experiment(api_key=COMET_ML_API_KEY, project_name=PROJECT_NAME)
+        self.experiment.log_parameters(generator.to_dict())
         self.start_time = datetime.now()
 
     def log_sub_experiment(self, bert_scores) -> None:
@@ -41,17 +44,17 @@ class BertScoresHandler:
         self.per_example_recall.extend(bert_scores["recall"].tolist())
         self.num_examples += len(bert_scores["f1"])
 
-    def end_experiment(self, experiment: Experiment) -> None:
+    def end_experiment(self) -> None:
         average_bert_f1 = sum(self.per_example_f1) / self.num_examples
         average_bert_precision = sum(self.per_example_precision) / self.num_examples
         average_bert_recall = sum(self.per_example_recall) / self.num_examples
-        experiment.log_metric("average_bert_f1", average_bert_f1)
-        experiment.log_metric("average_bert_precision", average_bert_precision)
-        experiment.log_metric("average_bert_recall", average_bert_recall)
+        self.experiment.log_metric("average_bert_f1", average_bert_f1)
+        self.experiment.log_metric("average_bert_precision", average_bert_precision)
+        self.experiment.log_metric("average_bert_recall", average_bert_recall)
         total_time_in_seconds = (datetime.now() - self.start_time).total_seconds()
-        experiment.log_metric("time in seconds", total_time_in_seconds)
-        experiment.send_notification(f"Experiment finished successfully in {total_time_in_seconds} seconds")
-        experiment.end()
+        self.experiment.log_metric("time in seconds", total_time_in_seconds)
+        self.experiment.send_notification(f"Experiment finished successfully in {total_time_in_seconds} seconds")
+        self.experiment.end()
 
 
 def generate_text_generators() -> Generator[TextGenerator, None, None]:
@@ -82,16 +85,12 @@ def process_translation_data(data_set_name: str, sub_set_name: str) -> Dataset:
 
 def run_experiment(generator: TextGenerator) -> None:
     generator.task = "translation"
-    experiment = Experiment(api_key=COMET_ML_API_KEY, project_name=PROJECT_NAME)
-    experiment.log_parameters(generator.to_dict())
     my_evaluator = TranslationEvaluator(default_metric_name="bertscore")
     my_evaluator.PREDICTION_PREFIX = "generated"
-    num_samples = 0
-    handler = BertScoresHandler()
+    handler = ExperimentHandler(generator)
     for sub_set_name in SUB_SETS:
         language1, language2 = sub_set_name.split("-")
         processed_sub_set: Dataset = process_translation_data(DATASET_NAME, sub_set_name)
-        num_samples += len(processed_sub_set)
         my_evaluator.METRIC_KWARGS = {"lang": language2}
         scores1 = my_evaluator.compute(model_or_pipeline=generator,
                                        data=processed_sub_set, input_column=language1, label_column=language2)
@@ -100,7 +99,7 @@ def run_experiment(generator: TextGenerator) -> None:
         scores2 = my_evaluator.compute(model_or_pipeline=generator,
                                        data=processed_sub_set, input_column=language2, label_column=language1)
         handler.log_sub_experiment(scores2)
-    handler.end_experiment(experiment)
+    handler.end_experiment()
 
 
 def main():
