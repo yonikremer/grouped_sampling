@@ -15,12 +15,15 @@ class TreeGenerator(TextGenerator):
     top_k: int
 
     def __init__(self, model_name: str, group_size: int,
-                 top_k: Optional[int], top_p: Optional[float], temp: float = 1.0, end_of_sentence_stop: bool = False):
+                 top_k: Optional[int], top_p: Optional[float],
+                 temp: float = 1.0, end_of_sentence_stop: bool = False, answer_length_multiplier: int = 16):
         super().__init__(
             model_name=model_name,
             group_size=group_size,
             temp=temp,
-            end_of_sentence_stop=end_of_sentence_stop)
+            end_of_sentence_stop=end_of_sentence_stop,
+            answer_length_multiplier=answer_length_multiplier
+        )
 
         if top_p is None and top_k is None:
             self.top_p = 0.0

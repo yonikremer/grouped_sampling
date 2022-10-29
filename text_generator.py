@@ -50,16 +50,22 @@ class TextGenerator(Callable, ABC):
     end_of_sentence_stop: bool
     maximum_length: int
     framework: str = "pt"
+    answer_length_multiplier: int = 16
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0,
-                 end_of_sentence_stop: bool = False):
+                 end_of_sentence_stop: bool = False,
+                 answer_length_multiplier: int = 16,):
         """Model name: the name of the model
         used for loading from hugging face hub
         group size: int
         the number of tokens to be predicted at each model call
         temp: float
-        temperature parameter for the softmax function"""
+        temperature parameter for the softmax function
+        answer_length_multiplier: int
+            if the answer length is not given,
+            the maximum answer length is set to:
+            the length of the prompt times the answer_length_multiplier"""
         self.model_name = model_name
         config = AutoConfig.from_pretrained(model_name)
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -84,6 +90,7 @@ class TextGenerator(Callable, ABC):
                 raise ValueError(
                     "The maximum length of the model is too big for the current implementation"
                 )
+        self.answer_length_multiplier = answer_length_multiplier
 
     def set_group_size(self, new_group_size):
         self.group_size = new_group_size
@@ -130,7 +137,6 @@ class TextGenerator(Callable, ABC):
             print("end of sentence id:", self.end_of_sentence_id)
             print("end of sentence stop:", self.end_of_sentence_stop)
             print("tokenizer", self.tokenizer)
-            print("model:", self.model)
             raise e
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
@@ -302,10 +308,13 @@ class TextGenerator(Callable, ABC):
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 truncation=truncation) for prompt in tqdm(prompt_s)]
 
+
         curr_token_list: List[int] = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation)
 
         prompt_len: int = len(curr_token_list)
+        if max_new_tokens is None:
+            max_new_tokens = prompt_len * self.answer_length_multiplier
         tokenized_answers: List[TokenIDS]
         tokenized_answers = self._forward(
             curr_token_list,

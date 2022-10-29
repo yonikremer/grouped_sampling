@@ -68,6 +68,7 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
         top_k=None,
         top_p=0.7,
         end_of_sentence_stop=True,
+        answer_length_multiplier=4,
     )
 
 

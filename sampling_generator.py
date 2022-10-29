@@ -58,12 +58,15 @@ class SamplingGenerator(TextGenerator):
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0, top_k: Optional[int] = None,
-                 top_p: Optional[float] = None, end_of_sentence_stop: bool = False):
+                 top_p: Optional[float] = None, end_of_sentence_stop: bool = False,
+                 answer_length_multiplier: int = 16,):
         super().__init__(
             model_name=model_name,
             group_size=group_size,
             temp=temp,
-            end_of_sentence_stop=end_of_sentence_stop)
+            end_of_sentence_stop=end_of_sentence_stop,
+            answer_length_multiplier=answer_length_multiplier,
+        )
         if top_k is None and top_p is None:
             self.top_p = 1.0
             self.top_k = self.vocab_size
