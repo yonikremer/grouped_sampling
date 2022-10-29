@@ -113,6 +113,16 @@ class TextGenerator(Callable, ABC):
             print("The inputs that caused the error:")
             print(f"token list: {token_list}")
             print(f"padded token list: {padded_token_list}")
+            print(f"length of token list: {len(token_list)}")
+            print(f"length of padded token list: {len(padded_token_list)}")
+            print("maximum length:" ,self.maximum_length)
+            print("attention length:", attention_len)
+            print("group size:", self.group_size)
+            print("padding tokens:", self.padding_tokens)
+            print("end of sentence id:", self.end_of_sentence_id)
+            print("end of sentence stop:", self.end_of_sentence_stop)
+            print("tokenizer", self.tokenizer)
+            print("model:", self.model)
             raise e
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
