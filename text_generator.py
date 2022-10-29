@@ -126,9 +126,10 @@ class TextGenerator(Callable, ABC):
         outputs = self.model(**inputs)
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
-        # logits_tensor.shape = (attention_len, vocab_size)
-        if logits_tensor.shape[-1] >= self.vocab_size:
+        if logits_tensor.shape[1] >= self.vocab_size:
             logits_tensor = logits_tensor[:, :self.vocab_size]
+        if logits_tensor.shape[0] >= self.vocab_size:
+            logits_tensor = logits_tensor[:self.vocab_size, :]
 
         if cuda.is_available():
             logits_tensor_copy = logits_tensor
@@ -216,13 +217,13 @@ class TextGenerator(Callable, ABC):
             return_full_text: bool,
             clean_up_tokenization_spaces: bool
     ):
-
         """A helper method for __call__ that converts the token ids to dictionary
         all the arguments are sent directly from the __call__ method
         token_ids - the token ids from the _forward method
         prompt_len - the length of the tokenized prompt
         the rest of the arguments are the arguments from the __call__ method
         """
+        assert all(token_id <= self.vocab_size for token_id in token_ids)
         assert all(isinstance(token_id, int) for token_id in token_ids)
         if num_new_tokens is None:
             shorten_token_list = token_ids
@@ -292,6 +293,7 @@ class TextGenerator(Callable, ABC):
             - "generated_token_ids" (`torch.tensor`, present when `return_tensors=True`) -- The token
               ids of the generated text.
             """
+
         if max_new_tokens is None and not self.end_of_sentence_stop:
             raise ValueError("max_new_tokens must be given if end_of_sentence_stop is False")
         if isinstance(prompt_s, list):

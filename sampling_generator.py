@@ -167,6 +167,9 @@ class SamplingGenerator(TextGenerator):
         for curr_token_probs in prob_mat:
             for used_token in used_tokens:
                 curr_token_probs[used_token] = 0.0
+            # for tokens with index >= self.vocab_size
+            if len(curr_token_probs) > self.vocab_size:
+                curr_token_probs = curr_token_probs[:self.vocab_size]
 
             indexed_prob: Dict[int, float]
             indexed_prob = {
@@ -184,6 +187,7 @@ class SamplingGenerator(TextGenerator):
             weights_list = list(weighted_probs.values())
             sampled_token: int = choices(
                 keys_list, weights_list, k=1)[0]
+            assert sampled_token < self.vocab_size
             new_group.append(sampled_token)
             if sampled_token == self.end_of_sentence_id:
                 return new_group
