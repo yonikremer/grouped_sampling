@@ -16,6 +16,7 @@ from transformers.tokenization_utils_base import TruncationStrategy
 
 TokenIDS = Union[List[int], Tuple[int]]
 SingleAnswer = Dict[str, Union[str, tensor]]
+MAX_MODEL_INPUT_SIZE = 8192
 
 
 class GenerationType(Enum):
@@ -76,6 +77,12 @@ class TextGenerator(Callable, ABC):
         self.padding_tokens = [pad_id] * (self.group_size - 1)
         self.end_of_sentence_stop = end_of_sentence_stop
         self.maximum_length = self.tokenizer.model_max_length
+        if self.maximum_length > MAX_MODEL_INPUT_SIZE or self.maximum_length is None:
+            self.maximum_length = config.max_position_embeddings
+            if self.maximum_length > MAX_MODEL_INPUT_SIZE or self.maximum_length is None:
+                raise ValueError(
+                    "The maximum length of the model is too big for the current implementation"
+                )
 
     def set_group_size(self, new_group_size):
         self.group_size = new_group_size
