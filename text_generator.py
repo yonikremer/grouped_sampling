@@ -58,13 +58,16 @@ class TextGenerator(Callable, ABC):
         temp: float
         temperature parameter for the softmax function"""
         self.model_name = model_name
+        config = AutoConfig.from_pretrained(model_name)
+        max_input_length = config.max_position_embeddings
+        if max_input_length is None:
+            max_input_length = 512
         self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name)
+            model_name, model_max_length=max_input_length)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name)
         if cuda.is_available():
             self.model = self.model.cuda()
-        config = AutoConfig.from_pretrained(model_name)
         self.vocab_size = config.vocab_size
         self.temp = temp
         self.group_size = group_size
