@@ -111,7 +111,8 @@ class TextGenerator(Callable, ABC):
             outputs = self.model(**inputs)
         except RuntimeError as e:
             print("The inputs that caused the error:")
-            print(len(longer_token_tensor), len(attention_mask))
+            print(f"token list: {token_list}")
+            print(f"padded token list: {padded_token_list}")
             raise e
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
