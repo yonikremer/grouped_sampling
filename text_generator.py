@@ -51,6 +51,7 @@ class TextGenerator(Callable, ABC):
     maximum_length: int
     framework: str = "pt"
     answer_length_multiplier: int = 16
+    vocab_size: int
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0,
@@ -122,24 +123,12 @@ class TextGenerator(Callable, ABC):
         for key, value in inputs.items():
             assert value.shape[-1] <= self.maximum_length
 
-        try:
-            outputs = self.model(**inputs)
-        except RuntimeError as e:
-            print("The inputs that caused the error:")
-            print(f"token list: {token_list}")
-            print(f"padded token list: {padded_token_list}")
-            print(f"length of token list: {len(token_list)}")
-            print(f"length of padded token list: {len(padded_token_list)}")
-            print("maximum length:", self.maximum_length)
-            print("attention length:", attention_len)
-            print("group size:", self.group_size)
-            print("padding tokens:", self.padding_tokens)
-            print("end of sentence id:", self.end_of_sentence_id)
-            print("end of sentence stop:", self.end_of_sentence_stop)
-            print("tokenizer", self.tokenizer)
-            raise e
+        outputs = self.model(**inputs)
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
+        # logits_tensor.shape = (attention_len, vocab_size)
+        if logits_tensor.shape[-1] >= self.vocab_size:
+            logits_tensor = logits_tensor[:, :self.vocab_size]
 
         if cuda.is_available():
             logits_tensor_copy = logits_tensor
@@ -314,7 +303,6 @@ class TextGenerator(Callable, ABC):
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 truncation=truncation) for prompt in tqdm(prompt_s)]
-
 
         curr_token_list: List[int] = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation)
