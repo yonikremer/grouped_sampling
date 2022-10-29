@@ -26,6 +26,8 @@ else:
     with open(api_key_file, "w") as f:
         f.write(COMET_ML_API_KEY)
 PROJECT_NAME = "grouped-sampling-evaluation"
+# TODO: remove this statement when stop debugging
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 
 class ExperimentHandler:
