@@ -77,7 +77,7 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
         group_size=8,
         temp=1.0,
         top_k=None,
-        top_p=0.7,
+        top_p=0.5,
         end_of_sentence_stop=True,
         answer_length_multiplier=4,
     )
