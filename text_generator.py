@@ -1,3 +1,4 @@
+import os
 import timeit
 from enum import Enum
 from abc import ABC, abstractmethod
@@ -108,7 +109,14 @@ class TextGenerator(Callable, ABC):
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
 
-        prob_tensor = Softmax(dim=1)(logits_tensor)
+        try:
+            prob_tensor = Softmax(dim=1)(logits_tensor)
+        except RuntimeError:
+            reserved_gpu_memory = cuda.memory_reserved(0)
+            allocated_gpu_memory = cuda.memory_allocated(0)
+            free_gpu_memory = reserved_gpu_memory - allocated_gpu_memory
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = f"<max_split_size_mb:{free_gpu_memory}>"
+            prob_tensor = Softmax(dim=1)(logits_tensor)
         if self.group_size <= prob_tensor.shape[0]:
             prob_tensor = prob_tensor[-self.group_size:, :]
             prob_mat = [prob_tensor[i, :].tolist()
