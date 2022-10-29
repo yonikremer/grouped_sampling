@@ -234,6 +234,7 @@ class TextGenerator(Callable, ABC):
         prompt_len - the length of the tokenized prompt
         the rest of the arguments are the arguments from the __call__ method
         """
+        assert all(isinstance(token_id, int) for token_id in token_ids)
         if num_new_tokens is None:
             shorten_token_list = token_ids
         else:
@@ -248,11 +249,19 @@ class TextGenerator(Callable, ABC):
         if return_tensors:
             final_ans["generated_token_ids"] = tensor(shorten_token_list)
         if return_text:
-            final_ans["generated_text"] = self.tokenizer.decode(
-                shorten_token_list,
-                skip_special_tokens=True,
-                clean_up_tokenization_spaces=clean_up_tokenization_spaces
-            )
+            try:
+                final_ans["generated_text"] = self.tokenizer.decode(
+                    shorten_token_list,
+                    skip_special_tokens=True,
+                    clean_up_tokenization_spaces=clean_up_tokenization_spaces
+                )
+            except TypeError as e:
+                print(str(e))
+                if "sequence item " in str(e):
+                    # str(e) == "sequence item problematic_index: expected str instance, int found"
+                    problematic_index: int = int(str(e).split(" ")[2])
+                    print(f"problematic index: {problematic_index}")
+                    print(f"token ids: {shorten_token_list}")
         return final_ans
 
     def __call__(
