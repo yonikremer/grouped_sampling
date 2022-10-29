@@ -1,11 +1,10 @@
-import os
 import timeit
 from enum import Enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
 
-from torch import LongTensor, ones, no_grad, cuda, tensor
+from torch import LongTensor, ones, cuda, tensor
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
@@ -104,16 +103,15 @@ class TextGenerator(Callable, ABC):
                   "attention_mask": attention_mask,
                   "labels": longer_token_tensor}
 
-        with no_grad():
-            outputs = self.model(**inputs)
+        outputs = self.model(**inputs)
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
 
-        try:
-            prob_tensor = Softmax(dim=1)(logits_tensor)
-        except RuntimeError:
-            # move logits_tensor to cpu
-            logits_tensor = logits_tensor.cpu()
+        if cuda.is_available():
+            logits_tensor_copy = logits_tensor
+            logits_tensor_copy.cpu()
+            prob_tensor = Softmax(dim=1)(logits_tensor_copy)
+        else:
             prob_tensor = Softmax(dim=1)(logits_tensor)
         if self.group_size <= prob_tensor.shape[0]:
             prob_tensor = prob_tensor[-self.group_size:, :]
