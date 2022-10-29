@@ -107,7 +107,8 @@ class TextGenerator(Callable, ABC):
         try:
             outputs = self.model(**inputs)
         except RuntimeError as e:
-            print("The inputs that caused the error:", inputs)
+            print("The inputs that caused the error:")
+            print(map(lambda x: x.to_list(), inputs.values()))
             raise e
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
