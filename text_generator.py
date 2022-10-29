@@ -259,10 +259,7 @@ class TextGenerator(Callable, ABC):
                 print(str(e))
                 if "sequence item " in str(e):
                     print(f"token ids: {shorten_token_list}")
-                    # str(e) == "sequence item problematic_index: expected str instance, int found"
-                    problematic_index_string = str(e).split(" ")[2].replace(":", "").replace(",", "").replace(" ", "")
-                    problematic_index: int = int(problematic_index_string)
-                    print(f"problematic index: {problematic_index}")
+                raise e
         return final_ans
 
     def __call__(
