@@ -50,7 +50,8 @@ class TextGenerator(Callable, ABC):
     framework: str = "pt"
 
     def __init__(self, model_name: str, group_size: int,
-                 temp: float = 1.0, end_of_sentence_stop: bool = False):
+                 temp: float = 1.0,
+                 end_of_sentence_stop: bool = False):
         """Model name: the name of the model
         used for loading from hugging face hub
         group size: int
@@ -59,11 +60,8 @@ class TextGenerator(Callable, ABC):
         temperature parameter for the softmax function"""
         self.model_name = model_name
         config = AutoConfig.from_pretrained(model_name)
-        max_input_length = config.max_position_embeddings
-        if max_input_length is None:
-            max_input_length = 512
         self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name, model_max_length=max_input_length)
+            model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name)
         if cuda.is_available():
@@ -153,6 +151,7 @@ class TextGenerator(Callable, ABC):
             padding=False,
             add_special_tokens=False,
             truncation=truncation,
+            max_length=self.maximum_length,
         )
         is_dict = isinstance(tokenizer_output, dict)
         is_batch_encoding = isinstance(tokenizer_output,
