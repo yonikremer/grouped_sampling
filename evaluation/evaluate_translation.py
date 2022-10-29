@@ -17,11 +17,14 @@ SUB_SETS = ['ar-cs', 'ar-de', 'cs-de', 'ar-en', 'cs-en', 'de-en', 'ar-es', 'cs-e
             'it-ru', 'ja-ru', 'nl-ru', 'pt-ru', 'ar-zh', 'cs-zh', 'de-zh', 'en-zh', 'es-zh', 'fr-zh', 'it-zh', 'ja-zh',
             'nl-zh', 'pt-zh', 'ru-zh']
 METRIC_NAMES = ("bertscore",)
-if os.path.exists("comet_ml_api_key.txt"):
-    with open("comet_ml_api_key.txt", "r") as f:
+api_key_file = "final_project/evaluation/comet_ml_api_key.txt"
+if os.path.exists(api_key_file):
+    with open(api_key_file, "r") as f:
         COMET_ML_API_KEY = f.read().strip()
 else:
     COMET_ML_API_KEY = input("Please enter your api_key for comet ml: ")
+    with open(api_key_file, "w") as f:
+        f.write(COMET_ML_API_KEY)
 PROJECT_NAME = "grouped-sampling-evaluation"
 
 
