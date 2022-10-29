@@ -104,7 +104,11 @@ class TextGenerator(Callable, ABC):
                   "attention_mask": attention_mask,
                   "labels": longer_token_tensor}
 
-        outputs = self.model(**inputs)
+        try:
+            outputs = self.model(**inputs)
+        except RuntimeError as e:
+            print("The inputs that caused the error:", inputs)
+            raise e
 
         logits_tensor = outputs.logits.squeeze(0) / self.temp
 
