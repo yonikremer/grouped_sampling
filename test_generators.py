@@ -80,7 +80,7 @@ class TestTextGenerator(TestCase):
 
     def test_calling_generators(self):
         for curr_text_generator in self.create_text_generators():
-            with self.subTest(curr_text_generator=str(curr_text_generator)):
+            with self.subTest(curr_text_generator=str(curr_text_generator)) as sub:
                 answer = curr_text_generator(
                     prompt_s=self.PROMPT,
                     max_new_tokens=curr_text_generator.group_size * 2,
@@ -91,6 +91,7 @@ class TestTextGenerator(TestCase):
                                                                   f"curr_text_generator: {str(curr_text_generator)}")
                 self.assertTrue(answer.startswith(self.PROMPT), f"{answer} doesn't start with {self.PROMPT}. "
                                                                 f"curr_text_generator: {str(curr_text_generator)}")
+                print(f"ended sub test: {sub}")
 
     repeating_prompt: str = "This is a very long text. " * 2
     long_prompt: str = "This is a very long text. " * 2048
@@ -101,7 +102,7 @@ class TestTextGenerator(TestCase):
 
         for prompt in self.edge_cases:
             for curr_generator in islice(self.create_text_generators(), 3, 5):
-                with self.subTest(prompt=prompt, curr_generator=str(curr_generator)):
+                with self.subTest(prompt=prompt, curr_generator=str(curr_generator)) as sub:
                     answer = curr_generator(
                         prompt_s=prompt,
                         max_new_tokens=curr_generator.group_size * 2,
@@ -115,6 +116,7 @@ class TestTextGenerator(TestCase):
                     self.assertTrue(answer.startswith(prompt[:-1]), f"{answer} doesn't start with "
                                                                     f"{prompt}. "
                                                                     f"curr_generator: {str(curr_generator)}")
+                    print(f"ended sub test: {sub}")
 
     def test_post_process(self):
         """Tests the different returning options"""
@@ -180,7 +182,7 @@ class TestTextGenerator(TestCase):
                                                temp=self.TEMPERATURES[0],
                                                end_of_sentence_stop=False)
         for generator in (tree_gen, top_p_sampling_gen):
-            with self.subTest(generator=str(generator)):
+            with self.subTest(generator=str(generator)) as sub:
                 prompt: str = "I was to happy to see that "
                 num_return_sequences = 2
                 answer: List[Dict[str, Union[str, Tensor]]] = generator(
@@ -191,6 +193,7 @@ class TestTextGenerator(TestCase):
                 for curr_answer in answer:
                     self.assertIn(prompt, curr_answer["generated_text"],
                                   f"{curr_answer['generated_text']} doesn't contain {prompt}")
+                print(f"ended sub test: {sub}")
 
     def test_max_new_tokens_is_none(self):
         """test the __call__ function when max_new_tokens is None
