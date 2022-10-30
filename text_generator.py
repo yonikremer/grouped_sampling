@@ -104,13 +104,11 @@ class TextGenerator(Callable, ABC):
             -> Tensor:
         """Returns the probability matrix
          as a list of lists of floats"""
-
-        attention_len = len(token_list) + self.group_size - 1
-
         padded_token_list = token_list + self.padding_tokens
+
         if len(padded_token_list) > self.maximum_length:
             padded_token_list = padded_token_list[-self.maximum_length:]
-            attention_len = self.maximum_length
+        attention_len = len(padded_token_list)
         longer_token_tensor = LongTensor([padded_token_list])
         attention_mask = ones([1, attention_len])
         if cuda.is_available():
@@ -123,17 +121,18 @@ class TextGenerator(Callable, ABC):
         with no_grad():
             outputs = self.model(**inputs)
 
-        logits: Tensor = outputs.logits.squeeze(0) / self.temp
-        if logits.shape[1] >= self.vocab_size:
-            logits: Tensor = logits[:, :self.vocab_size]
+        unscaled_logits: Tensor = outputs.logits.squeeze(0)
+        unscaled_relevant_logits: Tensor = unscaled_logits[-self.group_size:, :]
+        scaled_relevant_logits = unscaled_relevant_logits / self.temp
+        if scaled_relevant_logits.shape[1] >= self.vocab_size:
+            scaled_relevant_logits: Tensor = scaled_relevant_logits[:, :self.vocab_size]
 
         if cuda.is_available():
-            logits_tensor_copy: Tensor = logits
-            logits_tensor_copy.cpu()
-            prob_tensor: Tensor = Softmax(dim=1)(logits_tensor_copy)
+            scaled_relevant_logits: Tensor = scaled_relevant_logits
+            scaled_relevant_logits.cpu()
+            prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
         else:
-            prob_tensor: Tensor = Softmax(dim=1)(logits)
-        prob_tensor: Tensor = prob_tensor[-self.group_size:, :]
+            prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
         if not self.end_of_sentence_stop:
             for prob_vec in prob_tensor:
                 prob_vec[self.end_of_sentence_id] = 0.0
