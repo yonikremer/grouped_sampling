@@ -4,6 +4,8 @@ from random import choices, seed
 from copy import deepcopy
 from typing import Callable, List, Dict, Optional, Any
 
+from torch import Tensor
+
 from text_generator import TextGenerator, GenerationType, NoCompletionsFound
 
 
@@ -158,13 +160,14 @@ class SamplingGenerator(TextGenerator):
         return weighted_probs
 
     def generate_group(
-            self, prob_mat: List[List[float]],
+            self, prob_mat: Tensor,
             org_used_tokens: List[int]) -> List[int]:
         """Generates a group of tokens
          using the choice_function."""
         used_tokens = deepcopy(org_used_tokens)
         new_group = []
         for curr_token_probs in prob_mat:
+            curr_token_probs: Tensor
             for used_token in used_tokens:
                 curr_token_probs[used_token] = 0.0
             # for tokens with index >= self.vocab_size
@@ -208,7 +211,7 @@ class SamplingGenerator(TextGenerator):
                 num_groups = num_new_tokens // self.group_size
                 the_range = range(num_groups)
             for _ in the_range:
-                prob_mat = self.get_prob_mat(curr_token_list)
+                prob_mat: Tensor = self.get_prob_mat(curr_token_list)
                 new_tokens = self.generate_group(
                     prob_mat, curr_token_list)
                 if self.end_of_sentence_id in new_tokens:

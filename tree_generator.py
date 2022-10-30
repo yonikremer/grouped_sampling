@@ -2,6 +2,8 @@ import sys
 from math import ceil
 from typing import List, Dict, Union, Tuple, Sequence, Any, Optional
 
+from torch import Tensor
+
 from text_generator import TextGenerator, NoCompletionsFound, GenerationType
 
 tokenIDS = Union[List[int], Tuple[int]]
@@ -133,7 +135,7 @@ class TreeGenerator(TextGenerator):
         return filtered_completions
 
     def generate_group(
-            self, prob_mat: List[List[float]],
+            self, prob_mat: Tensor,
             org_prompt: tokenIDS) -> List[List[int]]:
         """given a matrix of probabilities,
         returns a list of lists of tokens.
@@ -157,6 +159,7 @@ class TreeGenerator(TextGenerator):
 
         already_predicted = set(TreeGenerator.flatten(org_prompt))
         for token_prob in prob_mat:  # group_size times
+            token_prob: Tensor  # token_prob.shape is (vocab_size,)
             for token_id in already_predicted:
                 token_prob[token_id] = 0.0
                 # We never use the same token twice,
@@ -226,7 +229,7 @@ class TreeGenerator(TextGenerator):
         if is_list or is_tuple:
             tokens_list: List[int]
             tokens_list = TreeGenerator.flatten(org_prompt)
-            prob_mat = self.get_prob_mat(tokens_list)
+            prob_mat: Tensor = self.get_prob_mat(tokens_list)
         else:
             raise TypeError("org_prompt must be a list or a tuple")
         tokenized_ans_list: List[List[int]] = self.generate_group(

@@ -101,7 +101,7 @@ class TextGenerator(Callable, ABC):
         self.padding_tokens = [pad_id] * (self.group_size - 1)
 
     def get_prob_mat(self, token_list: List[int]) \
-            -> List[List[float]]:
+            -> Tensor:
         """Returns the probability matrix
          as a list of lists of floats"""
 
@@ -134,12 +134,10 @@ class TextGenerator(Callable, ABC):
         else:
             prob_tensor: Tensor = Softmax(dim=1)(logits)
         prob_tensor: Tensor = prob_tensor[-self.group_size:, :]
-        prob_mat = [prob_tensor[i, :].tolist()
-                    for i in range(self.group_size)]
         if not self.end_of_sentence_stop:
-            for prob_vec in prob_mat:
+            for prob_vec in prob_tensor:
                 prob_vec[self.end_of_sentence_id] = 0.0
-        return prob_mat
+        return prob_tensor
 
     def preprocess(
             self,
