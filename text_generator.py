@@ -126,8 +126,6 @@ class TextGenerator(Callable, ABC):
         logits_tensor = outputs.logits.squeeze(0) / self.temp
         if logits_tensor.shape[1] >= self.vocab_size:
             logits_tensor = logits_tensor[:, :self.vocab_size]
-        if logits_tensor.shape[0] >= self.vocab_size:
-            logits_tensor = logits_tensor[:self.vocab_size, :]
 
         if cuda.is_available():
             logits_tensor_copy = logits_tensor
