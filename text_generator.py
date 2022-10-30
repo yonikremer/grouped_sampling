@@ -133,20 +133,9 @@ class TextGenerator(Callable, ABC):
             prob_tensor = Softmax(dim=1)(logits_tensor_copy)
         else:
             prob_tensor = Softmax(dim=1)(logits_tensor)
-        if self.group_size <= prob_tensor.shape[0]:
-            prob_tensor = prob_tensor[-self.group_size:, :]
-            prob_mat = [prob_tensor[i, :].tolist()
-                        for i in range(self.group_size)]
-        else:
-            print("Warning: the group size is bigger than")
-            print("the length of the model's output")
-            print("If the length of the model input is n,")
-            print("n will be length of the model's output")
-            num_tokens = self.group_size - prob_tensor.shape[0]
-            print(f"the predicted text will be \
-                {num_tokens} tokens shorter")
-            prob_mat = [prob_tensor[i, :].tolist()
-                        for i in range(prob_tensor.shape[0])]
+        prob_tensor = prob_tensor[-self.group_size:, :]
+        prob_mat = [prob_tensor[i, :].tolist()
+                    for i in range(self.group_size)]
         if (not self.end_of_sentence_stop) and self.end_of_sentence_id is not None:
             for prob_vec in prob_mat:
                 prob_vec[self.end_of_sentence_id] = 0.0
