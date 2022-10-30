@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
 
-from torch import LongTensor, ones, cuda, tensor, no_grad
+from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
@@ -123,17 +123,17 @@ class TextGenerator(Callable, ABC):
         with no_grad():
             outputs = self.model(**inputs)
 
-        logits_tensor = outputs.logits.squeeze(0) / self.temp
-        if logits_tensor.shape[1] >= self.vocab_size:
-            logits_tensor = logits_tensor[:, :self.vocab_size]
+        logits: Tensor = outputs.logits.squeeze(0) / self.temp
+        if logits.shape[1] >= self.vocab_size:
+            logits: Tensor = logits[:, :self.vocab_size]
 
         if cuda.is_available():
-            logits_tensor_copy = logits_tensor
+            logits_tensor_copy: Tensor = logits
             logits_tensor_copy.cpu()
-            prob_tensor = Softmax(dim=1)(logits_tensor_copy)
+            prob_tensor: Tensor = Softmax(dim=1)(logits_tensor_copy)
         else:
-            prob_tensor = Softmax(dim=1)(logits_tensor)
-        prob_tensor = prob_tensor[-self.group_size:, :]
+            prob_tensor: Tensor = Softmax(dim=1)(logits)
+        prob_tensor: Tensor = prob_tensor[-self.group_size:, :]
         prob_mat = [prob_tensor[i, :].tolist()
                     for i in range(self.group_size)]
         if (not self.end_of_sentence_stop) and self.end_of_sentence_id is not None:
