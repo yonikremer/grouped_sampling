@@ -60,7 +60,8 @@ class SamplingGenerator(TextGenerator):
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0, top_k: Optional[int] = None,
-                 top_p: Optional[float] = None, end_of_sentence_stop: bool = False,
+                 top_p: Optional[float] = None,
+                 end_of_sentence_stop: bool = False,
                  answer_length_multiplier: int = 16,):
         super().__init__(
             model_name=model_name,
@@ -204,7 +205,9 @@ class SamplingGenerator(TextGenerator):
     ) -> List[List[int]]:
         answers: List[List[int]] = []
         curr_token_list = tokenized_prompt
-        for _ in ChangingSeed(default_seed=self.default_seed, max_num_calls=num_return_sequences):
+        for _ in ChangingSeed(
+                default_seed=self.default_seed,
+                max_num_calls=num_return_sequences):
             if num_new_tokens is None:
                 the_range = itertools.count()
             else:

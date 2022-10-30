@@ -48,7 +48,7 @@ class TextGenerator(Callable, ABC):
     generation_type: GenerationType
     end_of_sentence_id: Optional[int]
     end_of_sentence_stop: bool
-    maximum_length: int
+    max_input_len: int
     framework: str = "pt"
     answer_length_multiplier: int = 16
     vocab_size: int
@@ -66,7 +66,8 @@ class TextGenerator(Callable, ABC):
         answer_length_multiplier: int
             if the answer length is not given,
             the maximum answer length is set to:
-            the length of the prompt times the answer_length_multiplier"""
+            the length of the prompt * answer_length_multiplier
+        """
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name)
@@ -78,18 +79,20 @@ class TextGenerator(Callable, ABC):
         self.temp = temp
         self.group_size = group_size
         pad_id = self.tokenizer.pad_token_id
-        self.end_of_sentence_id = self.tokenizer.eos_token_id
+
         if not isinstance(pad_id, int):
             pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
         self.end_of_sentence_stop = end_of_sentence_stop and self.end_of_sentence_id is not None
-        self.maximum_length = self.tokenizer.model_max_length
-        if self.maximum_length > MAX_MODEL_INPUT_SIZE or self.maximum_length is None:
+        self.max_input_len = self.tokenizer.model_max_length
+        max_len_is_huge = self.max_input_len > MAX_MODEL_INPUT_SIZE
+        if max_len_is_huge or self.max_input_len is None:
             config = AutoConfig.from_pretrained(model_name)
-            self.maximum_length = config.max_position_embeddings
-            if self.maximum_length > MAX_MODEL_INPUT_SIZE or self.maximum_length is None:
+            self.max_input_len = config.max_position_embeddings
+            max_len_is_still_huge = self.max_input_len > MAX_MODEL_INPUT_SIZE
+            if max_len_is_still_huge or self.max_input_len is None:
                 raise ValueError(
-                    "The maximum length of the model is too big for the current implementation"
+                    "The maximum length of the model is too big"
                 )
         self.answer_length_multiplier = answer_length_multiplier
 
@@ -106,8 +109,8 @@ class TextGenerator(Callable, ABC):
          as a list of lists of floats"""
         padded_token_list = token_list + self.padding_tokens
 
-        if len(padded_token_list) > self.maximum_length:
-            padded_token_list = padded_token_list[-self.maximum_length:]
+        if len(padded_token_list) > self.max_input_len:
+            padded_token_list = padded_token_list[-self.max_input_len:]
         attention_len = len(padded_token_list)
         longer_token_tensor = LongTensor([padded_token_list])
         attention_mask = ones([1, attention_len])
@@ -122,15 +125,17 @@ class TextGenerator(Callable, ABC):
             outputs = self.model(**inputs)
 
         unscaled_logits: Tensor = outputs.logits.squeeze(0)
-        unscaled_relevant_logits: Tensor = unscaled_logits[-self.group_size:, :]
+        unscaled_relevant_logits: Tensor
+        unscaled_relevant_logits = unscaled_logits[-self.group_size:, :]
         scaled_relevant_logits = unscaled_relevant_logits / self.temp
         if scaled_relevant_logits.shape[1] >= self.vocab_size:
-            scaled_relevant_logits: Tensor = scaled_relevant_logits[:, :self.vocab_size]
+            scaled_relevant_logits: Tensor
+            scaled_relevant_logits = scaled_relevant_logits[:, :self.vocab_size]
 
         if cuda.is_available():
-            scaled_relevant_logits: Tensor = scaled_relevant_logits
-            scaled_relevant_logits.cpu()
-            prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
+            scaled_relevant_logits_copy: Tensor = scaled_relevant_logits
+            scaled_relevant_logits_copy.cpu()
+            prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits_copy)
         else:
             prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
         if not self.end_of_sentence_stop:
@@ -156,7 +161,7 @@ class TextGenerator(Callable, ABC):
             padding=False,
             add_special_tokens=False,
             truncation=truncation,
-            max_length=self.maximum_length,
+            max_length=self.max_input_len,
         )
         is_dict = isinstance(tokenizer_output, dict)
         is_batch_encoding = isinstance(tokenizer_output,
@@ -184,7 +189,8 @@ class TextGenerator(Callable, ABC):
         Has a unique implementation for each subclass
         Args:
             tokenized_prompt: List[int] - the tokenized prompt from the preprocess method
-            num_new_tokens: int - the number of new tokens to generate from the __call__ method
+            num_new_tokens: int - the number of new tokens to generate
+                from the __call__ method
         Returns:
             the prompt + generated text as a list/tuple of ints"""
         pass
@@ -199,11 +205,13 @@ class TextGenerator(Callable, ABC):
             return_full_text: bool,
             clean_up_tokenization_spaces: bool
     ):
-        """A helper method for __call__ that converts the token ids to dictionary
-        all the arguments are sent directly from the __call__ method
+        """A helper method for __call__
+        that converts the token ids to dictionary
         token_ids - the token ids from the _forward method
         prompt_len - the length of the tokenized prompt
-        the rest of the arguments are the arguments from the __call__ method
+        the rest of the arguments are the arguments
+        from the __call__ method
+        look up the documentation of the __call__ method for more info
         """
         if num_new_tokens is None:
             shorten_token_list = token_ids
@@ -244,7 +252,8 @@ class TextGenerator(Callable, ABC):
                 (the text given by the user)
                 if many prompts are given as a list,
                 the function process each one independently and returns them as a list.
-                (the same as calling [__call__(prompt, *args, **kwargs) for prompt in prompts])])
+                (the same as calling [__call__(prompt, *args, **kwargs)
+                 for prompt in prompts])])
             max_new_tokens: Optional[int] > 0 - the number of tokens to generate
                 if None, the function will generate tokens until one of them is the end of sentence token
             return_tensors: bool - whether to return the generated token ids
@@ -336,23 +345,35 @@ class NoCompletionsFound(Exception):
             f"additional info: {additional_info}")
 
 
-def compare_generators(non_grouped_generator: TextGenerator, prompt: str, num_tokens: int, group_size: int):
+def compare_generators(
+        non_grouped_generator: TextGenerator,
+        prompt: str,
+        num_tokens: int,
+        group_size: int):
     """Compares grouped and non-grouped text generators"""
     print(f"Your prompt:")
     print(prompt)
 
     start_non_grouped = timeit.default_timer()
-    non_grouped_ans: str = non_grouped_generator(prompt_s=prompt, max_new_tokens=num_tokens)["generated_text"]
+    non_grouped_ans: str = non_grouped_generator(
+        prompt_s=prompt,
+        max_new_tokens=num_tokens
+    )["generated_text"]
     stop_non_grouped = timeit.default_timer()
     non_grouped_time = stop_non_grouped - start_non_grouped
-    print(f"Text generated by Non grouped sampling in {non_grouped_time} seconds:")
+    print(f"Text generated by Non grouped sampling"
+          f" in {non_grouped_time} seconds:")
     print(non_grouped_ans)
 
     non_grouped_generator.set_group_size(group_size)
     grouped_generator = non_grouped_generator
     start_grouped_generation = timeit.default_timer()
-    grouped_ans: str = grouped_generator(prompt_s=prompt, max_new_tokens=num_tokens)["generated_text"]
+    grouped_ans: str = grouped_generator(
+        prompt_s=prompt,
+        max_new_tokens=num_tokens
+    )["generated_text"]
     stop_grouped_generation = timeit.default_timer()
     grouped_time = stop_grouped_generation - start_grouped_generation
-    print(f"Text generated by grouped sampling in {grouped_time} seconds:")
+    print(f"Text generated by grouped sampling"
+          f" in {grouped_time} seconds:")
     print(grouped_ans)

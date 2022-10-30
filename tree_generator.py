@@ -18,7 +18,9 @@ class TreeGenerator(TextGenerator):
 
     def __init__(self, model_name: str, group_size: int,
                  top_k: Optional[int], top_p: Optional[float],
-                 temp: float = 1.0, end_of_sentence_stop: bool = False, answer_length_multiplier: int = 16):
+                 temp: float = 1.0,
+                 end_of_sentence_stop: bool = False,
+                 answer_length_multiplier: int = 16):
         super().__init__(
             model_name=model_name,
             group_size=group_size,
@@ -49,15 +51,18 @@ class TreeGenerator(TextGenerator):
             self.top_p = top_p
 
     @staticmethod
-    def no_duplicates(my_sequence: List[Any], prompt_length: int) -> bool:
+    def no_duplicates(
+            my_sequence: List[Any],
+            prompt_length: int) -> bool:
         """Return if there isn't a repetition in the sequence
         complexity: O(n) where n is the length of the sequence"""
         generated_tokens = my_sequence[prompt_length:]
         return len(generated_tokens) == len(set(generated_tokens))
 
     @staticmethod
-    def combinations(mat: Sequence[Sequence[Any]], prompt_length: int) \
-            -> List[List[Any]]:
+    def combinations(
+            mat: Sequence[Sequence[Any]],
+            prompt_length: int) -> List[List[Any]]:
         """Returns all the lists such that list[j] is in mat[j]
         runtime function:
         prod([len(mat[i]) for i in range(len(mat))])"""
@@ -66,7 +71,10 @@ class TreeGenerator(TextGenerator):
                     for i in range(len(mat[0]))]
         res: List[List[Any]] = []
         for i in mat[0]:
-            for j in TreeGenerator.combinations(mat[1:], prompt_length):
+            for j in TreeGenerator.combinations(
+                    mat[1:],
+                    prompt_length
+            ):
                 res.append([i] + j)
         filtered_res: List[List[Any]]
         filtered_res = list(filter(
@@ -237,8 +245,11 @@ class TreeGenerator(TextGenerator):
         if len(tokenized_ans_list) == 0:
             raise NoCompletionsFound(self)
         prob_list: List[float]
-        prob_list = [TreeGenerator.seq_prob(seq, prob_mat, org_prompt_prob)
-                     for seq in tokenized_ans_list]
+        prob_list = [TreeGenerator.seq_prob(
+            seq,
+            prob_mat,
+            org_prompt_prob
+        ) for seq in tokenized_ans_list]
         new_prompts: List[List[int]]
         ans: List[int]
         new_prompts = [tokens_list + TreeGenerator.flatten(ans)
@@ -291,9 +302,12 @@ class TreeGenerator(TextGenerator):
         seq_prob_dict = self.rec_gen(
             tokenized_prompt, num_new_tokens)
         if len(seq_prob_dict) < num_return_sequences:
-            raise NoCompletionsFound(self,
-                                     f"Not enough completions found, {len(seq_prob_dict)} found"
-                                     f" but {num_return_sequences} requested")
+            raise NoCompletionsFound(
+                self,
+                f"Not enough completions found,"
+                f" {len(seq_prob_dict)} found"
+                f" but {num_return_sequences} requested"
+            )
         sorted_seq_prob_dict = sorted(
             seq_prob_dict.items(), key=lambda x: x[1], reverse=True
         )
