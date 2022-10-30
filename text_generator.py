@@ -224,7 +224,7 @@ class TextGenerator(Callable, ABC):
         prompt_len - the length of the tokenized prompt
         the rest of the arguments are the arguments from the __call__ method
         """
-        assert all(token_id < self.tokenizer.vocab_size for token_id in token_ids)
+        assert all(token_id < self.vocab_size for token_id in token_ids)
         assert all(isinstance(token_id, int) for token_id in token_ids)
         if num_new_tokens is None:
             shorten_token_list = token_ids
@@ -237,7 +237,7 @@ class TextGenerator(Callable, ABC):
         if not return_full_text:
             shorten_token_list = shorten_token_list[prompt_len:]
         final_ans = {}
-        assert all(token_id < self.tokenizer.vocab_size for token_id in shorten_token_list)
+        assert all(token_id < self.vocab_size for token_id in shorten_token_list)
         if return_tensors:
             final_ans["generated_token_ids"] = tensor(shorten_token_list)
         if return_text:
@@ -252,7 +252,6 @@ class TextGenerator(Callable, ABC):
                 if "sequence item " in str(e):
                     print(f"shorten_token_list = {shorten_token_list}")
                     print("The maximum value is: ", max(shorten_token_list))
-                    print("self.tokenizer.vocab_size = ", self.tokenizer.vocab_size)
                     print("self.vocab_size = ", self.vocab_size)
                 raise e
         return final_ans
