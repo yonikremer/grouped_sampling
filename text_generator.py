@@ -82,7 +82,7 @@ class TextGenerator(Callable, ABC):
         if not isinstance(pad_id, int):
             pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
-        self.end_of_sentence_stop = end_of_sentence_stop
+        self.end_of_sentence_stop = end_of_sentence_stop and self.end_of_sentence_id is not None
         self.maximum_length = self.tokenizer.model_max_length
         if self.maximum_length > MAX_MODEL_INPUT_SIZE or self.maximum_length is None:
             config = AutoConfig.from_pretrained(model_name)
@@ -136,7 +136,7 @@ class TextGenerator(Callable, ABC):
         prob_tensor: Tensor = prob_tensor[-self.group_size:, :]
         prob_mat = [prob_tensor[i, :].tolist()
                     for i in range(self.group_size)]
-        if (not self.end_of_sentence_stop) and self.end_of_sentence_id is not None:
+        if not self.end_of_sentence_stop:
             for prob_vec in prob_mat:
                 prob_vec[self.end_of_sentence_id] = 0.0
         return prob_mat
