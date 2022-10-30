@@ -110,7 +110,6 @@ class TextGenerator(Callable, ABC):
         padded_token_list = token_list + self.padding_tokens
         if len(padded_token_list) > self.maximum_length:
             padded_token_list = padded_token_list[-self.maximum_length:]
-            assert len(padded_token_list) == self.maximum_length
             attention_len = self.maximum_length
         longer_token_tensor = LongTensor([padded_token_list])
         attention_mask = ones([1, attention_len])
@@ -120,8 +119,6 @@ class TextGenerator(Callable, ABC):
         inputs = {"input_ids": longer_token_tensor,
                   "attention_mask": attention_mask,
                   "labels": longer_token_tensor}
-        for key, value in inputs.items():
-            assert value.shape[-1] <= self.maximum_length
 
         with no_grad():
             outputs = self.model(**inputs)
@@ -224,8 +221,6 @@ class TextGenerator(Callable, ABC):
         prompt_len - the length of the tokenized prompt
         the rest of the arguments are the arguments from the __call__ method
         """
-        assert all(token_id < self.vocab_size for token_id in token_ids)
-        assert all(isinstance(token_id, int) for token_id in token_ids)
         if num_new_tokens is None:
             shorten_token_list = token_ids
         else:
@@ -237,23 +232,14 @@ class TextGenerator(Callable, ABC):
         if not return_full_text:
             shorten_token_list = shorten_token_list[prompt_len:]
         final_ans = {}
-        assert all(token_id < self.vocab_size for token_id in shorten_token_list)
         if return_tensors:
             final_ans["generated_token_ids"] = tensor(shorten_token_list)
         if return_text:
-            try:
-                final_ans["generated_text"] = self.tokenizer.decode(
-                    shorten_token_list,
-                    skip_special_tokens=True,
-                    clean_up_tokenization_spaces=clean_up_tokenization_spaces
-                )
-            except TypeError as e:
-                print(str(e))
-                if "sequence item " in str(e):
-                    print(f"shorten_token_list = {shorten_token_list}")
-                    print("The maximum value is: ", max(shorten_token_list))
-                    print("self.vocab_size = ", self.vocab_size)
-                raise e
+            final_ans["generated_text"] = self.tokenizer.decode(
+                shorten_token_list,
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces
+            )
         return final_ans
 
     def __call__(
@@ -322,8 +308,6 @@ class TextGenerator(Callable, ABC):
             max_new_tokens,
             num_return_sequences
         )
-
-        assert all(t < self.vocab_size for t in tokenized_answers[0])
 
         if num_return_sequences > 1:
             return [self.postprocess(
