@@ -68,21 +68,13 @@ class TextGenerator(Callable, ABC):
             the maximum answer length is set to:
             the length of the prompt times the answer_length_multiplier"""
         self.model_name = model_name
-        config = AutoConfig.from_pretrained(model_name)
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name)
         if cuda.is_available():
             self.model = self.model.cuda()
-        self.vocab_size = config.vocab_size
-        if self.vocab_size != self.tokenizer.vocab_size:
-            raise ValueError(
-                "The vocab size of the model and the tokenizer are not equal",
-                self.vocab_size, self.tokenizer.vocab_size,
-                "This was the bug to begin with"
-            )
-
+        self.vocab_size = self.tokenizer.vocab_size
         self.temp = temp
         self.group_size = group_size
         pad_id = self.tokenizer.pad_token_id
@@ -93,6 +85,7 @@ class TextGenerator(Callable, ABC):
         self.end_of_sentence_stop = end_of_sentence_stop
         self.maximum_length = self.tokenizer.model_max_length
         if self.maximum_length > MAX_MODEL_INPUT_SIZE or self.maximum_length is None:
+            config = AutoConfig.from_pretrained(model_name)
             self.maximum_length = config.max_position_embeddings
             if self.maximum_length > MAX_MODEL_INPUT_SIZE or self.maximum_length is None:
                 raise ValueError(
