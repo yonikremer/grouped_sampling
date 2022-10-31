@@ -83,6 +83,7 @@ class TextGenerator(Callable, ABC):
         if not isinstance(pad_id, int):
             pad_id = 0
         self.padding_tokens = [pad_id] * (self.group_size - 1)
+        self.end_of_sentence_id = self.tokenizer.eos_token_id
         self.end_of_sentence_stop = end_of_sentence_stop and self.end_of_sentence_id is not None
         self.max_input_len = self.tokenizer.model_max_length
         max_len_is_huge = self.max_input_len > MAX_MODEL_INPUT_SIZE
