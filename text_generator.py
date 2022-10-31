@@ -148,7 +148,7 @@ class TextGenerator(Callable, ABC):
             prompt: str,
             prefix: str = "",
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
-    ) -> List[int]:
+    ) -> Tensor:
         """A helper method for __call__ that tokenize the prompt
         all the arguments are sent directly from the __call__ method
         Returns:
@@ -167,21 +167,22 @@ class TextGenerator(Callable, ABC):
         is_batch_encoding = isinstance(tokenizer_output,
                                        BatchEncoding)
         if is_dict or is_batch_encoding:
-            token_tensor = tokenizer_output["input_ids"]
+            token_tensor: Tensor = tokenizer_output["input_ids"]
+        elif isinstance(tokenizer_output, Tensor):
+            token_tensor: Tensor = tokenizer_output
         else:
-            token_tensor = tokenizer_output
+            raise TypeError("The tokenizer output is not one of:"
+                            "dict, BatchEncoding, Tensor")
 
         while token_tensor.shape[0] == 1:
             token_tensor = token_tensor[0]
 
-        tokenized_prompt: List[int]
-        tokenized_prompt = token_tensor.tolist()
-        return tokenized_prompt
+        return token_tensor
 
     @abstractmethod
     def _forward(
             self,
-            tokenized_prompt: List[int],
+            tokenized_prompt: Tensor,
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[TokenIDS]:
@@ -289,15 +290,15 @@ class TextGenerator(Callable, ABC):
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 truncation=truncation) for prompt in tqdm(prompt_s)]
 
-        curr_token_list: List[int] = self.preprocess(
+        tokenized_prompt: Tensor = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation)
 
-        prompt_len: int = len(curr_token_list)
+        prompt_len: int = len(tokenized_prompt)
         if max_new_tokens is None:
             max_new_tokens = prompt_len * self.answer_length_multiplier
         tokenized_answers: List[TokenIDS]
         tokenized_answers = self._forward(
-            curr_token_list,
+            tokenized_prompt,
             max_new_tokens,
             num_return_sequences
         )

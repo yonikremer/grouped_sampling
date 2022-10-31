@@ -1,8 +1,7 @@
 import itertools
 from collections.abc import Iterator
 from random import choices, seed
-from copy import deepcopy
-from typing import Callable, List, Dict, Optional, Any
+from typing import Callable, List, Dict, Optional, Any, Set
 
 from torch import Tensor
 
@@ -165,7 +164,7 @@ class SamplingGenerator(TextGenerator):
             org_used_tokens: List[int]) -> List[int]:
         """Generates a group of tokens
          using the choice_function."""
-        used_tokens = deepcopy(org_used_tokens)
+        used_tokens: Set[int] = set(org_used_tokens)
         new_group = []
         for curr_token_probs in prob_mat:
             curr_token_probs: Tensor
@@ -194,17 +193,17 @@ class SamplingGenerator(TextGenerator):
             new_group.append(sampled_token)
             if sampled_token == self.end_of_sentence_id:
                 return new_group
-            used_tokens.append(sampled_token)
+            used_tokens.add(sampled_token)
         return new_group
 
     def _forward(
             self,
-            tokenized_prompt: List[int],
+            tokenized_prompt: Tensor,
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[List[int]]:
         answers: List[List[int]] = []
-        curr_token_list = tokenized_prompt
+        curr_token_list: List[int] = tokenized_prompt.tolist()
         for _ in ChangingSeed(
                 default_seed=self.default_seed,
                 max_num_calls=num_return_sequences):
@@ -220,8 +219,6 @@ class SamplingGenerator(TextGenerator):
                 if self.end_of_sentence_id in new_tokens:
                     end_of_sentence_index = new_tokens.index(self.end_of_sentence_id)
                     new_tokens = new_tokens[:end_of_sentence_index]
-                    curr_token_list.extend(new_tokens)
-                    break
                 curr_token_list.extend(new_tokens)
             answers.append(curr_token_list)
         return answers
