@@ -2,7 +2,7 @@ from itertools import islice
 from unittest import TestCase, main
 from typing import Generator, Union, Dict, List
 
-from torch import Tensor
+from torch import Tensor, equal
 
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
@@ -141,9 +141,13 @@ class TestTextGenerator(TestCase):
                               f"{answer['generated_token_ids']} is not a list")
         self.assertTrue(answer["generated_text"].startswith(prompt),
                         f"{answer['generated_text']} doesn't start with {prompt}")
-        prompt_tokens: List[int] = generator.preprocess(prompt)
-        self.assertEqual(answer["generated_token_ids"].tolist()[:len(prompt_tokens)], prompt_tokens,
-                         f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
+        prompt_tokens: Tensor = generator.preprocess(prompt)
+        self.assertIsInstance(prompt_tokens, Tensor,
+                              f"{prompt_tokens} is not a tensor")
+        self.assertIsInstance(answer["generated_token_ids"][:len(prompt_tokens)], Tensor,
+                              f"{answer['generated_token_ids'][:len(prompt_tokens)]} is not a tensor")
+        self.assertTrue(equal(answer["generated_token_ids"][:len(prompt_tokens)], prompt_tokens),
+                        f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
 
         answer: Dict[str, Union[str, Tensor]] = generator(
             prompt_s=prompt, max_new_tokens=10,
@@ -151,9 +155,9 @@ class TestTextGenerator(TestCase):
         )
         self.assertFalse(answer["generated_text"].startswith(prompt),
                          f"{answer['generated_text']} doesn't start with {prompt}")
-        prompt_tokens: List[int] = generator.preprocess(prompt)
-        self.assertNotEqual(answer["generated_token_ids"].tolist()[:len(prompt_tokens)], prompt_tokens,
-                            f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
+        prompt_tokens: Tensor = generator.preprocess(prompt)
+        self.assertFalse(equal(answer["generated_token_ids"][:len(prompt_tokens)], prompt_tokens),
+                         f"{answer['generated_token_ids'][:len(prompt_tokens)]} is not equal to {prompt_tokens}")
 
     def test_prefix(self):
         """Tests that the prefix option of the methods __call__ and preprocess works"""
@@ -227,9 +231,9 @@ class TestTextGenerator(TestCase):
                                   f"{answer['generated_token_ids']} is not a list")
             self.assertTrue(answer["generated_text"].startswith(prompt),
                             f"{answer['generated_text']} doesn't start with {prompt}")
-            prompt_tokens: List[int] = generator.preprocess(prompt)
-            self.assertEqual(answer["generated_token_ids"].tolist()[:len(prompt_tokens)], prompt_tokens,
-                             f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
+            prompt_tokens: Tensor = generator.preprocess(prompt)
+            self.assertTrue(equal(answer["generated_token_ids"][:len(prompt_tokens)], prompt_tokens),
+                            f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
 
 
 if __name__ == '__main__':
