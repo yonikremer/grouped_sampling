@@ -164,6 +164,7 @@ class SamplingGenerator(TextGenerator):
             org_used_tokens: List[int]) -> List[int]:
         """Generates a group of tokens
          using the choice_function."""
+        prob_mat.cpu()
         used_tokens: Set[int] = set(org_used_tokens)
         new_group = []
         for curr_token_probs in prob_mat:
