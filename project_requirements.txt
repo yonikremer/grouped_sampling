@@ -1,5 +1,5 @@
-torch~=1.12.1
+torch
 transformers
-numpy~=1.21.5
+numpy
 pip
 tqdm
