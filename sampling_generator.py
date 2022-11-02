@@ -209,7 +209,7 @@ class SamplingGenerator(TextGenerator):
                 default_seed=self.default_seed,
                 max_num_calls=num_return_sequences):
             if num_new_tokens is None:
-                the_range = itertools.count()
+                raise RuntimeError("num_new_tokens is None")
             else:
                 num_groups = num_new_tokens // self.group_size
                 the_range = range(num_groups)
