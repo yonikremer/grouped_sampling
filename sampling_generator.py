@@ -1,4 +1,3 @@
-import itertools
 from collections.abc import Iterator
 from random import choices, seed
 from typing import Callable, List, Dict, Optional, Any, Set
