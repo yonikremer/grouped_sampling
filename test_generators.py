@@ -57,9 +57,9 @@ class TestTextGenerator(TestCase):
                                           temp=self.TEMPERATURES[0])
 
             for group_size in self.GROUP_SIZES:
-                top_p_sampling_gen.set_group_size(group_size)
-                top_k_sampling_gen.set_group_size(group_size)
-                curr_tree_gen.set_group_size(group_size)
+                top_p_sampling_gen.group_size = group_size
+                top_k_sampling_gen.group_size = group_size
+                curr_tree_gen.group_size = group_size
 
                 for top_k in self.TOP_KS:
                     top_k_sampling_gen.top_k = top_k

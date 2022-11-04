@@ -97,12 +97,13 @@ class TextGenerator(Callable, ABC):
                 )
         self.answer_length_multiplier = answer_length_multiplier
 
-    def set_group_size(self, new_group_size):
-        self.group_size = new_group_size
-        pad_id = self.tokenizer.pad_token_id
-        if pad_id is None:
-            pad_id = 0
-        self.padding_tokens = [pad_id] * (self.group_size - 1)
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+        if key == "group_size":
+            pad_id = self.tokenizer.pad_token_id
+            if pad_id is None:
+                pad_id = 0
+            self.padding_tokens = [pad_id] * (self.group_size - 1)
 
     def get_prob_mat(self, token_list: List[int]) \
             -> Tensor:
@@ -367,7 +368,7 @@ def compare_generators(
           f" in {non_grouped_time} seconds:")
     print(non_grouped_ans)
 
-    non_grouped_generator.set_group_size(group_size)
+    non_grouped_generator.group_size = group_size
     grouped_generator = non_grouped_generator
     start_grouped_generation = timeit.default_timer()
     grouped_ans: str = grouped_generator(
