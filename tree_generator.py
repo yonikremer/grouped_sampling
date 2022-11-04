@@ -29,26 +29,30 @@ class TreeGenerator(TextGenerator):
             answer_length_multiplier=answer_length_multiplier
         )
 
-        if top_p is None and top_k is None:
-            self.top_p = 0.0
-            self.top_k = 1
-            self.generation_type = GenerationType.GREEDY
-        elif top_k is None:
-            self.generation_type = GenerationType.TREE
-            self.top_k = self.vocab_size
-            self.top_p = top_p
-        elif top_p is None:
-            self.generation_type = GenerationType.TREE
-            self.top_k = top_k
+        if top_k is None and top_p is None:
             self.top_p = 1.0
-        elif top_k == 1 or top_p == 0.0:
-            self.top_p = 0.0
-            self.top_k = 1
-            self.generation_type = GenerationType.GREEDY
-        else:
-            self.generation_type = GenerationType.TREE
+            self.top_k = self.vocab_size
+            self.generation_type = GenerationType.RANDOM
+        elif top_p is None and top_k is not None:
             self.top_k = top_k
+            if top_k == 1:
+                self.generation_type = GenerationType.GREEDY
+            elif top_k >= self.vocab_size:
+                self.generation_type = GenerationType.RANDOM
+            else:
+                self.generation_type = GenerationType.TOP_K
+        elif top_k is None and top_p is not None:
             self.top_p = top_p
+            if top_p == 1.0:
+                self.generation_type = GenerationType.RANDOM
+            elif top_p == 0.0:
+                self.generation_type = GenerationType.GREEDY
+            else:
+                self.generation_type = GenerationType.TOP_P
+        else:
+            raise ValueError(
+                "Either top_k or top_p \
+                should be set.")
 
     @staticmethod
     def no_duplicates(
@@ -161,8 +165,7 @@ class TreeGenerator(TextGenerator):
         over all complexity of the function is
         O(group_size * vocab_size * log(vocab_size))"""
 
-        # prob_tensor.shape is now
-        # (group_size, vocab_size)
+        # prob_tensor.shape is now (group_size, vocab_size)
         possible_tokens = []
 
         already_predicted = set(TreeGenerator.flatten(org_prompt))
@@ -235,7 +238,6 @@ class TreeGenerator(TextGenerator):
         is_list = isinstance(org_prompt, list)
         is_tuple = isinstance(org_prompt, tuple)
         if is_list or is_tuple:
-            tokens_list: List[int]
             tokens_list = TreeGenerator.flatten(org_prompt)
             prob_mat: Tensor = self.get_prob_mat(tokens_list)
         else:
