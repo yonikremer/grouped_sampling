@@ -61,12 +61,13 @@ class ExperimentManager:
         self.num_examples += len(bert_scores["f1"])
 
     def end_experiment(self) -> None:
-        average_bert_f1 = sum(self.per_example_f1) / self.num_examples
-        average_bert_precision = sum(self.per_example_precision) / self.num_examples
-        average_bert_recall = sum(self.per_example_recall) / self.num_examples
-        self.experiment.log_metric("average_bert_f1", average_bert_f1)
-        self.experiment.log_metric("average_bert_precision", average_bert_precision)
-        self.experiment.log_metric("average_bert_recall", average_bert_recall)
+        per_example_scores: Dict[str, List[float]] = {"f1": self.per_example_f1,
+                                                      "precision": self.per_example_precision,
+                                                      "recall": self.per_example_recall}
+        averaged_scores = {}
+        for metric, scores in per_example_scores.items():
+            averaged_scores[f"average {metric}"] = sum(scores) / self.num_examples
+        self.experiment.log_metrics(averaged_scores)
         total_time_in_seconds = (datetime.now() - self.start_time).total_seconds()
         self.experiment.log_metric("time in seconds", total_time_in_seconds)
         self.experiment.send_notification(f"Experiment finished successfully in {total_time_in_seconds} seconds")
