@@ -344,7 +344,7 @@ class TextGenerator(Callable, ABC):
         return repr(self)
 
     @abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> Dict[str, Any]:
         pass
 
 

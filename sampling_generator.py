@@ -255,7 +255,7 @@ class SamplingGenerator(TextGenerator):
                f"top_p: {self.top_p}, " \
                f"top_k: {self.top_k}"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> Dict[str, Any]:
         return {
             "model_name": self.model_name,
             "group_size": self.group_size,

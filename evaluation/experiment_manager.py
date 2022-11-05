@@ -27,7 +27,7 @@ class ExperimentManager:
             log_git_metadata=False,
             log_git_patch=False,
         )
-        self.experiment.log_parameters(generator.to_dict())
+        self.experiment.log_parameters(generator.as_dict())
         self.start_time = datetime.now()
 
     @staticmethod
