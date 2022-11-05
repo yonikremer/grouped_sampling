@@ -47,6 +47,10 @@ class ChangingSeed(Iterator):
 
 
 class TokenProb:
+    """Class for storing the probability of a token and the token itself.
+    Used to store the probabilities of the next tokens in the sampling generator.
+    Is useful because it supports the < and > operators, which are used in the
+    heapq module"""
     __slots__ = ['token_id', 'prob']
     token_id: int
     prob: Tensor  # of shape (1,) and dtype float
