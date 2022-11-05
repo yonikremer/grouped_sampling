@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Generator, Any, Dict, Tuple, List
 
 from evaluate import TranslationEvaluator
@@ -30,7 +32,7 @@ def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dat
     spited_sub_set_name = sub_set_name.split("_")
     language1, language2 = spited_sub_set_name[:2]
     # add a warning here
-    sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train")
+    sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train[:1]")
     processed_data1_dict: Dataset
     processed_data2_dict: Dataset
 
@@ -54,7 +56,7 @@ def run_experiment(generator: TextGenerator) -> None:
         processed_sub_set, language1, language2 = process_translation_data(DATASET_NAME, sub_set_name)
         my_evaluator.METRIC_KWARGS = {"lang": language2}
         # noinspection PyTypeChecker
-        scores1: Dict[str, List[float]] = my_evaluator.compute(
+        scores1: Dict[str, List[float] | Any] = my_evaluator.compute(
             model_or_pipeline=generator,
             data=processed_sub_set,
             input_column=language1,
@@ -63,7 +65,7 @@ def run_experiment(generator: TextGenerator) -> None:
         manager.log_sub_experiment(scores1)
         my_evaluator.METRIC_KWARGS = {"lang": language1}
         # noinspection PyTypeChecker
-        scores2: Dict[str, List[float]] = my_evaluator.compute(
+        scores2: Dict[str, List[float] | Any] = my_evaluator.compute(
             model_or_pipeline=generator,
             data=processed_sub_set,
             input_column=language2,
