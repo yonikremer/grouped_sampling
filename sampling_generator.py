@@ -175,7 +175,7 @@ class SamplingGenerator(TextGenerator):
         """Gets a token id: probability mapping
         returns the TOP_K tokens
         with the highest probability."""
-
+        assert len(probs) >= self.top_k
         top_k_keys: List[int] = heapq.nlargest(self.top_k, probs.items(), key=probs.get)
         top_k_probs = {
             k: probs[k]
