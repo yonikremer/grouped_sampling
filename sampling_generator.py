@@ -175,10 +175,7 @@ class SamplingGenerator(TextGenerator):
         """Gets a token id: probability mapping
         returns the TOP_K tokens
         with the highest probability."""
-        top_k_keys: List[int] = heapq.nlargest(self.top_k, probs, key=probs.get)
-        top_k_probs = {
-            k: probs[k]
-            for k in top_k_keys}
+        top_k_probs = dict(sorted(probs.items(), key=lambda x: x[1], reverse=True)[:self.top_k])
         prob_sum = sum(top_k_probs.values())
         weighted_probs = {
             k: v / prob_sum
