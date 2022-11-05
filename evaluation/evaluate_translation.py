@@ -32,7 +32,7 @@ def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dat
     spited_sub_set_name = sub_set_name.split("_")
     language1, language2 = spited_sub_set_name[:2]
     # add a warning here
-    sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train[:1]")
+    sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train")
     processed_data1_dict: Dataset
     processed_data2_dict: Dataset
 
