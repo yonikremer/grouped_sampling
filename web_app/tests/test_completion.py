@@ -25,7 +25,7 @@ def test_index(client: FlaskClient, auth) -> None:
     lower_html_str = response.get_data(as_text=True).lower()
     assert ("log out" in lower_html_str or "logout" in lower_html_str)
     assert not ("log in" in lower_html_str or "login" in lower_html_str)
-    assert not ("register" in lower_html_str)
+    assert "register" not in lower_html_str
 
 
 def count_completions(app: Flask) -> int:
@@ -36,7 +36,7 @@ def count_completions(app: Flask) -> int:
 
 
 def valid_completion_create_requests() -> Generator[Dict[str, str]]:
-    """Returns a generator of good completion create requests"""
+    """Returns a generator of good completion.create requests"""
     fields = ("prompt", "num_tokens", "model_name", "group_size", "generation_type",
               "top_p", "top_k", "temperature", "num_return_sequences")
     request: Dict[str, str] = {f: "" for f in fields}
