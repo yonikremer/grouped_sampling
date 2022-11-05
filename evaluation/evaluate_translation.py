@@ -1,8 +1,7 @@
-from typing import Generator, Any, Dict, Iterable, Tuple
+from typing import Generator, Any, Dict, Iterable, Tuple, List
 
 from evaluate import TranslationEvaluator
-from datasets import load_dataset, Dataset
-from torch import Tensor
+from datasets import load_dataset, Dataset, get_dataset_config_names
 
 from evaluation.experiment_manager import ExperimentManager
 from sampling_generator import SamplingGenerator
@@ -58,7 +57,7 @@ def run_experiment(generator: TextGenerator) -> None:
         processed_sub_set, language1, language2 = process_translation_data(DATASET_NAME, sub_set_name)
         my_evaluator.METRIC_KWARGS = {"lang": language2}
         # noinspection PyTypeChecker
-        scores1: Dict[str, Tensor] = my_evaluator.compute(
+        scores1: Dict[str, List[float]] = my_evaluator.compute(
             model_or_pipeline=generator,
             data=processed_sub_set,
             input_column=language1,
@@ -67,7 +66,7 @@ def run_experiment(generator: TextGenerator) -> None:
         manager.log_sub_experiment(scores1)
         my_evaluator.METRIC_KWARGS = {"lang": language1}
         # noinspection PyTypeChecker
-        scores2: Dict[str, Tensor] = my_evaluator.compute(
+        scores2: Dict[str, List[float]] = my_evaluator.compute(
             model_or_pipeline=generator,
             data=processed_sub_set,
             input_column=language2,
@@ -83,4 +82,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    pass

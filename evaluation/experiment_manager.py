@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import List, Dict
 
 from comet_ml import Experiment
-from torch import Tensor
 
 from text_generator import TextGenerator
 
@@ -50,14 +49,14 @@ class ExperimentManager:
                 f.write(COMET_ML_API_KEY)
         return COMET_ML_API_KEY
 
-    def log_sub_experiment(self, bert_scores: Dict[str, Tensor]) -> None:
+    def log_sub_experiment(self, bert_scores: Dict[str, List[float]]) -> None:
         """Args:
             bert_scores: Dict[str, Tensor]
                 with keys "f1", "precision", "recall"
                 values of shape (number of examples in the sub-experiment,) and type float"""
-        self.per_example_f1.extend(bert_scores["f1"].tolist())
-        self.per_example_precision.extend(bert_scores["precision"].tolist())
-        self.per_example_recall.extend(bert_scores["recall"].tolist())
+        self.per_example_f1.extend(bert_scores["f1"])
+        self.per_example_precision.extend(bert_scores["precision"])
+        self.per_example_recall.extend(bert_scores["recall"])
         self.num_examples += len(bert_scores["f1"])
 
     def end_experiment(self) -> None:
