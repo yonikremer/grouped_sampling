@@ -50,7 +50,9 @@ class TokenProb:
     """Class for storing the probability of a token and the token itself.
     Used to store the probabilities of the next tokens in the sampling generator.
     Is useful because it supports the < and > operators, which are used in the
-    heapq module"""
+    heapq module
+    The < and > are the opposite of each other because the heapq module is only supporting minimum heaps
+    and I need a maximum heap"""
     __slots__ = ['token_id', 'prob']
     token_id: int
     prob: Tensor  # of shape (1,) and dtype float
@@ -62,12 +64,12 @@ class TokenProb:
     def __lt__(self, other: "TokenProb"):
         """Overrides the < operator
         Comparison is done by the probability"""
-        return self.prob < other.prob
+        return self.prob > other.prob
 
     def __gt__(self, other: "TokenProb"):
         """Overrides the > operator
         Comparison is done by the probability"""
-        return self.prob > other.prob
+        return self.prob < other.prob
 
 
 class SamplingGenerator(TextGenerator):
@@ -149,10 +151,12 @@ class SamplingGenerator(TextGenerator):
         assuming the values of the dict are between 0 and 1, inclusive"""
         top_p_probs: Dict[int, Tensor] = {}
         prob_sum: float = 0.0
+        converted_probs: List[TokenProb]
         converted_probs = [TokenProb(token_id, prob) for token_id, prob in probs.items()]
-        heapq._heapify_max(converted_probs)
-        while prob_sum < self.top_p:
-            token_id: int = heapq._heappop_max(converted_probs).token_id
+        heapq.heapify(converted_probs)
+        while prob_sum < self.top_p and len(converted_probs) > 0:
+            curr_prob: TokenProb = heapq.heappop(converted_probs)
+            token_id = curr_prob.token_id
             prob_sum += probs[token_id]
             top_p_probs[token_id] = probs[token_id]
         if len(top_p_probs) == 0:
