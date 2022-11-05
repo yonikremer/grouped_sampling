@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 from itertools import islice
 from unittest import TestCase, main
-from typing import Generator, Union, Dict, List
+from typing import Generator
 
 from torch import Tensor, equal
 
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
-from text_generator import TextGenerator
+from text_generator import TextGenerator, SingleAnswer
 
 
 class TestTextGenerator(TestCase):
@@ -123,7 +125,7 @@ class TestTextGenerator(TestCase):
         """Tests the different returning options"""
         generator: TextGenerator = next(self.create_text_generators())
         prompt: str = "This is a test prompt"
-        answer: Dict[str, Union[str, Tensor]] = generator(
+        answer: SingleAnswer = generator(
             prompt_s=prompt,
             max_new_tokens=10,
             return_tensors=True,
@@ -150,7 +152,7 @@ class TestTextGenerator(TestCase):
         self.assertTrue(equal(answer["generated_token_ids"][:len(prompt_tokens)], prompt_tokens),
                         f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
 
-        answer: Dict[str, Union[str, Tensor]] = generator(
+        answer: SingleAnswer = generator(
             prompt_s=prompt, max_new_tokens=10,
             return_tensors=True, return_text=True, return_full_text=False
         )
@@ -165,7 +167,7 @@ class TestTextGenerator(TestCase):
         generator: TextGenerator = next(self.create_text_generators())
         prompt: str = "test prompt"
         prefix = "This is a"
-        answer: Dict[str, Union[str, Tensor]] = generator(
+        answer: SingleAnswer = generator(
             prompt_s=prompt, max_new_tokens=10,
             return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
         )
@@ -190,7 +192,7 @@ class TestTextGenerator(TestCase):
             with self.subTest(generator=str(generator)) as sub:
                 prompt: str = "I was to happy to see that "
                 num_return_sequences = 2
-                answer: List[Dict[str, Union[str, Tensor]]] = generator(
+                answer: SingleAnswer = generator(
                     prompt_s=prompt, max_new_tokens=8, return_tensors=False, return_text=True,
                     return_full_text=True, num_return_sequences=num_return_sequences
                 )
@@ -216,7 +218,7 @@ class TestTextGenerator(TestCase):
                                                end_of_sentence_stop=True)
         for generator in (top_p_sampling_gen, tree_gen):
             prompt: str = "This is a very short prompt"
-            answer: Dict[str, Union[str, Tensor]] = generator(
+            answer: SingleAnswer = generator(
                 prompt_s=prompt, max_new_tokens=None,
                 return_tensors=True, return_text=True, return_full_text=True
             )

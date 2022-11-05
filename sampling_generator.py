@@ -8,6 +8,9 @@ from torch import Tensor, tensor
 from text_generator import TextGenerator, GenerationType, NoCompletionsFound
 
 
+ProbDict = Dict[int, Tensor]
+
+
 class ChangingSeed(Iterator):
     """Context manager for changing the seed of the random module.
     How to use:
@@ -76,7 +79,7 @@ class SamplingGenerator(TextGenerator):
     """A TextGenerator that generates text
     using random sampling
     with top-k or top-p filtering."""
-    filter_tokens: Callable[[Dict[int, Tensor]], Dict[int, Tensor]]
+    filter_tokens: Callable[[ProbDict], ProbDict]
     top_k: Optional[int] = None
     top_p: Optional[float] = None
     default_seed: int = 0
@@ -123,16 +126,16 @@ class SamplingGenerator(TextGenerator):
             raise RuntimeError
 
     @staticmethod
-    def all_tokens(probs: Dict[int, Tensor]) \
-            -> Dict[int, Tensor]:
+    def all_tokens(probs: ProbDict) \
+            -> ProbDict:
         """A filtering function that doesn't filter any tokens.
         returns all the tokens with their probabilities."""
         return probs
 
     @staticmethod
     def highest_prob_token(
-            probs: Dict[int, Tensor]) \
-            -> Dict[int, Tensor]:
+            probs: ProbDict) \
+            -> ProbDict:
         """Gets a token id: probability mapping
         as a sorted dictionary
         returns the token with the highest probability.
@@ -141,8 +144,8 @@ class SamplingGenerator(TextGenerator):
         return {highest_prob_token_id: tensor(1.0)}
 
     def top_p_tokens(
-            self, probs: Dict[int, Tensor]) \
-            -> Dict[int, Tensor]:
+            self, probs: ProbDict) \
+            -> ProbDict:
         """Gets a token id: probability mapping
         returns the tokens with the highest probability
         such that their sum is <= self.top_p.
@@ -150,7 +153,7 @@ class SamplingGenerator(TextGenerator):
         if it's higher than top_p.
         assuming the values of the dict are between 0 and 1, inclusive
         this is the bottleneck of the sampling generator."""
-        top_p_probs: Dict[int, Tensor] = {}
+        top_p_probs: ProbDict = {}
         prob_sum: float = 0.0
         converted_probs: List[TokenProb]
         converted_probs = [TokenProb(token_id, prob) for token_id, prob in probs.items()]
@@ -171,8 +174,8 @@ class SamplingGenerator(TextGenerator):
         return weighted_probs
 
     def top_k_tokens(
-            self, probs: Dict[int, Tensor]) \
-            -> Dict[int, Tensor]:
+            self, probs: ProbDict) \
+            -> ProbDict:
         """Gets a token id: probability mapping
         returns the TOP_K tokens
         with the highest probability.

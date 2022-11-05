@@ -1,12 +1,12 @@
+from __future__ import annotations
+
 import sys
 from math import ceil
-from typing import List, Dict, Union, Tuple, Sequence, Any, Optional
+from typing import List, Dict, Tuple, Sequence, Any, Optional
 
 from torch import Tensor
 
-from text_generator import TextGenerator, NoCompletionsFound, GenerationType
-
-tokenIDS = Union[List[int], Tuple[int]]
+from text_generator import TextGenerator, NoCompletionsFound, GenerationType, TokenIDS
 
 
 class TreeGenerator(TextGenerator):
@@ -109,7 +109,7 @@ class TreeGenerator(TextGenerator):
         return probability
 
     @staticmethod
-    def flatten(ids: tokenIDS) -> List:
+    def flatten(ids: TokenIDS) -> List:
         """Gets a list where some elements might be lists
         and adds every item
         in the inner list to the outer list.
@@ -153,7 +153,7 @@ class TreeGenerator(TextGenerator):
 
     def generate_group(
             self, prob_mat: Tensor,
-            org_prompt: tokenIDS) -> List[List[int]]:
+            org_prompt: TokenIDS) -> List[List[int]]:
         """given a matrix of probabilities,
         returns a list of lists of tokens.
         the matrix is of size group_size x vocab_size
@@ -228,7 +228,7 @@ class TreeGenerator(TextGenerator):
 
         return new_sequences
 
-    def rec_gen(self, org_prompt: Union[tokenIDS, Tensor],
+    def rec_gen(self, org_prompt: TokenIDS | Tensor,
                 num_tokens: Optional[int],
                 org_prompt_prob: float = 1.0) \
             -> Dict[Tuple[int], float]:

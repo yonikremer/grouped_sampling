@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import timeit
 from enum import Enum
 from abc import ABC, abstractmethod
@@ -16,7 +18,7 @@ from transformers.tokenization_utils_base import TruncationStrategy
 from tqdm import tqdm
 
 TokenIDS = Union[List[int], Tuple[int]]
-SingleAnswer = Dict[str, Union[str, tensor]]
+SingleAnswer = Dict[str, Union[str, Tensor]]
 MAX_MODEL_INPUT_SIZE = 8192
 
 
@@ -248,7 +250,7 @@ class TextGenerator(Callable, ABC):
             prefix: str = "",
             num_return_sequences: int = 1,
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
-    ) -> Union[SingleAnswer, List[SingleAnswer], List[List[SingleAnswer]]]:
+    ) -> SingleAnswer | List[SingleAnswer] | List[List[SingleAnswer]]:
         """The function that outside code should call to generate text
         Args:
             prompt_s: str or list of str - the prompt(s) to start the generation from
