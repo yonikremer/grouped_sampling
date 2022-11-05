@@ -23,8 +23,8 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
         model_name="facebook/opt-125m",
         group_size=8,
         temp=1.0,
-        top_k=None,
-        top_p=0.5,
+        top_k=4,
+        top_p=None,
         end_of_sentence_stop=True,
         answer_length_multiplier=4,
     )
