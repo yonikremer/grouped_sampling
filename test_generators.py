@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from itertools import islice
+from itertools import islice, product
 from unittest import TestCase, main
 from typing import Generator, List
 
@@ -35,50 +35,47 @@ class TestTextGenerator(TestCase):
                                                temp=self.TEMPERATURES[0],
                                                end_of_sentence_stop=True)
         yield top_p_sampling_gen
+        del top_p_sampling_gen
         yield curr_tree_gen
+        del curr_tree_gen
 
-        for model_name in self.MODEL_NAMES:
-            if self.MODEL_NAMES.index(model_name) > 0:
-                del top_p_sampling_gen, top_k_sampling_gen, curr_tree_gen
-            top_p_sampling_gen = SamplingGenerator(model_name=model_name,
-                                                   group_size=self.GROUP_SIZES[0],
-                                                   top_k=None,
-                                                   top_p=self.TOP_PS[0],
-                                                   temp=self.TEMPERATURES[0])
+        model_name = self.MODEL_NAMES[1]
+        top_p_sampling_gen = SamplingGenerator(model_name=model_name,
+                                               group_size=self.GROUP_SIZES[0],
+                                               top_k=None,
+                                               top_p=self.TOP_PS[0],
+                                               temp=self.TEMPERATURES[0])
 
-            top_k_sampling_gen = SamplingGenerator(model_name=model_name,
-                                                   group_size=self.GROUP_SIZES[0],
-                                                   top_k=self.TOP_KS[0],
-                                                   top_p=None,
-                                                   temp=self.TEMPERATURES[0])
+        top_k_sampling_gen = SamplingGenerator(model_name=model_name,
+                                               group_size=self.GROUP_SIZES[0],
+                                               top_k=self.TOP_KS[0],
+                                               top_p=None,
+                                               temp=self.TEMPERATURES[0])
 
-            curr_tree_gen = TreeGenerator(model_name=model_name,
-                                          group_size=self.GROUP_SIZES[0],
-                                          top_k=self.TOP_KS[0],
-                                          top_p=self.TOP_PS[0],
-                                          temp=self.TEMPERATURES[0])
+        curr_tree_gen = TreeGenerator(model_name=model_name,
+                                      group_size=self.GROUP_SIZES[0],
+                                      top_k=self.TOP_KS[0],
+                                      top_p=self.TOP_PS[0],
+                                      temp=self.TEMPERATURES[0])
 
-            for group_size in self.GROUP_SIZES:
-                top_p_sampling_gen.group_size = group_size
-                top_k_sampling_gen.group_size = group_size
-                curr_tree_gen.group_size = group_size
+        for group_size, temp in product(self.GROUP_SIZES, self.TEMPERATURES):
+            top_p_sampling_gen.temp = temp
+            top_k_sampling_gen.temp = temp
+            curr_tree_gen.temp = temp
+            top_p_sampling_gen.group_size = group_size
+            top_k_sampling_gen.group_size = group_size
+            curr_tree_gen.group_size = group_size
 
-                for top_k in self.TOP_KS:
-                    top_k_sampling_gen.top_k = top_k
-                    curr_tree_gen.top_k = top_k
+            for top_k in self.TOP_KS:
+                top_k_sampling_gen.top_k = top_k
+                curr_tree_gen.top_k = top_k
+                yield top_k_sampling_gen
 
-                    for top_p in self.TOP_PS:
-                        top_p_sampling_gen.top_p = top_p
-                        curr_tree_gen.top_p = top_p
-
-                        for temp in self.TEMPERATURES:
-                            top_p_sampling_gen.temp = temp
-                            top_k_sampling_gen.temp = temp
-                            curr_tree_gen.temp = temp
-
-                            yield top_p_sampling_gen
-                            yield top_k_sampling_gen
-                            yield curr_tree_gen
+                for top_p in self.TOP_PS:
+                    top_p_sampling_gen.top_p = top_p
+                    curr_tree_gen.top_p = top_p
+                    yield top_p_sampling_gen
+                    yield curr_tree_gen
 
     def test_calling_generators(self):
         for curr_text_generator in self.create_text_generators():
