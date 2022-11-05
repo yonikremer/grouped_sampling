@@ -49,10 +49,15 @@ class TreeGenerator(TextGenerator):
                 self.generation_type = GenerationType.GREEDY
             else:
                 self.generation_type = GenerationType.TOP_P
+        elif top_k is not None and top_p is not None:
+            if top_k == 1 or top_p == 0.0:
+                self.generation_type = GenerationType.GREEDY
+            elif top_k >= self.vocab_size and top_p == 1.0:
+                self.generation_type = GenerationType.RANDOM
+            else:
+                self.generation_type = GenerationType.TOP_K
         else:
-            raise ValueError(
-                "Either top_k or top_p \
-                should be set.")
+            raise RuntimeError("Invalid top_k and top_p combination")
 
     @staticmethod
     def no_duplicates(
@@ -223,7 +228,8 @@ class TreeGenerator(TextGenerator):
 
         return new_sequences
 
-    def rec_gen(self, org_prompt: tokenIDS, num_tokens: Optional[int],
+    def rec_gen(self, org_prompt: Union[tokenIDS, Tensor],
+                num_tokens: Optional[int],
                 org_prompt_prob: float = 1.0) \
             -> Dict[Tuple[int], float]:
         """Recursively generates the next group of tokens
@@ -235,13 +241,16 @@ class TreeGenerator(TextGenerator):
             num_groups = None
         else:
             num_groups = ceil(num_tokens / self.group_size)
-        is_list = isinstance(org_prompt, list)
-        is_tuple = isinstance(org_prompt, tuple)
-        if is_list or is_tuple:
+        is_tensor = isinstance(org_prompt, Tensor)
+        tokens_list: List[int]
+        if isinstance(org_prompt, list) or isinstance(org_prompt, tuple):
             tokens_list = TreeGenerator.flatten(org_prompt)
-            prob_mat: Tensor = self.get_prob_mat(tokens_list)
+        elif is_tensor:
+            tokens_list = org_prompt.tolist()
         else:
-            raise TypeError("org_prompt must be a list or a tuple")
+            raise TypeError("org_prompt must be a list or a tuple."
+                            f" got {type(org_prompt)} instead")
+        prob_mat: Tensor = self.get_prob_mat(tokens_list)
         tokenized_ans_list: List[List[int]] = self.generate_group(
             prob_mat, org_prompt)
         if len(tokenized_ans_list) == 0:
@@ -291,7 +300,7 @@ class TreeGenerator(TextGenerator):
 
     def _forward(
             self,
-            tokenized_prompt: List[int],
+            tokenized_prompt: Tensor,
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[List[int]]:
