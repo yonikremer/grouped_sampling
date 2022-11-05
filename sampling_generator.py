@@ -89,30 +89,32 @@ class SamplingGenerator(TextGenerator):
             answer_length_multiplier=answer_length_multiplier,
         )
         if top_k is None and top_p is None:
-            self.top_p = 1.0
-            self.top_k = self.vocab_size
             self.generation_type = GenerationType.RANDOM
             self.filter_tokens = SamplingGenerator.all_tokens
         elif top_p is None and top_k is not None:
             self.top_k = top_k
-            self.filter_tokens = self.top_k_tokens
-            self.generation_type = GenerationType.TOP_K
+            if top_k == 1:
+                self.generation_type = GenerationType.GREEDY
+                self.filter_tokens = SamplingGenerator.highest_prob_token
+            elif top_k >= self.vocab_size:
+                self.generation_type = GenerationType.RANDOM
+                self.filter_tokens = SamplingGenerator.all_tokens
+            else:
+                self.filter_tokens = self.top_k_tokens
+                self.generation_type = GenerationType.TOP_K
         elif top_k is None and top_p is not None:
             self.top_p = top_p
-            self.filter_tokens = self.top_p_tokens
-            self.generation_type = GenerationType.TOP_P
-        elif top_p == 1.0 or top_k >= self.vocab_size:
-            self.top_p = 1.0
-            self.top_k = self.vocab_size
-            self.generation_type = GenerationType.RANDOM
-            self.filter_tokens = SamplingGenerator.all_tokens
-        elif top_k == 1 or top_p == 0:
-            self.generation_type = GenerationType.GREEDY
-            self.filter_tokens = SamplingGenerator.highest_prob_token
+            if top_p == 1.0:
+                self.generation_type = GenerationType.RANDOM
+                self.filter_tokens = SamplingGenerator.all_tokens
+            elif top_p == 0.0:
+                self.generation_type = GenerationType.GREEDY
+                self.filter_tokens = SamplingGenerator.highest_prob_token
+            else:
+                self.filter_tokens = self.top_p_tokens
+                self.generation_type = GenerationType.TOP_P
         else:
-            raise ValueError(
-                "Either top_k or top_p \
-                should be set.")
+            raise RuntimeError
 
     @staticmethod
     def all_tokens(probs: Dict[int, Tensor]) \
