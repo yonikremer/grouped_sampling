@@ -1,5 +1,5 @@
 import os
-from typing import Generator, Any, Dict, List
+from typing import Generator, Any, Dict, List, Iterable
 from datetime import datetime
 
 from evaluate import TranslationEvaluator
@@ -9,15 +9,15 @@ from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 from comet_ml import Experiment
 
-DATASET_NAME = "news_commentary"
-SUB_SETS = ['ar-cs', 'ar-de', 'cs-de', 'ar-en', 'cs-en', 'de-en', 'ar-es', 'cs-es', 'de-es', 'en-es', 'ar-fr', 'cs-fr',
-            'de-fr', 'en-fr', 'es-fr', 'ar-it', 'cs-it', 'de-it', 'en-it', 'es-it', 'fr-it', 'ar-ja', 'cs-ja', 'de-ja',
-            'en-ja', 'es-ja', 'fr-ja', 'ar-nl', 'cs-nl', 'de-nl', 'en-nl', 'es-nl', 'fr-nl', 'it-nl', 'ar-pt', 'cs-pt',
-            'de-pt', 'en-pt', 'es-pt', 'fr-pt', 'it-pt', 'nl-pt', 'ar-ru', 'cs-ru', 'de-ru', 'en-ru', 'es-ru', 'fr-ru',
-            'it-ru', 'ja-ru', 'nl-ru', 'pt-ru', 'ar-zh', 'cs-zh', 'de-zh', 'en-zh', 'es-zh', 'fr-zh', 'it-zh', 'ja-zh',
-            'nl-zh', 'pt-zh', 'ru-zh']
+DATASET_NAME = "ted_talks_iwslt"
+SPLIT_NAMES: Iterable[str] = ['eu_ca_2014', 'eu_ca_2015', 'eu_ca_2016', 'nl_en_2014', 'nl_en_2015', 'nl_en_2016', 'nl_hi_2014', 'nl_hi_2015', 'nl_hi_2016', 'de_ja_2014', 'de_ja_2015', 'de_ja_2016', 'fr-ca_hi_2014', 'fr-ca_hi_2015', 'fr-ca_hi_2016']
 METRIC_NAMES = ("bertscore",)
-api_key_file = "final_project/evaluation/comet_ml_api_key.txt"
+if os.getcwd() == "/content":
+    # if running on colab
+    api_key_file = "final_project/evaluation/comet_ml_api_key.txt"
+else:
+    # if running locally
+    api_key_file = "comet_ml_api_key.txt"
 if os.path.exists(api_key_file):
     with open(api_key_file, "r") as f:
         COMET_ML_API_KEY = f.read().strip()
@@ -25,7 +25,7 @@ else:
     COMET_ML_API_KEY = input("Please enter your api_key for comet ml: ")
     with open(api_key_file, "w") as f:
         f.write(COMET_ML_API_KEY)
-PROJECT_NAME = "grouped-sampling-evaluation"
+COMET_ML_PROJECT_NAME = "grouped-sampling-evaluation"
 # TODO: remove this statement when stop debugging
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
@@ -41,7 +41,7 @@ class ExperimentHandler:
     def __init__(self, generator: TextGenerator):
         self.experiment = Experiment(
             api_key=COMET_ML_API_KEY,
-            project_name=PROJECT_NAME,
+            project_name=COMET_ML_PROJECT_NAME,
             auto_param_logging=False,
             auto_metric_logging=False,
             log_code=False,
@@ -84,7 +84,10 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
 
 
 def process_translation_data(data_set_name: str, sub_set_name: str) -> Dataset:
-    language1, language2 = sub_set_name.split("-")
+    print(f"Loading {data_set_name} {sub_set_name}")
+    spited_sub_set_name = sub_set_name.split("_")
+    print(spited_sub_set_name)
+    language1, language2 = spited_sub_set_name[:2]
     # add a warning here
     sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train")
     processed_data1_dict: Dataset
@@ -103,8 +106,11 @@ def run_experiment(generator: TextGenerator) -> None:
     my_evaluator = TranslationEvaluator(default_metric_name="bertscore")
     my_evaluator.PREDICTION_PREFIX = "generated"
     handler = ExperimentHandler(generator)
-    for sub_set_name in SUB_SETS:
-        language1, language2 = sub_set_name.split("-")
+    for sub_set_name in SPLIT_NAMES:
+        print(f"Loading {sub_set_name}")
+        spited_sub_set_name = sub_set_name.split("_")
+        print(spited_sub_set_name)
+        language1, language2 = spited_sub_set_name[:2]
         processed_sub_set: Dataset = process_translation_data(DATASET_NAME, sub_set_name)
         my_evaluator.METRIC_KWARGS = {"lang": language2}
         scores1 = my_evaluator.compute(model_or_pipeline=generator,
@@ -125,3 +131,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+else:
+    raise ImportError("This file should not be imported")
