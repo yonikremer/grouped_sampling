@@ -66,7 +66,7 @@ class ExperimentManager:
                                                       "recall": self.per_example_recall}
         averaged_scores = {}
         for metric, scores in per_example_scores.items():
-            averaged_scores[f"average {metric}"] = sum(scores) / self.num_examples
+            averaged_scores[f"average BERT {metric}"] = sum(scores) / self.num_examples
         self.experiment.log_metrics(averaged_scores)
         total_time_in_seconds = (datetime.now() - self.start_time).total_seconds()
         self.experiment.log_metric("time in seconds", total_time_in_seconds)
