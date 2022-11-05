@@ -79,7 +79,6 @@ def run_experiment(generator: TextGenerator) -> None:
 
 def main():
     for curr_text_generator in generate_text_generators():
-        print("starting experiment")
         run_experiment(curr_text_generator)
 
 

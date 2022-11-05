@@ -231,7 +231,6 @@ class SamplingGenerator(TextGenerator):
             if num_new_tokens is None:
                 raise RuntimeError("num_new_tokens is None")
             else:
-                print("num_new_tokens: ", num_new_tokens)
                 num_groups = num_new_tokens // self.group_size
                 the_range = range(num_groups)
             for _ in the_range:
