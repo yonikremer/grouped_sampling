@@ -21,10 +21,10 @@ SPLIT_NAMES: Iterable[str] = ['eu_ca_2014', 'eu_ca_2015', 'eu_ca_2016', 'nl_en_2
 def generate_text_generators() -> Generator[TextGenerator, None, None]:
     yield SamplingGenerator(
         model_name="facebook/opt-125m",
-        group_size=8,
+        group_size=16,
         temp=1.0,
-        top_k=1,
-        top_p=None,
+        top_k=None,
+        top_p=1.0,
         end_of_sentence_stop=True,
         answer_length_multiplier=2,
     )
