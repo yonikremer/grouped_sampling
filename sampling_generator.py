@@ -148,7 +148,8 @@ class SamplingGenerator(TextGenerator):
         such that their sum is <= self.top_p.
         or the token with the highest probability
         if it's higher than top_p.
-        assuming the values of the dict are between 0 and 1, inclusive"""
+        assuming the values of the dict are between 0 and 1, inclusive
+        this is the bottleneck of the sampling generator."""
         top_p_probs: Dict[int, Tensor] = {}
         prob_sum: float = 0.0
         converted_probs: List[TokenProb]
@@ -174,7 +175,8 @@ class SamplingGenerator(TextGenerator):
             -> Dict[int, Tensor]:
         """Gets a token id: probability mapping
         returns the TOP_K tokens
-        with the highest probability."""
+        with the highest probability.
+        this is the bottleneck of the sampling generator."""
         top_k_keys: List[int] = heapq.nlargest(self.top_k, probs, key=probs.get)
         top_k_probs = {
             k: probs[k]
@@ -207,7 +209,7 @@ class SamplingGenerator(TextGenerator):
                 in enumerate(curr_token_probs)}
             weighted_probs = self.filter_tokens(indexed_prob)
             keys_list = list(weighted_probs.keys())
-            weights_list = list(prob_val.item() for prob_val in weighted_probs.values())
+            weights_list: List[float] = [prob_val.item() for prob_val in weighted_probs.values()]
             sampled_token: int = choices(
                 keys_list, weights_list, k=1)[0]
             new_group.append(sampled_token)
