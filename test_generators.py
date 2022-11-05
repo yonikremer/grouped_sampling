@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from itertools import islice
 from unittest import TestCase, main
-from typing import Generator
+from typing import Generator, List
 
 from torch import Tensor, equal
 
@@ -192,12 +192,13 @@ class TestTextGenerator(TestCase):
             with self.subTest(generator=str(generator)) as sub:
                 prompt: str = "I was to happy to see that "
                 num_return_sequences = 2
-                answer: SingleAnswer = generator(
+                answer: List[SingleAnswer] = generator(
                     prompt_s=prompt, max_new_tokens=8, return_tensors=False, return_text=True,
                     return_full_text=True, num_return_sequences=num_return_sequences
                 )
                 self.assertEqual(len(answer), num_return_sequences, f"len(answer) is not {num_return_sequences}")
                 for curr_answer in answer:
+                    curr_answer: SingleAnswer
                     self.assertIn(prompt, curr_answer["generated_text"],
                                   f"{curr_answer['generated_text']} doesn't contain {prompt}")
                 print(f"ended sub test: {sub}")
@@ -237,6 +238,16 @@ class TestTextGenerator(TestCase):
             prompt_tokens: Tensor = generator.preprocess(prompt)
             self.assertTrue(equal(answer["generated_token_ids"][:len(prompt_tokens)], prompt_tokens),
                             f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
+
+    def test_initialization(self):
+        """Tests the __init__ method independently"""
+        for _ in self.create_text_generators():
+            continue
+
+    def test_str(self):
+        """Test the __str__ method"""
+        for generator in self.create_text_generators():
+            self.assertIsInstance(str(generator), str)
 
 
 if __name__ == '__main__':
