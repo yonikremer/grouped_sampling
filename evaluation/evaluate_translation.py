@@ -2,6 +2,7 @@ from typing import Generator, Any, Dict, Iterable, Tuple
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset
+from torch import Tensor
 
 from evaluation.experiment_manager import ExperimentManager
 from sampling_generator import SamplingGenerator
@@ -11,6 +12,7 @@ DATASET_NAME = "ted_talks_iwslt"
 SPLIT_NAMES: Iterable[str] = ['eu_ca_2014', 'eu_ca_2015', 'eu_ca_2016', 'nl_en_2014', 'nl_en_2015', 'nl_en_2016',
                               'nl_hi_2014', 'nl_hi_2015', 'nl_hi_2016', 'de_ja_2014', 'de_ja_2015', 'de_ja_2016',
                               'fr-ca_hi_2014', 'fr-ca_hi_2015', 'fr-ca_hi_2016']
+
 
 # the next line is used for debug mode
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
@@ -55,12 +57,22 @@ def run_experiment(generator: TextGenerator) -> None:
         language2: str
         processed_sub_set, language1, language2 = process_translation_data(DATASET_NAME, sub_set_name)
         my_evaluator.METRIC_KWARGS = {"lang": language2}
-        scores1 = my_evaluator.compute(model_or_pipeline=generator,
-                                       data=processed_sub_set, input_column=language1, label_column=language2)
+        # noinspection PyTypeChecker
+        scores1: Dict[str, Tensor] = my_evaluator.compute(
+            model_or_pipeline=generator,
+            data=processed_sub_set,
+            input_column=language1,
+            label_column=language2
+        )
         manager.log_sub_experiment(scores1)
         my_evaluator.METRIC_KWARGS = {"lang": language1}
-        scores2 = my_evaluator.compute(model_or_pipeline=generator,
-                                       data=processed_sub_set, input_column=language2, label_column=language1)
+        # noinspection PyTypeChecker
+        scores2: Dict[str, Tensor] = my_evaluator.compute(
+            model_or_pipeline=generator,
+            data=processed_sub_set,
+            input_column=language2,
+            label_column=language1
+        )
         manager.log_sub_experiment(scores2)
     manager.end_experiment()
 
