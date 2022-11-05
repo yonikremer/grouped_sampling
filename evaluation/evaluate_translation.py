@@ -11,7 +11,6 @@ from comet_ml import Experiment
 
 DATASET_NAME = "ted_talks_iwslt"
 SPLIT_NAMES: Iterable[str] = ['eu_ca_2014', 'eu_ca_2015', 'eu_ca_2016', 'nl_en_2014', 'nl_en_2015', 'nl_en_2016', 'nl_hi_2014', 'nl_hi_2015', 'nl_hi_2016', 'de_ja_2014', 'de_ja_2015', 'de_ja_2016', 'fr-ca_hi_2014', 'fr-ca_hi_2015', 'fr-ca_hi_2016']
-METRIC_NAMES = ("bertscore",)
 if os.getcwd() == "/content":
     # if running on colab
     api_key_file = "final_project/evaluation/comet_ml_api_key.txt"
