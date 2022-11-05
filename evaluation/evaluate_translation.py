@@ -11,20 +11,7 @@ from comet_ml import Experiment
 
 DATASET_NAME = "ted_talks_iwslt"
 SPLIT_NAMES: Iterable[str] = ['eu_ca_2014', 'eu_ca_2015', 'eu_ca_2016', 'nl_en_2014', 'nl_en_2015', 'nl_en_2016', 'nl_hi_2014', 'nl_hi_2015', 'nl_hi_2016', 'de_ja_2014', 'de_ja_2015', 'de_ja_2016', 'fr-ca_hi_2014', 'fr-ca_hi_2015', 'fr-ca_hi_2016']
-if os.getcwd() == "/content":
-    # if running on colab
-    api_key_file = "final_project/evaluation/comet_ml_api_key.txt"
-else:
-    # if running locally
-    api_key_file = "comet_ml_api_key.txt"
-if os.path.exists(api_key_file):
-    with open(api_key_file, "r") as f:
-        COMET_ML_API_KEY = f.read().strip()
-else:
-    COMET_ML_API_KEY = input("Please enter your api_key for comet ml: ")
-    with open(api_key_file, "w") as f:
-        f.write(COMET_ML_API_KEY)
-COMET_ML_PROJECT_NAME = "grouped-sampling-evaluation"
+
 # TODO: remove this statement when stop debugging
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
@@ -36,11 +23,12 @@ class ExperimentHandler:
     num_examples: int = 0
     start_time: datetime
     experiment: Experiment
+    COMET_ML_PROJECT_NAME = "grouped-sampling-evaluation"
 
     def __init__(self, generator: TextGenerator):
         self.experiment = Experiment(
-            api_key=COMET_ML_API_KEY,
-            project_name=COMET_ML_PROJECT_NAME,
+            api_key=ExperimentHandler.get_comet_api_key(),
+            project_name=self.COMET_ML_PROJECT_NAME,
             auto_param_logging=False,
             auto_metric_logging=False,
             log_code=False,
@@ -50,6 +38,23 @@ class ExperimentHandler:
         )
         self.experiment.log_parameters(generator.to_dict())
         self.start_time = datetime.now()
+
+    @staticmethod
+    def get_comet_api_key() -> str:
+        if os.getcwd() == "/content":
+            # if running on colab
+            api_key_file = "final_project/evaluation/comet_ml_api_key.txt"
+        else:
+            # if running locally
+            api_key_file = "comet_ml_api_key.txt"
+        if os.path.exists(api_key_file):
+            with open(api_key_file, "r") as f:
+                COMET_ML_API_KEY = f.read().strip()
+        else:
+            COMET_ML_API_KEY = input("Please enter your api_key for comet ml: ")
+            with open(api_key_file, "w") as f:
+                f.write(COMET_ML_API_KEY)
+        return COMET_ML_API_KEY
 
     def log_sub_experiment(self, bert_scores) -> None:
         self.per_example_f1.extend(bert_scores["f1"].tolist())
