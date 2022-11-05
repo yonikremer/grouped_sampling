@@ -1,5 +1,5 @@
 import os
-from typing import Generator, Any, Dict, List, Iterable
+from typing import Generator, Any, Dict, List, Iterable, Tuple
 from datetime import datetime
 
 from evaluate import TranslationEvaluator
@@ -87,10 +87,8 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
     )
 
 
-def process_translation_data(data_set_name: str, sub_set_name: str) -> Dataset:
-    print(f"Loading {data_set_name} {sub_set_name}")
+def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
-    print(spited_sub_set_name)
     language1, language2 = spited_sub_set_name[:2]
     # add a warning here
     sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train")
@@ -102,7 +100,7 @@ def process_translation_data(data_set_name: str, sub_set_name: str) -> Dataset:
         return {input_lang: translation[input_lang], output_lang: translation[output_lang]}
 
     processed_data = sub_set.map(rename_keys, fn_kwargs={"input_lang": language1, "output_lang": language2})
-    return processed_data
+    return processed_data, language1, language2
 
 
 def run_experiment(generator: TextGenerator) -> None:
@@ -111,11 +109,10 @@ def run_experiment(generator: TextGenerator) -> None:
     my_evaluator.PREDICTION_PREFIX = "generated"
     handler = ExperimentHandler(generator)
     for sub_set_name in SPLIT_NAMES:
-        print(f"Loading {sub_set_name}")
-        spited_sub_set_name = sub_set_name.split("_")
-        print(spited_sub_set_name)
-        language1, language2 = spited_sub_set_name[:2]
-        processed_sub_set: Dataset = process_translation_data(DATASET_NAME, sub_set_name)
+        processed_sub_set: Dataset
+        language1: str
+        language2: str
+        processed_sub_set, language1, language2 = process_translation_data(DATASET_NAME, sub_set_name)
         my_evaluator.METRIC_KWARGS = {"lang": language2}
         scores1 = my_evaluator.compute(model_or_pipeline=generator,
                                        data=processed_sub_set, input_column=language1, label_column=language2)
