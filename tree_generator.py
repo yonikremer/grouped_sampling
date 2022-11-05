@@ -21,6 +21,7 @@ class TreeGenerator(TextGenerator):
                  temp: float = 1.0,
                  end_of_sentence_stop: bool = False,
                  answer_length_multiplier: int = 16):
+        self.top_p, self.top_k = top_p, top_k
         super().__init__(
             model_name=model_name,
             group_size=group_size,
@@ -29,35 +30,23 @@ class TreeGenerator(TextGenerator):
             answer_length_multiplier=answer_length_multiplier
         )
 
+    def choose_generation_type(self) -> GenerationType:
+        top_p, top_k = self.top_p, self.top_k
         if top_k is None and top_p is None:
-            self.top_p = 1.0
             self.top_k = self.vocab_size
-            self.generation_type = GenerationType.RANDOM
-        elif top_p is None and top_k is not None:
-            self.top_k = top_k
-            if top_k == 1:
-                self.generation_type = GenerationType.GREEDY
-            elif top_k >= self.vocab_size:
-                self.generation_type = GenerationType.RANDOM
-            else:
-                self.generation_type = GenerationType.TOP_K
-        elif top_k is None and top_p is not None:
-            self.top_p = top_p
-            if top_p == 1.0:
-                self.generation_type = GenerationType.RANDOM
-            elif top_p == 0.0:
-                self.generation_type = GenerationType.GREEDY
-            else:
-                self.generation_type = GenerationType.TOP_P
-        elif top_k is not None and top_p is not None:
-            if top_k == 1 or top_p == 0.0:
-                self.generation_type = GenerationType.GREEDY
-            elif top_k >= self.vocab_size and top_p == 1.0:
-                self.generation_type = GenerationType.RANDOM
-            else:
-                self.generation_type = GenerationType.TOP_K
-        else:
-            raise RuntimeError("Invalid top_k and top_p combination")
+            self.top_p = 1.0
+            return GenerationType.TREE
+        if top_k == 1 or top_p == 0.0:
+            return GenerationType.GREEDY
+        if top_k is not None:
+            if top_k < self.vocab_size:
+                return GenerationType.TOP_K
+            return GenerationType.TREE
+        if top_p is not None:
+            if top_p < 1.0:
+                return GenerationType.TOP_P
+            return GenerationType.TREE
+        raise RuntimeError
 
     @staticmethod
     def no_duplicates(

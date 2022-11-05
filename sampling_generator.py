@@ -90,6 +90,7 @@ class SamplingGenerator(TextGenerator):
                  top_p: Optional[float] = None,
                  end_of_sentence_stop: bool = False,
                  answer_length_multiplier: int = 16,):
+        self.top_p, self.top_k = top_p, top_k
         super().__init__(
             model_name=model_name,
             group_size=group_size,
@@ -97,33 +98,30 @@ class SamplingGenerator(TextGenerator):
             end_of_sentence_stop=end_of_sentence_stop,
             answer_length_multiplier=answer_length_multiplier,
         )
+        gen_type_to_filter_method = {
+            GenerationType.TOP_K: self.top_k_tokens,
+            GenerationType.TOP_P: self.top_p_tokens,
+            GenerationType.GREEDY: SamplingGenerator.highest_prob_token,
+            GenerationType.RANDOM: SamplingGenerator.all_tokens,
+        }
+        self.filter_tokens = gen_type_to_filter_method[self.generation_type]
+
+    def choose_generation_type(self) -> GenerationType:
+        top_k = self.top_k
+        top_p = self.top_p
         if top_k is None and top_p is None:
-            self.generation_type = GenerationType.RANDOM
-            self.filter_tokens = SamplingGenerator.all_tokens
-        elif top_p is None and top_k is not None:
-            self.top_k = top_k
-            if top_k == 1:
-                self.generation_type = GenerationType.GREEDY
-                self.filter_tokens = SamplingGenerator.highest_prob_token
-            elif top_k >= self.vocab_size:
-                self.generation_type = GenerationType.RANDOM
-                self.filter_tokens = SamplingGenerator.all_tokens
-            else:
-                self.filter_tokens = self.top_k_tokens
-                self.generation_type = GenerationType.TOP_K
-        elif top_k is None and top_p is not None:
-            self.top_p = top_p
-            if top_p == 1.0:
-                self.generation_type = GenerationType.RANDOM
-                self.filter_tokens = SamplingGenerator.all_tokens
-            elif top_p == 0.0:
-                self.generation_type = GenerationType.GREEDY
-                self.filter_tokens = SamplingGenerator.highest_prob_token
-            else:
-                self.filter_tokens = self.top_p_tokens
-                self.generation_type = GenerationType.TOP_P
-        else:
-            raise RuntimeError
+            return GenerationType.RANDOM
+        if top_k == 1 or top_p == 0.0:
+            return GenerationType.GREEDY
+        if top_k is not None:
+            if top_k < self.vocab_size:
+                return GenerationType.TOP_K
+            return GenerationType.RANDOM
+        if top_p is not None:
+            if top_p < 1.0:
+                return GenerationType.TOP_P
+            return GenerationType.RANDOM
+        raise RuntimeError
 
     @staticmethod
     def all_tokens(probs: ProbDict) \

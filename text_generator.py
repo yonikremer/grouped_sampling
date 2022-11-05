@@ -98,6 +98,14 @@ class TextGenerator(Callable, ABC):
                     "The maximum length of the model is too big"
                 )
         self.answer_length_multiplier = answer_length_multiplier
+        self.generation_type = self.choose_generation_type()
+
+    @abstractmethod
+    def choose_generation_type(self) -> GenerationType:
+        """A method that chooses the generation type
+        Returns:
+            a GenerationType object"""
+        raise NotImplementedError
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
