@@ -1,8 +1,9 @@
+import heapq
 from collections.abc import Iterator
 from random import choices, seed
 from typing import Callable, List, Dict, Optional, Any, Set
 
-from torch import Tensor
+from torch import Tensor, tensor
 
 from text_generator import TextGenerator, GenerationType, NoCompletionsFound
 
@@ -35,7 +36,6 @@ class ChangingSeed(Iterator):
 
     def __iter__(self):
         self.curr_seed = self.default_seed
-        self.default_seed = self.default_seed
         return self
 
     def __next__(self):
@@ -46,11 +46,31 @@ class ChangingSeed(Iterator):
             raise StopIteration
 
 
+class TokenProb:
+    __slots__ = ['token_id', 'prob']
+    token_id: int
+    prob: Tensor  # of shape (1,) and dtype float
+
+    def __init__(self, token_id: int, prob: Tensor):
+        self.token_id = token_id
+        self.prob = prob
+
+    def __lt__(self, other: "TokenProb"):
+        """Overrides the < operator
+        Comparison is done by the probability"""
+        return self.prob < other.prob
+
+    def __gt__(self, other: "TokenProb"):
+        """Overrides the > operator
+        Comparison is done by the probability"""
+        return self.prob > other.prob
+
+
 class SamplingGenerator(TextGenerator):
     """A TextGenerator that generates text
     using random sampling
     with top-k or top-p filtering."""
-    filter_tokens: Callable[[Dict[int, float]], Dict[int, float]]
+    filter_tokens: Callable[[Dict[int, Tensor]], Dict[int, Tensor]]
     top_k: Optional[int] = None
     top_p: Optional[float] = None
     default_seed: int = 0
@@ -95,41 +115,41 @@ class SamplingGenerator(TextGenerator):
                 should be set.")
 
     @staticmethod
-    def all_tokens(sorted_probs: Dict[int, float]) \
-            -> Dict[int, float]:
+    def all_tokens(probs: Dict[int, Tensor]) \
+            -> Dict[int, Tensor]:
         """A filtering function that doesn't filter any tokens.
         returns all the tokens with their probabilities."""
-        return sorted_probs
+        return probs
 
     @staticmethod
     def highest_prob_token(
-            sorted_probs: Dict[int, float]) \
-            -> Dict[int, float]:
+            probs: Dict[int, Tensor]) \
+            -> Dict[int, Tensor]:
         """Gets a token id: probability mapping
         as a sorted dictionary
         returns the token with the highest probability.
         as a {token: 1.0} dictionary."""
-        highest_prob_token_id = next(iter(sorted_probs))
-        return {highest_prob_token_id: 1.0}
+        highest_prob_token_id: int = max(probs, key=probs.get)
+        return {highest_prob_token_id: tensor(1.0)}
 
     def top_p_tokens(
-            self, sorted_probs: Dict[int, float]) \
-            -> Dict[int, float]:
+            self, probs: Dict[int, Tensor]) \
+            -> Dict[int, Tensor]:
         """Gets a token id: probability mapping
         returns the tokens with the highest probability
         such that their sum is <= self.top_p.
         or the token with the highest probability
-        if it's higher than top_p."""
-        top_p_probs: Dict[int, float] = {}
+        if it's higher than top_p.
+        assuming the values of the dict are between 0 and 1, inclusive"""
+        top_p_probs: Dict[int, Tensor] = {}
         prob_sum: float = 0.0
-        for i, (curr_token, curr_prob) \
-                in enumerate(sorted_probs.items()):
-            if i <= 0 or curr_prob <= self.top_p:
-                prob_sum += curr_prob
-                top_p_probs[curr_token] = curr_prob
-                continue
-            break
-        if prob_sum == 0:
+        converted_probs = [TokenProb(token_id, prob) for token_id, prob in probs.items()]
+        heapq._heapify_max(converted_probs)
+        while prob_sum < self.top_p:
+            token_id: int = heapq._heappop_max(converted_probs).token_id
+            prob_sum += probs[token_id]
+            top_p_probs[token_id] = probs[token_id]
+        if len(top_p_probs) == 0:
             raise NoCompletionsFound(
                 self, "The probabilities of all the tokens "
                       "is (rounded to) 0 . "
@@ -140,18 +160,16 @@ class SamplingGenerator(TextGenerator):
         return weighted_probs
 
     def top_k_tokens(
-            self, sorted_probs: Dict[int, float]) \
-            -> Dict[int, float]:
+            self, probs: Dict[int, Tensor]) \
+            -> Dict[int, Tensor]:
         """Gets a token id: probability mapping
         returns the TOP_K tokens
         with the highest probability."""
 
-        keys_list = list(sorted_probs.keys())
-        sorted_top_k_keys = keys_list[:self.top_k]
-        top_k_probs: Dict[int, float]
+        top_k_keys: List[int] = heapq.nlargest(self.top_k, probs.items(), key=probs.get)
         top_k_probs = {
-            k: sorted_probs[k]
-            for k in sorted_top_k_keys}
+            k: probs[k]
+            for k in top_k_keys}
         prob_sum = sum(top_k_probs.values())
         weighted_probs = {
             k: v / prob_sum
@@ -174,20 +192,13 @@ class SamplingGenerator(TextGenerator):
             if len(curr_token_probs) > self.vocab_size:
                 curr_token_probs = curr_token_probs[:self.vocab_size]
 
-            indexed_prob: Dict[int, float]
+            indexed_prob: Dict[int, Tensor]
             indexed_prob = {
                 i: prob for i, prob
                 in enumerate(curr_token_probs)}
-            # O(vocab_size)
-            items = indexed_prob.items()
-            sorted_probs: Dict[int, float]
-            # noinspection PyTypeChecker
-            sorted_probs = dict(sorted(
-                items, key=lambda x: x[1],
-                reverse=True))
-            weighted_probs = self.filter_tokens(sorted_probs)
+            weighted_probs = self.filter_tokens(indexed_prob)
             keys_list = list(weighted_probs.keys())
-            weights_list = list(weighted_probs.values())
+            weights_list = list(prob_val.item() for prob_val in weighted_probs.values())
             sampled_token: int = choices(
                 keys_list, weights_list, k=1)[0]
             new_group.append(sampled_token)
