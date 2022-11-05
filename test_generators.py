@@ -81,6 +81,7 @@ class TestTextGenerator(TestCase):
     def test_calling_generators(self):
         for curr_text_generator in self.create_text_generators():
             with self.subTest(curr_text_generator=str(curr_text_generator)) as sub:
+                print(f"started sub test: {sub}")
                 answer = curr_text_generator(
                     prompt_s=self.PROMPT,
                     max_new_tokens=curr_text_generator.group_size * 2,
