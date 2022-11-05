@@ -1,4 +1,3 @@
-import os
 from typing import Generator, Any, Dict, Iterable, Tuple
 
 from evaluate import TranslationEvaluator
@@ -9,10 +8,12 @@ from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 
 DATASET_NAME = "ted_talks_iwslt"
-SPLIT_NAMES: Iterable[str] = ['eu_ca_2014', 'eu_ca_2015', 'eu_ca_2016', 'nl_en_2014', 'nl_en_2015', 'nl_en_2016', 'nl_hi_2014', 'nl_hi_2015', 'nl_hi_2016', 'de_ja_2014', 'de_ja_2015', 'de_ja_2016', 'fr-ca_hi_2014', 'fr-ca_hi_2015', 'fr-ca_hi_2016']
+SPLIT_NAMES: Iterable[str] = ['eu_ca_2014', 'eu_ca_2015', 'eu_ca_2016', 'nl_en_2014', 'nl_en_2015', 'nl_en_2016',
+                              'nl_hi_2014', 'nl_hi_2015', 'nl_hi_2016', 'de_ja_2014', 'de_ja_2015', 'de_ja_2016',
+                              'fr-ca_hi_2014', 'fr-ca_hi_2015', 'fr-ca_hi_2016']
 
-# TODO: remove this statement when stop debugging
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+# the next line is used for debug mode
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 
 def generate_text_generators() -> Generator[TextGenerator, None, None]:
