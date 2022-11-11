@@ -31,7 +31,6 @@ class ExperimentManager:
             auto_param_logging=False,
             auto_metric_logging=False,
             log_code=False,
-            log_env_details=False,
             log_git_metadata=False,
             log_git_patch=False,
         )
