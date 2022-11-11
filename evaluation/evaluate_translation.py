@@ -4,6 +4,7 @@ from typing import Generator, Any, Dict, Tuple, List
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
+from tqdm import tqdm
 
 from evaluation.experiment_manager import ExperimentManager
 from sampling_generator import SamplingGenerator
@@ -50,8 +51,7 @@ def run_experiment(generator: TextGenerator) -> None:
     my_evaluator.PREDICTION_PREFIX = "generated"
     manager = ExperimentManager(generator)
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
-    for i, sub_set_name in enumerate(sub_sut_names):
-        print(f"starting sub experiment {i + 1}/{len(sub_sut_names)}")
+    for sub_set_name in tqdm(sub_sut_names):
         processed_sub_set: Dataset
         language1: str
         language2: str

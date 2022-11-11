@@ -1,4 +1,3 @@
 torch
 transformers
 pip
-tqdm
