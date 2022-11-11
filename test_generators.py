@@ -246,6 +246,23 @@ class TestTextGenerator(TestCase):
         for generator in self.create_text_generators():
             self.assertIsInstance(str(generator), str)
 
+    def test_call_many_prompts(self):
+        """Tests the __call__ method when many prompts are given"""
+        generator = next(self.create_text_generators())
+        prompts: List[str] = ["This is a test prompt", "This is another test prompt"]
+        answers: List[SingleAnswer] = generator(
+            prompt_s=prompts, max_new_tokens=10,
+            return_text=True, return_full_text=True
+        )
+        self.assertIsInstance(answers, list)
+        self.assertEqual(len(answers), len(prompts))
+        for i, answer in enumerate(answers):
+            self.assertIsInstance(answer, dict)
+            self.assertIn("generated_text", answer.keys())
+            self.assertIsInstance(answer["generated_text"], str)
+            self.assertTrue(answer["generated_text"].startswith(prompts[i]),
+                            f"{answer['generated_text']} doesn't start with {prompts[i]}")
+
 
 if __name__ == '__main__':
     main()
