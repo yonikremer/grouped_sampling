@@ -51,12 +51,11 @@ class ExperimentManager:
             api_key_file = "comet_ml_api_key.txt"
         if os.path.exists(api_key_file):
             with open(api_key_file, "r") as f:
-                COMET_ML_API_KEY = f.read().strip()
-        else:
-            COMET_ML_API_KEY = input("Please enter your api_key for comet ml: ")
-            with open(api_key_file, "w") as f:
-                f.write(COMET_ML_API_KEY)
-        return COMET_ML_API_KEY
+                return f.read().strip()
+        api_key = input("Please enter your api_key for comet ml: ")
+        with open(api_key_file, "w") as f:
+            f.write(api_key)
+        return api_key
 
     def log_sub_experiment(self, bert_scores: Dict[str, List[float]]) -> None:
         """Args:
