@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import os
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from comet_ml import Experiment
 
@@ -57,15 +59,19 @@ class ExperimentManager:
             f.write(api_key)
         return api_key
 
-    def log_sub_experiment(self, bert_scores: Dict[str, List[float]]) -> None:
+    def log_sub_experiment(self, bert_scores: Dict[str, List[float] | Any]) -> None:
         """Args:
             bert_scores: Dict[str, Tensor]
                 with keys "f1", "precision", "recall"
                 values of shape (number of examples in the sub-experiment,) and type float"""
-        self.per_example_f1.extend(bert_scores["f1"])
-        self.per_example_precision.extend(bert_scores["precision"])
-        self.per_example_recall.extend(bert_scores["recall"])
-        self.num_examples += len(bert_scores["f1"])
+        f_1: List[float] = bert_scores["f1"]
+        precision: List[float] = bert_scores["precision"]
+        recall: List[float] = bert_scores["recall"]
+        assert len(f_1) == len(precision) == len(recall)
+        self.per_example_f1.extend(f_1)
+        self.per_example_precision.extend(precision)
+        self.per_example_recall.extend(recall)
+        self.num_examples += len(f_1)
 
     def end_experiment(self) -> None:
         per_example_scores: Dict[str, List[float]] = {"f1": self.per_example_f1,
