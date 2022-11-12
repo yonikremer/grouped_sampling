@@ -145,8 +145,11 @@ class TextGenerator(Callable, ABC):
 
         if cuda.is_available():
             scaled_relevant_logits_copy: Tensor = scaled_relevant_logits
-            scaled_relevant_logits_copy.cpu()
             prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits_copy)
+            # move to cpu and detach
+            prob_tensor = prob_tensor.cpu().detach()
+            # empty cuda cache
+            cuda.empty_cache()
         else:
             prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
         if not self.end_of_sentence_stop:
