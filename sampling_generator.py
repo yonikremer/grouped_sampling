@@ -1,8 +1,9 @@
 import heapq
 from collections.abc import Iterator
-from random import choices, seed
+from random import seed
 from typing import Callable, List, Dict, Optional, Any, Set
 
+import torch
 from torch import Tensor, tensor
 
 from text_generator import TextGenerator, GenerationType, NoCompletionsFound
@@ -36,6 +37,7 @@ class ChangingSeed(Iterator):
     def __exit__(self, *args):
         self.curr_seed = self.default_seed
         seed(self.default_seed)
+        torch.manual_seed(self.default_seed)
 
     def __iter__(self):
         self.curr_seed = self.default_seed
@@ -44,6 +46,7 @@ class ChangingSeed(Iterator):
     def __next__(self):
         self.curr_seed += 1
         seed(self.curr_seed)
+        torch.manual_seed(self.curr_seed)
         self.curr_num_calls += 1
         if self.curr_num_calls > self.max_num_calls:
             raise StopIteration
@@ -84,6 +87,7 @@ class SamplingGenerator(TextGenerator):
     top_p: Optional[float] = None
     default_seed: int = 0
     seed(default_seed)
+    torch.manual_seed(default_seed)
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0, top_k: Optional[int] = None,
@@ -195,7 +199,7 @@ class SamplingGenerator(TextGenerator):
          using the choice_function."""
         prob_mat.cpu()
         used_tokens: Set[int] = set(org_used_tokens)
-        new_group = []
+        new_group: List[int] = []
         for curr_token_probs in prob_mat:
             curr_token_probs: Tensor
             for used_token in used_tokens:
@@ -203,16 +207,7 @@ class SamplingGenerator(TextGenerator):
             # for tokens with index >= self.vocab_size
             if len(curr_token_probs) > self.vocab_size:
                 curr_token_probs = curr_token_probs[:self.vocab_size]
-
-            indexed_prob: Dict[int, Tensor]
-            indexed_prob = {
-                i: prob for i, prob
-                in enumerate(curr_token_probs)}
-            weighted_probs = self.filter_tokens(indexed_prob)
-            keys_list = list(weighted_probs.keys())
-            weights_list: List[float] = [prob_val.item() for prob_val in weighted_probs.values()]
-            sampled_token: int = choices(
-                keys_list, weights_list, k=1)[0]
+            sampled_token: int = torch.multinomial(curr_token_probs, 1).item()
             new_group.append(sampled_token)
             if sampled_token == self.end_of_sentence_id:
                 return new_group
