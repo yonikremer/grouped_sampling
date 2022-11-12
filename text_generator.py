@@ -136,8 +136,6 @@ class TextGenerator(Callable, ABC):
 
         with no_grad():
             outputs = self.model(**inputs)
-        print("GPU stats after model call:")
-        print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
 
         unscaled_logits: Tensor = outputs.logits.squeeze(0)
         unscaled_relevant_logits: Tensor
@@ -152,8 +150,6 @@ class TextGenerator(Callable, ABC):
             prob_tensor = prob_tensor.cpu().detach()
             # empty cuda cache
             cuda.empty_cache()
-            print("GPU stats after emptying cache:")
-            print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
         if not self.end_of_sentence_stop:
             for prob_vec in prob_tensor:
                 prob_vec[self.end_of_sentence_id] = 0.0
