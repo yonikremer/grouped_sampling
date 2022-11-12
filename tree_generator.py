@@ -288,6 +288,8 @@ class TreeGenerator(TextGenerator):
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[List[int]]:
+        if num_return_sequences > 1 and self.generation_type == GenerationType.GREEDY:
+            raise ValueError("greedy generation with tree can't return more than one sequence")
 
         if num_new_tokens is not None:
             num_groups = ceil(num_new_tokens / self.group_size)
