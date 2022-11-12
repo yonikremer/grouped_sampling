@@ -10,6 +10,7 @@ from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 
 DATASET_NAME = "ted_talks_iwslt"
+METRIC_NAME = "bertscore"
 
 
 def generate_text_generators() -> Generator[TextGenerator, None, None]:
@@ -42,7 +43,7 @@ def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dat
 
 def run_experiment(generator: TextGenerator) -> None:
     generator.task = "translation"
-    my_evaluator = TranslationEvaluator(default_metric_name="bertscore")
+    my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
     my_evaluator.PREDICTION_PREFIX = "generated"
     manager = ExperimentManager(generator)
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
