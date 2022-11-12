@@ -76,8 +76,6 @@ class TextGenerator(Callable, ABC):
             model_name)
         if cuda.is_available():
             self.model = self.model.cuda()
-            print("GPU stats after loading model:")
-            print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
         self.vocab_size = self.tokenizer.vocab_size
         self.temp = temp
         self.group_size = group_size
@@ -294,7 +292,7 @@ class TextGenerator(Callable, ABC):
         if max_new_tokens is None and not self.end_of_sentence_stop:
             raise ValueError("max_new_tokens must be given if end_of_sentence_stop is False")
         if isinstance(prompt_s, list):
-            answers = [self.__call__(
+            return [self.__call__(
                 prompt_s=prompt,
                 max_new_tokens=max_new_tokens,
                 return_text=return_text,
@@ -302,9 +300,6 @@ class TextGenerator(Callable, ABC):
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 truncation=truncation) for prompt in prompt_s]
-            print("GPU memory stats after generation: ")
-            print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
-            return answers
 
         tokenized_prompt: Tensor = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation)
