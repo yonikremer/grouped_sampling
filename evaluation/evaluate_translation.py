@@ -5,11 +5,14 @@ import gc
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
+from datasets.utils.logging import set_verbosity_error
 
 from evaluation.experiment_manager import ExperimentManager
 from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 
+
+set_verbosity_error()
 gc.enable()
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
@@ -48,7 +51,7 @@ def run_experiment(generator: TextGenerator) -> None:
     my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
     my_evaluator.PREDICTION_PREFIX = "generated"
     manager = ExperimentManager(generator)
-    sub_sut_names = get_dataset_config_names(DATASET_NAME)[:1]
+    sub_sut_names = get_dataset_config_names(DATASET_NAME)
     for i, sub_set_name in enumerate(sub_sut_names):
         print(f"Running sub-experiment {i + 1} out of {len(sub_sut_names)}")
         processed_sub_set: Dataset
