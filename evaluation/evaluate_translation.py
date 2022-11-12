@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Generator, Any, Dict, Tuple, List
+import gc
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
@@ -9,6 +10,7 @@ from evaluation.experiment_manager import ExperimentManager
 from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 
+gc.enable()
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
 
