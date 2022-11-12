@@ -210,8 +210,10 @@ class SamplingGenerator(TextGenerator):
             sampled_token: int = torch.multinomial(curr_token_probs, 1).item()
             new_group.append(sampled_token)
             if sampled_token == self.end_of_sentence_id:
-                return new_group
+                # end the loop
+                break
             used_tokens.add(sampled_token)
+        del prob_mat
         return new_group
 
     def _forward(

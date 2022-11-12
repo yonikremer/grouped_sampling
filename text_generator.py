@@ -146,20 +146,18 @@ class TextGenerator(Callable, ABC):
         if scaled_relevant_logits.shape[1] >= self.vocab_size:
             scaled_relevant_logits: Tensor
             scaled_relevant_logits = scaled_relevant_logits[:, :self.vocab_size]
-
+        prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
         if cuda.is_available():
-            prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
             # move to cpu and detach
             prob_tensor = prob_tensor.cpu().detach()
             # empty cuda cache
             cuda.empty_cache()
             print("GPU stats after emptying cache:")
             print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
-        else:
-            prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
         if not self.end_of_sentence_stop:
             for prob_vec in prob_tensor:
                 prob_vec[self.end_of_sentence_id] = 0.0
+        del scaled_relevant_logits
         return prob_tensor
 
     def preprocess(
