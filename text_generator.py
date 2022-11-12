@@ -148,8 +148,7 @@ class TextGenerator(Callable, ABC):
             scaled_relevant_logits = scaled_relevant_logits[:, :self.vocab_size]
 
         if cuda.is_available():
-            scaled_relevant_logits_copy: Tensor = scaled_relevant_logits
-            prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits_copy)
+            prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
             # move to cpu and detach
             prob_tensor = prob_tensor.cpu().detach()
             # empty cuda cache
