@@ -46,7 +46,7 @@ def run_experiment(generator: TextGenerator) -> None:
     my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
     my_evaluator.PREDICTION_PREFIX = "generated"
     manager = ExperimentManager(generator)
-    sub_sut_names = get_dataset_config_names(DATASET_NAME)
+    sub_sut_names = get_dataset_config_names(DATASET_NAME)[:1]
     for i, sub_set_name in enumerate(sub_sut_names):
         print(f"Running sub-experiment {i + 1} out of {len(sub_sut_names)}")
         processed_sub_set: Dataset
