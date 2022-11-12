@@ -4,7 +4,6 @@ import timeit
 from enum import Enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from multiprocessing import Pool
 from typing import Optional, List, Union, Dict, Tuple, Any
 
 from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor
@@ -293,21 +292,14 @@ class TextGenerator(Callable, ABC):
         if max_new_tokens is None and not self.end_of_sentence_stop:
             raise ValueError("max_new_tokens must be given if end_of_sentence_stop is False")
         if isinstance(prompt_s, list):
-            with Pool() as p:
-                return p.starmap(
-                    self.__call__,
-                    [[prompt,
-                      max_new_tokens,
-                      return_tensors,
-                      return_text,
-                      return_full_text,
-                      clean_up_tokenization_spaces,
-                      prefix,
-                      num_return_sequences,
-                      truncation
-                      ]
-                     for prompt in prompt_s]
-                )
+            return [self.__call__(
+                prompt_s=prompt,
+                max_new_tokens=max_new_tokens,
+                return_text=return_text,
+                return_tensors=return_tensors,
+                return_full_text=return_full_text,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                truncation=truncation) for prompt in prompt_s]
 
         tokenized_prompt: Tensor = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation)
