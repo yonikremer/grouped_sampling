@@ -13,10 +13,6 @@ from text_generator import TextGenerator
 DATASET_NAME = "ted_talks_iwslt"
 
 
-# the next line is used for debug mode
-# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
-
 def generate_text_generators() -> Generator[TextGenerator, None, None]:
     yield SamplingGenerator(
         model_name="facebook/opt-125m",
@@ -29,10 +25,9 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
     )
 
 
-def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dataset, str, str]:
+def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language1, language2 = spited_sub_set_name[:2]
-    # add a warning here
     sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train")
     processed_data1_dict: Dataset
     processed_data2_dict: Dataset
@@ -41,8 +36,9 @@ def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dat
         translation: Dict[str, str] = x["translation"]
         return {input_lang: translation[input_lang], output_lang: translation[output_lang]}
 
-    processed_data = sub_set.map(rename_keys, fn_kwargs={"input_lang": language1, "output_lang": language2})
-    return processed_data, language1, language2
+    processed_data1 = sub_set.map(rename_keys, fn_kwargs={"input_lang": language1, "output_lang": language2})
+    processed_data2 = sub_set.map(rename_keys, fn_kwargs={"input_lang": language2, "output_lang": language1})
+    return processed_data1, processed_data2, language1, language2
 
 
 def run_experiment(generator: TextGenerator) -> None:
@@ -55,12 +51,12 @@ def run_experiment(generator: TextGenerator) -> None:
         processed_sub_set: Dataset
         language1: str
         language2: str
-        processed_sub_set, language1, language2 = process_translation_data(DATASET_NAME, sub_set_name)
+        processed_subset1, processed_subset2, language1, language2 = process_translation_data(DATASET_NAME, sub_set_name)
         my_evaluator.METRIC_KWARGS = {"lang": language2}
         # noinspection PyTypeChecker
         scores1: Dict[str, List[float] | Any] = my_evaluator.compute(
             model_or_pipeline=generator,
-            data=processed_sub_set,
+            data=processed_subset1,
             input_column=language1,
             label_column=language2
         )
@@ -69,7 +65,7 @@ def run_experiment(generator: TextGenerator) -> None:
         # noinspection PyTypeChecker
         scores2: Dict[str, List[float] | Any] = my_evaluator.compute(
             model_or_pipeline=generator,
-            data=processed_sub_set,
+            data=processed_subset2,
             input_column=language2,
             label_column=language1
         )
