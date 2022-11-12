@@ -77,7 +77,7 @@ class TextGenerator(Callable, ABC):
         if cuda.is_available():
             self.model = self.model.cuda()
             print("GPU stats after loading model:")
-            print(cuda.memory_stats(device=cuda.current_device()))
+            print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
         self.vocab_size = self.tokenizer.vocab_size
         self.temp = temp
         self.group_size = group_size
@@ -136,6 +136,8 @@ class TextGenerator(Callable, ABC):
 
         with no_grad():
             outputs = self.model(**inputs)
+        print("GPU stats after model call:")
+        print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
 
         unscaled_logits: Tensor = outputs.logits.squeeze(0)
         unscaled_relevant_logits: Tensor
@@ -152,6 +154,8 @@ class TextGenerator(Callable, ABC):
             prob_tensor = prob_tensor.cpu().detach()
             # empty cuda cache
             cuda.empty_cache()
+            print("GPU stats after emptying cache:")
+            print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
         else:
             prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
         if not self.end_of_sentence_stop:
@@ -306,7 +310,7 @@ class TextGenerator(Callable, ABC):
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 truncation=truncation) for prompt in prompt_s]
             print("GPU memory stats after generation: ")
-            print(cuda.memory_stats(device=cuda.current_device()))
+            print(cuda.memory_summary(device=cuda.current_device(), abbreviated=False))
             return answers
 
         tokenized_prompt: Tensor = self.preprocess(
