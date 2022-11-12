@@ -1,268 +1,220 @@
 from __future__ import annotations
 
 from itertools import islice, product
-from unittest import TestCase, main
 from typing import Generator, List
 
+import pytest
 from torch import Tensor, equal
 
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
 from text_generator import TextGenerator, SingleAnswer
 
+MODEL_NAMES = "gpt2", "facebook/opt-125m"
+GROUP_SIZES = 3, 1
+TOP_KS = 1, 4
+TOP_PS = 0.0, 0.5, 1.0
+TEMPERATURES = 0.5, 1.0, 10.0
+PROMPT = "Hello, world!"
+repeating_prompt: str = "This is a very long text. " * 2
+long_prompt: str = "This is a very long text. " * 512
+EDGE_CASE_PROMPTS = [long_prompt, repeating_prompt]
+TEST_PROMPT = "This is a test prompt."
 
-class TestTextGenerator(TestCase):
-    """Testing the classes that inherit from TextGenerator."""
 
-    MODEL_NAMES = "gpt2", "facebook/opt-125m"
-    GROUP_SIZES = 3, 1
-    TOP_KS = 1, 4
-    TOP_PS = 0.0, 0.5, 1.0
-    TEMPERATURES = 0.5, 1.0, 10.0
-    PROMPT = "Hello, world!"
+def create_text_generators() -> Generator[TextGenerator, None, None]:
+    curr_tree_gen = TreeGenerator(model_name=MODEL_NAMES[0],
+                                  group_size=GROUP_SIZES[0],
+                                  top_k=TOP_KS[0],
+                                  top_p=TOP_PS[0],
+                                  temp=TEMPERATURES[0],
+                                  end_of_sentence_stop=True)
+    top_p_sampling_gen = SamplingGenerator(model_name=MODEL_NAMES[0],
+                                           group_size=GROUP_SIZES[0],
+                                           top_k=None,
+                                           top_p=TOP_PS[0],
+                                           temp=TEMPERATURES[0],
+                                           end_of_sentence_stop=True)
+    yield top_p_sampling_gen
+    del top_p_sampling_gen
+    yield curr_tree_gen
+    del curr_tree_gen
 
-    def create_text_generators(self) -> Generator[TextGenerator, None, None]:
-        curr_tree_gen = TreeGenerator(model_name=self.MODEL_NAMES[0],
-                                      group_size=self.GROUP_SIZES[0],
-                                      top_k=self.TOP_KS[0],
-                                      top_p=self.TOP_PS[0],
-                                      temp=self.TEMPERATURES[0],
-                                      end_of_sentence_stop=True)
-        top_p_sampling_gen = SamplingGenerator(model_name=self.MODEL_NAMES[0],
-                                               group_size=self.GROUP_SIZES[0],
-                                               top_k=None,
-                                               top_p=self.TOP_PS[0],
-                                               temp=self.TEMPERATURES[0],
-                                               end_of_sentence_stop=True)
-        yield top_p_sampling_gen
-        del top_p_sampling_gen
-        yield curr_tree_gen
-        del curr_tree_gen
+    model_name = MODEL_NAMES[1]
+    top_p_sampling_gen = SamplingGenerator(model_name=model_name,
+                                           group_size=GROUP_SIZES[0],
+                                           top_k=None,
+                                           top_p=TOP_PS[0],
+                                           temp=TEMPERATURES[0])
 
-        model_name = self.MODEL_NAMES[1]
-        top_p_sampling_gen = SamplingGenerator(model_name=model_name,
-                                               group_size=self.GROUP_SIZES[0],
-                                               top_k=None,
-                                               top_p=self.TOP_PS[0],
-                                               temp=self.TEMPERATURES[0])
+    top_k_sampling_gen = SamplingGenerator(model_name=model_name,
+                                           group_size=GROUP_SIZES[0],
+                                           top_k=TOP_KS[0],
+                                           top_p=None,
+                                           temp=TEMPERATURES[0])
 
-        top_k_sampling_gen = SamplingGenerator(model_name=model_name,
-                                               group_size=self.GROUP_SIZES[0],
-                                               top_k=self.TOP_KS[0],
-                                               top_p=None,
-                                               temp=self.TEMPERATURES[0])
+    curr_tree_gen = TreeGenerator(model_name=model_name,
+                                  group_size=GROUP_SIZES[0],
+                                  top_k=TOP_KS[0],
+                                  top_p=TOP_PS[0],
+                                  temp=TEMPERATURES[0])
 
-        curr_tree_gen = TreeGenerator(model_name=model_name,
-                                      group_size=self.GROUP_SIZES[0],
-                                      top_k=self.TOP_KS[0],
-                                      top_p=self.TOP_PS[0],
-                                      temp=self.TEMPERATURES[0])
+    for group_size, temp in product(GROUP_SIZES, TEMPERATURES):
+        top_p_sampling_gen.temp = temp
+        top_k_sampling_gen.temp = temp
+        curr_tree_gen.temp = temp
+        top_p_sampling_gen.group_size = group_size
+        top_k_sampling_gen.group_size = group_size
+        curr_tree_gen.group_size = group_size
 
-        for group_size, temp in product(self.GROUP_SIZES, self.TEMPERATURES):
-            top_p_sampling_gen.temp = temp
-            top_k_sampling_gen.temp = temp
-            curr_tree_gen.temp = temp
-            top_p_sampling_gen.group_size = group_size
-            top_k_sampling_gen.group_size = group_size
-            curr_tree_gen.group_size = group_size
+        for top_k in TOP_KS:
+            top_k_sampling_gen.top_k = top_k
+            curr_tree_gen.top_k = top_k
+            yield top_k_sampling_gen
 
-            for top_k in self.TOP_KS:
-                top_k_sampling_gen.top_k = top_k
-                curr_tree_gen.top_k = top_k
-                yield top_k_sampling_gen
+            for top_p in TOP_PS:
+                top_p_sampling_gen.top_p = top_p
+                curr_tree_gen.top_p = top_p
+                yield top_p_sampling_gen
+                yield curr_tree_gen
 
-                for top_p in self.TOP_PS:
-                    top_p_sampling_gen.top_p = top_p
-                    curr_tree_gen.top_p = top_p
-                    yield top_p_sampling_gen
-                    yield curr_tree_gen
 
-    def test_calling_generators(self):
-        for curr_text_generator in self.create_text_generators():
-            with self.subTest(curr_text_generator=str(curr_text_generator)) as sub:
-                print(f"started sub test: {sub}")
-                answer = curr_text_generator(
-                    prompt_s=self.PROMPT,
-                    max_new_tokens=curr_text_generator.group_size * 2,
-                )["generated_text"]
-                self.assertIsInstance(answer, str, f"{answer} is not a string. "
-                                                   f"curr_text_generator: {str(curr_text_generator)}")
-                self.assertGreater(len(answer), len(self.PROMPT), f"{answer} is not a not longer than {self.PROMPT}. "
-                                                                  f"curr_text_generator: {str(curr_text_generator)}")
-                self.assertTrue(answer.startswith(self.PROMPT), f"{answer} doesn't start with {self.PROMPT}. "
-                                                                f"curr_text_generator: {str(curr_text_generator)}")
-                print(f"ended sub test: {sub}")
+@pytest.mark.parametrize("curr_text_generator", create_text_generators())
+def test_calling_generators(curr_text_generator):
+    answer = curr_text_generator(
+        prompt_s=PROMPT,
+        max_new_tokens=curr_text_generator.group_size * 2,
+    )["generated_text"]
+    assert isinstance(answer, str), f"{answer} is not a string. curr_text_generator: {str(curr_text_generator)}"
+    assert answer.startswith(PROMPT), f"{answer} doesn't start with {PROMPT}"
+    assert len(answer) > len(PROMPT), f"{answer} is too short"
 
-    repeating_prompt: str = "This is a very long text. " * 2
-    long_prompt: str = "This is a very long text. " * 2048
-    edge_cases = [long_prompt, repeating_prompt]
 
-    def test_edge_cases(self):
-        """Tests the generators with long inputs. (an edge case)"""
+@pytest.mark.parametrize("curr_text_generator, edge_case_prompt",
+                         product(islice(create_text_generators(), 3, 5), EDGE_CASE_PROMPTS))
+def test_edge_cases(curr_text_generator: TextGenerator, edge_case_prompt: str):
+    answer = curr_text_generator(
+        prompt_s=edge_case_prompt,
+        max_new_tokens=curr_text_generator.group_size * 2,
+        return_full_text=True,
+    )["generated_text"]
+    assert isinstance(answer, str), f"{answer} is not a string. curr_generator: {str(curr_text_generator)}"
+    assert len(answer) > len(edge_case_prompt), f"{answer} is not a not longer than {edge_case_prompt}"
+    assert answer.startswith(edge_case_prompt[:-1]), f"{answer} doesn't start with {edge_case_prompt}"
 
-        for prompt in self.edge_cases:
-            for curr_generator in islice(self.create_text_generators(), 3, 5):
-                with self.subTest(prompt=prompt, curr_generator=str(curr_generator)) as sub:
-                    answer = curr_generator(
-                        prompt_s=prompt,
-                        max_new_tokens=curr_generator.group_size * 2,
-                        return_full_text=True,
-                    )["generated_text"]
-                    self.assertIsInstance(answer, str, f"{answer} is not a string. "
-                                                       f"curr_generator: {str(curr_generator)}")
-                    self.assertGreater(len(answer), len(prompt), f"{answer} is not a not longer than "
-                                                                 f"{prompt}. "
-                                                                 f"curr_generator: {str(curr_generator)}")
-                    self.assertTrue(answer.startswith(prompt[:-1]), f"{answer} doesn't start with "
-                                                                    f"{prompt}. "
-                                                                    f"curr_generator: {str(curr_generator)}")
-                    print(f"ended sub test: {sub}")
 
-    def test_post_process(self):
-        """Tests the different returning options"""
-        generator: TextGenerator = next(self.create_text_generators())
-        prompt: str = "This is a test prompt"
-        answer: SingleAnswer = generator(
-            prompt_s=prompt,
-            max_new_tokens=10,
-            return_tensors=True,
-            return_text=True,
-            return_full_text=True
-        )
-        self.assertIsInstance(answer, dict,
-                              f"{answer} is not a dict")
-        self.assertIn("generated_text", answer.keys(),
-                      f"{answer} doesn't contain 'generated_text'")
-        self.assertIn("generated_token_ids", answer.keys(),
-                      f"{answer} doesn't contain 'generated_token_ids'")
-        self.assertIsInstance(answer["generated_text"], str,
-                              f"{answer['generated_text']} is not a string")
-        self.assertIsInstance(answer["generated_token_ids"], Tensor,
-                              f"{answer['generated_token_ids']} is not a list")
-        self.assertTrue(answer["generated_text"].startswith(prompt),
-                        f"{answer['generated_text']} doesn't start with {prompt}")
-        prompt_tokens: Tensor = generator.preprocess(prompt)
-        self.assertIsInstance(prompt_tokens, Tensor,
-                              f"{prompt_tokens} is not a tensor")
-        self.assertIsInstance(answer["generated_token_ids"][:len(prompt_tokens)], Tensor,
-                              f"{answer['generated_token_ids'][:len(prompt_tokens)]} is not a tensor")
-        self.assertTrue(equal(answer["generated_token_ids"][:len(prompt_tokens)], prompt_tokens),
-                        f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
+def test_post_process():
+    """Tests the different returning options"""
+    generator: TextGenerator = next(create_text_generators())
+    prompt: str = "This is a test prompt"
+    returned_val: SingleAnswer = generator(
+        prompt_s=prompt,
+        max_new_tokens=10,
+        return_tensors=True,
+        return_text=True,
+        return_full_text=True
+    )
+    assert isinstance(returned_val, dict), f"{returned_val} is not a dict"
+    assert "generated_text" in returned_val.keys(), f"{returned_val} doesn't contain 'generated_text'"
+    assert "generated_token_ids" in returned_val.keys(), f"{returned_val} doesn't contain 'generated_token_ids'"
+    returned_text = returned_val["generated_text"]
+    assert isinstance(returned_text, str), f"{returned_val['generated_text']} is not a string"
+    generated_token_ids: Tensor = returned_val["generated_token_ids"]
+    assert isinstance(generated_token_ids,
+                      Tensor), f"{returned_val['generated_token_ids']} is not a list"
+    assert returned_text.startswith(
+        prompt), f"{returned_text} doesn't start with {prompt}"
+    prompt_tokens: Tensor = generator.preprocess(prompt)
+    assert equal(generated_token_ids[:len(prompt_tokens)], prompt_tokens), \
+        f"{returned_val['generated_token_ids'].tolist()} is not equal to {prompt_tokens}"
+    assert isinstance(generated_token_ids[:len(prompt_tokens)], Tensor), \
+        f"{returned_val['generated_token_ids']} is not a tensor"
+    post_processed_text: str = generator.postprocess(
+        token_ids=generated_token_ids.tolist(), num_new_tokens=10, prompt_len=len(prompt_tokens),
+        return_tensors=True, return_text=True, return_full_text=True,
+        clean_up_tokenization_spaces=True)['generated_text']
+    assert returned_text == post_processed_text, f"{returned_text} is not equal to {post_processed_text}"
 
-        answer: SingleAnswer = generator(
-            prompt_s=prompt, max_new_tokens=10,
-            return_tensors=True, return_text=True, return_full_text=False
-        )
-        self.assertFalse(answer["generated_text"].startswith(prompt),
-                         f"{answer['generated_text']} doesn't start with {prompt}")
-        prompt_tokens: Tensor = generator.preprocess(prompt)
-        self.assertFalse(equal(answer["generated_token_ids"][:len(prompt_tokens)], prompt_tokens),
-                         f"{answer['generated_token_ids'][:len(prompt_tokens)]} is not equal to {prompt_tokens}")
+    returned_val: SingleAnswer = generator(
+        prompt_s=prompt, max_new_tokens=10,
+        return_tensors=True, return_text=True, return_full_text=False
+    )
+    returned_text = returned_val["generated_text"]
+    assert not returned_text.startswith(
+        prompt), f"{returned_text} doesn't start with {prompt}"
+    prompt_tokens: Tensor = generator.preprocess(prompt)
+    assert not equal(returned_val["generated_token_ids"][:len(prompt_tokens)], prompt_tokens), \
+        f"{returned_val['generated_token_ids'][:len(prompt_tokens)]} is equal to {prompt_tokens}"
 
-    def test_prefix(self):
-        """Tests that the prefix option of the methods __call__ and preprocess works"""
-        generator: TextGenerator = next(self.create_text_generators())
-        prompt: str = "test prompt"
-        prefix = "This is a"
-        answer: SingleAnswer = generator(
-            prompt_s=prompt, max_new_tokens=10,
-            return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
-        )
-        self.assertTrue(answer["generated_text"].startswith(prefix),
-                        f"{answer['generated_text']} doesn't start with {prefix}")
-        self.assertIn(prompt, answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}")
 
-    def test_num_return_sequences(self):
-        """Tests that the num_return_sequences option of the methods __call__ and preprocess works"""
-        tree_gen = TreeGenerator(model_name=self.MODEL_NAMES[0],
-                                 group_size=2,
-                                 top_k=3,
-                                 top_p=None,
-                                 end_of_sentence_stop=False)
-        top_p_sampling_gen = SamplingGenerator(model_name=self.MODEL_NAMES[0],
-                                               group_size=self.GROUP_SIZES[0],
-                                               top_k=None,
-                                               top_p=self.TOP_PS[0],
-                                               temp=self.TEMPERATURES[0],
-                                               end_of_sentence_stop=False)
-        for generator in (tree_gen, top_p_sampling_gen):
-            with self.subTest(generator=str(generator)) as sub:
-                prompt: str = "I was to happy to see that "
-                num_return_sequences = 2
-                answer: List[SingleAnswer] = generator(
-                    prompt_s=prompt, max_new_tokens=8, return_tensors=False, return_text=True,
-                    return_full_text=True, num_return_sequences=num_return_sequences
-                )
-                self.assertEqual(len(answer), num_return_sequences, f"len(answer) is not {num_return_sequences}")
-                for curr_answer in answer:
-                    curr_answer: SingleAnswer
-                    self.assertIn(prompt, curr_answer["generated_text"],
-                                  f"{curr_answer['generated_text']} doesn't contain {prompt}")
-                print(f"ended sub test: {sub}")
+def test_prefix():
+    """Tests that the prefix option of the methods __call__ and preprocess works"""
+    generator: TextGenerator = next(create_text_generators())
+    prompt: str = "test prompt"
+    prefix = "This is a"
+    answer: SingleAnswer = generator(
+        prompt_s=prompt, max_new_tokens=10,
+        return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
+    )
+    assert answer["generated_text"].startswith(prefix), f"{answer['generated_text']} doesn't start with {prefix}"
+    assert prompt in answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}"
 
-    def test_max_new_tokens_is_none(self):
-        """test the __call__ function when max_new_tokens is None
-        and end_of_sentence_stop is True"""
-        tree_gen = TreeGenerator(model_name=self.MODEL_NAMES[0],
-                                 group_size=2,
-                                 top_k=1,
-                                 top_p=None,
-                                 end_of_sentence_stop=True)
-        top_p_sampling_gen = SamplingGenerator(model_name=self.MODEL_NAMES[0],
-                                               group_size=self.GROUP_SIZES[0],
-                                               top_k=None,
-                                               top_p=self.TOP_PS[0],
-                                               temp=self.TEMPERATURES[0],
-                                               end_of_sentence_stop=True)
-        for generator in (top_p_sampling_gen, tree_gen):
-            prompt: str = "This is a very short prompt"
-            answer: SingleAnswer = generator(
-                prompt_s=prompt, max_new_tokens=None,
-                return_tensors=True, return_text=True, return_full_text=True
-            )
-            self.assertIsInstance(answer, dict,
-                                  f"{answer} is not a dict")
-            self.assertIn("generated_text", answer.keys(),
-                          f"{answer} doesn't contain 'generated_text'")
-            self.assertIn("generated_token_ids", answer.keys(),
-                          f"{answer} doesn't contain 'generated_token_ids'")
-            self.assertIsInstance(answer["generated_text"], str,
-                                  f"{answer['generated_text']} is not a string")
-            self.assertIsInstance(answer["generated_token_ids"], Tensor,
-                                  f"{answer['generated_token_ids']} is not a list")
-            self.assertTrue(answer["generated_text"].startswith(prompt),
-                            f"{answer['generated_text']} doesn't start with {prompt}")
-            prompt_tokens: Tensor = generator.preprocess(prompt)
-            self.assertTrue(equal(answer["generated_token_ids"][:len(prompt_tokens)], prompt_tokens),
-                            f"{answer['generated_token_ids'].tolist()} is not equal to {prompt_tokens}")
 
-    def test_initialization(self):
-        """Tests the __init__ method independently"""
-        for _ in self.create_text_generators():
-            continue
+def test_num_return_sequences():
+    generator = next(create_text_generators())
+    num_return_sequences = 2
+    answer: List[SingleAnswer] = generator(
+        prompt_s=TEST_PROMPT, max_new_tokens=8, return_tensors=False, return_text=True,
+        return_full_text=True, num_return_sequences=num_return_sequences
+    )
+    assert len(answer) == num_return_sequences, f"len(answer) is not {num_return_sequences}"
+    for curr_answer in answer:
+        curr_answer: SingleAnswer
+        assert curr_answer["generated_text"].startswith(TEST_PROMPT), \
+            f"{curr_answer['generated_text']} doesn't start with {TEST_PROMPT}"
 
-    def test_str(self):
-        """Test the __str__ method"""
-        for generator in self.create_text_generators():
-            self.assertIsInstance(str(generator), str)
+        assert len(curr_answer["generated_text"]) > len(TEST_PROMPT), \
+            f"{curr_answer['generated_text']} is too short"
 
-    def test_call_many_prompts(self):
-        """Tests the __call__ method when many prompts are given"""
-        generator = next(self.create_text_generators())
-        prompts: List[str] = ["This is a test prompt", "This is another test prompt"]
-        answers: List[SingleAnswer] = generator(
-            prompt_s=prompts, max_new_tokens=10,
-            return_text=True, return_full_text=True
-        )
-        self.assertIsInstance(answers, list)
-        self.assertEqual(len(answers), len(prompts))
-        for i, answer in enumerate(answers):
-            self.assertIsInstance(answer, dict)
-            self.assertIn("generated_text", answer.keys())
-            self.assertIsInstance(answer["generated_text"], str)
-            self.assertTrue(answer["generated_text"].startswith(prompts[i]),
-                            f"{answer['generated_text']} doesn't start with {prompts[i]}")
+
+@pytest.mark.parametrize("curr_text_generator", islice(create_text_generators(), 2))
+def test_max_new_tokens_is_none(curr_text_generator: TextGenerator):
+    answer: SingleAnswer = curr_text_generator(
+        prompt_s=TEST_PROMPT, max_new_tokens=None, return_tensors=False, return_text=True,
+        return_full_text=True
+    )
+    assert answer["generated_text"].startswith(TEST_PROMPT), \
+        f"{answer['generated_text']} doesn't start with {TEST_PROMPT}"
+
+    assert len(answer["generated_text"]) > len(TEST_PROMPT), \
+        f"{answer['generated_text']} is too short"
+
+
+def test_initialization():
+    for _ in create_text_generators():
+        continue
+
+
+def test_str():
+    for curr_text_generator in create_text_generators():
+        assert isinstance(str(curr_text_generator), str), f"{str(curr_text_generator)} is not a string"
+
+
+def test_call_many_prompts():
+    """Tests the __call__ method when many prompts are given"""
+    generator = next(create_text_generators())
+    PROMPTS: List[str] = ["This is a test prompt", "This is another test prompt"]
+    answers: List[SingleAnswer] = generator(
+        prompt_s=PROMPTS, max_new_tokens=10,
+        return_text=True, return_full_text=True
+    )
+    assert isinstance(answers, list), f"{answers} is not a list"
+    for prompt, answer in zip(PROMPTS, answers):
+        assert isinstance(answer, dict), f"{answer} is not a dict"
+        assert "generated_text" in answer.keys(), f"{answer} doesn't contain the key 'generated_text'"
+        assert isinstance(answer["generated_text"], str), f"{answer['generated_text']} is not a string"
+        assert answer["generated_text"].startswith(prompt), f"{answer['generated_text']} doesn't start with {prompt}"
 
 
 if __name__ == '__main__':
-    main()
+    pytest.main([__file__])
