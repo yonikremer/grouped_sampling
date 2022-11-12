@@ -79,15 +79,14 @@ def create_text_generators() -> Generator[TextGenerator, None, None]:
                 yield curr_tree_gen
 
 
-@pytest.mark.parametrize("curr_text_generator", create_text_generators())
-def test_calling_generators(curr_text_generator):
-    answer = curr_text_generator(
-        prompt_s=PROMPT,
-        max_new_tokens=curr_text_generator.group_size * 2,
-    )["generated_text"]
-    assert isinstance(answer, str), f"{answer} is not a string. curr_text_generator: {str(curr_text_generator)}"
-    assert answer.startswith(PROMPT), f"{answer} doesn't start with {PROMPT}"
-    assert len(answer) > len(PROMPT), f"{answer} is too short"
+def test_initialization():
+    for _ in create_text_generators():
+        continue
+
+
+def test_str():
+    for curr_text_generator in create_text_generators():
+        assert isinstance(str(curr_text_generator), str), f"{str(curr_text_generator)} is not a string"
 
 
 @pytest.mark.parametrize("curr_text_generator, edge_case_prompt",
@@ -190,16 +189,6 @@ def test_max_new_tokens_is_none(curr_text_generator: TextGenerator):
         f"{answer['generated_text']} is too short"
 
 
-def test_initialization():
-    for _ in create_text_generators():
-        continue
-
-
-def test_str():
-    for curr_text_generator in create_text_generators():
-        assert isinstance(str(curr_text_generator), str), f"{str(curr_text_generator)} is not a string"
-
-
 def test_call_many_prompts():
     """Tests the __call__ method when many prompts are given"""
     generator = next(create_text_generators())
@@ -214,6 +203,17 @@ def test_call_many_prompts():
         assert "generated_text" in answer.keys(), f"{answer} doesn't contain the key 'generated_text'"
         assert isinstance(answer["generated_text"], str), f"{answer['generated_text']} is not a string"
         assert answer["generated_text"].startswith(prompt), f"{answer['generated_text']} doesn't start with {prompt}"
+
+
+@pytest.mark.parametrize("curr_text_generator", create_text_generators())
+def test_calling_generators(curr_text_generator):
+    answer = curr_text_generator(
+        prompt_s=PROMPT,
+        max_new_tokens=curr_text_generator.group_size * 2,
+    )["generated_text"]
+    assert isinstance(answer, str), f"{answer} is not a string. curr_text_generator: {str(curr_text_generator)}"
+    assert answer.startswith(PROMPT), f"{answer} doesn't start with {PROMPT}"
+    assert len(answer) > len(PROMPT), f"{answer} is too short"
 
 
 if __name__ == '__main__':
