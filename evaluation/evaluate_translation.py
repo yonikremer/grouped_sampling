@@ -5,14 +5,16 @@ import gc
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
-from datasets.utils.logging import set_verbosity_error
+import datasets
+import transformers
 
 from evaluation.experiment_manager import ExperimentManager
 from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 
 
-set_verbosity_error()
+datasets.utils.logging.set_verbosity_error()
+transformers.utils.logging.set_verbosity_error()
 gc.enable()
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
