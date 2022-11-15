@@ -8,7 +8,6 @@ from torch import Tensor, tensor
 
 from text_generator import TextGenerator, GenerationType, NoCompletionsFound
 
-
 ProbDict = Dict[int, Tensor]
 
 
@@ -93,7 +92,7 @@ class SamplingGenerator(TextGenerator):
                  temp: float = 1.0, top_k: Optional[int] = None,
                  top_p: Optional[float] = None,
                  end_of_sentence_stop: bool = False,
-                 answer_length_multiplier: int = 16,):
+                 answer_length_multiplier: int = 16, ):
         self.top_p, self.top_k = top_p, top_k
         super().__init__(
             model_name=model_name,
@@ -109,6 +108,12 @@ class SamplingGenerator(TextGenerator):
             GenerationType.RANDOM: SamplingGenerator.all_tokens,
         }
         self.filter_tokens = gen_type_to_filter_method[self.generation_type]
+
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+        if key == "default_seed":
+            seed(value)
+            torch.manual_seed(value)
 
     def choose_generation_type(self) -> GenerationType:
         top_k = self.top_k
