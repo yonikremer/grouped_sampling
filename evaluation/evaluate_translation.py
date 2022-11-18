@@ -32,9 +32,25 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
     )
 
 
+def lang_code_to_name(language_code: str) -> str:
+    """Converts language's ISO_639_1 code to language name
+    Raises KeyError if language code is not one of the languages in the ted_talks_iwslt dataset"""
+    ISO_639_1 = {
+        "de": "German",
+        "en": "English",
+        "nl": "Dutch",
+        "eu": "Basque",
+        "ja": "Japanese",
+        "ca": "Catalan",
+        "fr-ca": "Canadian French",
+        "hi": "Hindi",
+    }
+    return ISO_639_1[language_code]
+
+
 def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
-    language1, language2 = spited_sub_set_name[:2]
+    language_code1, language_code2 = spited_sub_set_name[:2]
     sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train")
     processed_data1_dict: Dataset
     processed_data2_dict: Dataset
@@ -43,9 +59,9 @@ def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dat
         translation: Dict[str, str] = x["translation"]
         return {input_lang: translation[input_lang], output_lang: translation[output_lang]}
 
-    subset_part1 = sub_set.map(rename_keys, fn_kwargs={"input_lang": language1, "output_lang": language2})
-    subset_part2 = sub_set.map(rename_keys, fn_kwargs={"input_lang": language2, "output_lang": language1})
-    return subset_part1, subset_part2, language1, language2
+    subset_part1 = sub_set.map(rename_keys, fn_kwargs={"input_lang": language_code1, "output_lang": language_code2})
+    subset_part2 = sub_set.map(rename_keys, fn_kwargs={"input_lang": language_code2, "output_lang": language_code1})
+    return subset_part1, subset_part2, language_code1, language_code2
 
 
 def run_experiment(generator: TextGenerator) -> None:
@@ -57,25 +73,31 @@ def run_experiment(generator: TextGenerator) -> None:
     for i, sub_set_name in enumerate(sub_sut_names):
         print(f"Running sub-experiment {i + 1} out of {len(sub_sut_names)}")
         processed_sub_set: Dataset
-        language1: str
-        language2: str
-        subset_part1, subset_part2, language1, language2 = process_translation_data(DATASET_NAME, sub_set_name)
-        my_evaluator.METRIC_KWARGS = {"lang": language2}
+        language_code1: str
+        language_code2: str
+        subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(
+            DATASET_NAME, sub_set_name)
+        language_name1, language_name2 = lang_code_to_name(language_code1), lang_code_to_name(language_code2)
+        prefix = f"Translate {language_name1} to {language_name2}: \n {language_name1}: "
+        my_evaluator.METRIC_KWARGS = {"lang": language_code2}
+        my_evaluator.PIPELINE_KWARGS = {"prefix": prefix}
         # noinspection PyTypeChecker
         scores1: Dict[str, List[float] | Any] = my_evaluator.compute(
             model_or_pipeline=generator,
             data=subset_part1,
-            input_column=language1,
-            label_column=language2
+            input_column=language_code1,
+            label_column=language_code2
         )
         manager.log_sub_experiment(scores1)
-        my_evaluator.METRIC_KWARGS = {"lang": language1}
+        prefix = f"Translate {language_name2} to {language_name1}: \n {language_name2}: "
+        my_evaluator.PIPELINE_KWARGS = {"prefix": prefix}
+        my_evaluator.METRIC_KWARGS = {"lang": language_code1}
         # noinspection PyTypeChecker
         scores2: Dict[str, List[float] | Any] = my_evaluator.compute(
             model_or_pipeline=generator,
             data=subset_part2,
-            input_column=language2,
-            label_column=language1
+            input_column=language_code2,
+            label_column=language_code1
         )
         manager.log_sub_experiment(scores2)
     manager.end_experiment()
