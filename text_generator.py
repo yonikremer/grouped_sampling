@@ -159,13 +159,14 @@ class TextGenerator(Callable, ABC):
             prompt: str,
             prefix: str = "",
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
+            postfix: str = "",
     ) -> Tensor:
         """A helper method for __call__ that tokenize the prompt
         all the arguments are sent directly from the __call__ method
         Returns:
             the tokenized prompt as a list of ints"""
 
-        prompt = prefix + prompt
+        prompt = prefix + prompt + postfix
         tokenizer_output = self.tokenizer(
             prompt,
             return_tensors=self.framework,
@@ -217,6 +218,7 @@ class TextGenerator(Callable, ABC):
             return_full_text: bool,
             clean_up_tokenization_spaces: bool,
             prefix: str = "",
+            postfix: str = "",
     ):
         """A helper method for __call__
         that converts the token ids to dictionary
@@ -234,17 +236,21 @@ class TextGenerator(Callable, ABC):
                 shorten_token_list = token_ids[:final_num_tokens]
             else:
                 shorten_token_list = token_ids
+
+        generated_tokens = shorten_token_list[prompt_len:]
         if return_full_text:
             prefix_length = len(self.tokenizer.encode(prefix))
-            shorten_token_list = shorten_token_list[prefix_length:]
+            postfix_length = len(self.tokenizer.encode(postfix))
+            prompt_tokens = shorten_token_list[prefix_length:prompt_len-postfix_length]  # Without prefix and postfix
+            final_token_list = prompt_tokens + generated_tokens
         else:
-            shorten_token_list = shorten_token_list[prompt_len:]
+            final_token_list = generated_tokens
         final_ans = {}
         if return_tensors:
-            final_ans["generated_token_ids"] = tensor(shorten_token_list)
+            final_ans["generated_token_ids"] = tensor(final_token_list)
         if return_text:
             final_ans["generated_text"] = self.tokenizer.decode(
-                shorten_token_list,
+                final_token_list,
                 skip_special_tokens=True,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces
             )
@@ -261,6 +267,7 @@ class TextGenerator(Callable, ABC):
             prefix: str = "",
             num_return_sequences: int = 1,
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
+            postfix: str = "",
     ) -> SingleAnswer | List[SingleAnswer] | List[List[SingleAnswer]]:
         """The function that outside code should call to generate text
         Args:
@@ -286,6 +293,7 @@ class TextGenerator(Callable, ABC):
                 For SamplingGenerator: each answer will be generated with different seed.
                 For TreeGenerator: the num_return_sequences with the highest scores will be returned.
             truncation: TruncationStrategy - whether to truncate the prompt
+            postfix: str - a postfix to add to the prompt
         Returns:
             Each result comes as a dictionary with the following keys:
             - "generated_text" (`str`, present when `return_text=True`) -- The generated text.
@@ -303,10 +311,12 @@ class TextGenerator(Callable, ABC):
                 return_tensors=return_tensors,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                truncation=truncation) for prompt in prompt_s]
+                truncation=truncation,
+                postfix=postfix,
+            ) for prompt in prompt_s]
 
         tokenized_prompt: Tensor = self.preprocess(
-            prompt=prompt_s, prefix=prefix, truncation=truncation)
+            prompt=prompt_s, prefix=prefix, truncation=truncation, postfix=postfix)
 
         prompt_len: int = len(tokenized_prompt)
         # length for the prefix and the prompt
@@ -329,6 +339,7 @@ class TextGenerator(Callable, ABC):
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 prefix=prefix,
+                postfix=postfix,
             ) for tokenized_answer in tokenized_answers]
         else:
             return self.postprocess(

@@ -78,8 +78,9 @@ def run_experiment(generator: TextGenerator) -> None:
         subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name)
         language_name1, language_name2 = lang_code_to_name(language_code1), lang_code_to_name(language_code2)
         prefix = f"Translate {language_name1} to {language_name2}: \n {language_name1}: "
+        postfix = f"\n {language_name2}: "
         my_evaluator.METRIC_KWARGS = {"lang": language_code2}
-        my_evaluator.PIPELINE_KWARGS = {"prefix": prefix}
+        my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
         # noinspection PyTypeChecker
         scores1: Dict[str, List[float] | Any] = my_evaluator.compute(
             model_or_pipeline=generator,
@@ -89,7 +90,8 @@ def run_experiment(generator: TextGenerator) -> None:
         )
         manager.log_sub_experiment(scores1)
         prefix = f"Translate {language_name2} to {language_name1}: \n {language_name2}: "
-        my_evaluator.PIPELINE_KWARGS = {"prefix": prefix}
+        postfix = f"\n {language_name1}: "
+        my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
         my_evaluator.METRIC_KWARGS = {"lang": language_code1}
         # noinspection PyTypeChecker
         scores2: Dict[str, List[float] | Any] = my_evaluator.compute(
