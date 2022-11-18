@@ -48,10 +48,10 @@ def lang_code_to_name(language_code: str) -> str:
     return ISO_639_1[language_code]
 
 
-def process_translation_data(data_set_name: str, sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
+def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
-    sub_set: Dataset = load_dataset(data_set_name, sub_set_name, split="train")
+    sub_set: Dataset = load_dataset(DATASET_NAME, sub_set_name, split="train")
     processed_data1_dict: Dataset
     processed_data2_dict: Dataset
 
@@ -75,8 +75,7 @@ def run_experiment(generator: TextGenerator) -> None:
         processed_sub_set: Dataset
         language_code1: str
         language_code2: str
-        subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(
-            DATASET_NAME, sub_set_name)
+        subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name)
         language_name1, language_name2 = lang_code_to_name(language_code1), lang_code_to_name(language_code2)
         prefix = f"Translate {language_name1} to {language_name2}: \n {language_name1}: "
         my_evaluator.METRIC_KWARGS = {"lang": language_code2}
