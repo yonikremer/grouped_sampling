@@ -102,7 +102,7 @@ def test_edge_cases(curr_text_generator: TextGenerator, edge_case_prompt: str):
     assert answer.startswith(edge_case_prompt[:-1]), f"{answer} doesn't start with {edge_case_prompt}"
 
 
-def test_post_process():
+def test_pre_and_post_process():
     """Tests the different returning options"""
     generator: TextGenerator = next(create_text_generators())
     prompt: str = "This is a test prompt"
@@ -123,7 +123,8 @@ def test_post_process():
                       Tensor), f"{returned_val['generated_token_ids']} is not a list"
     assert returned_text.startswith(
         prompt), f"{returned_text} doesn't start with {prompt}"
-    prompt_tokens: Tensor = generator.preprocess(prompt)
+    prompt_tokens: Tensor
+    prompt_tokens, _, _, _ = generator.preprocess(prompt)
     assert equal(generated_token_ids[:len(prompt_tokens)], prompt_tokens), \
         f"{returned_val['generated_token_ids'].tolist()} is not equal to {prompt_tokens}"
     assert isinstance(generated_token_ids[:len(prompt_tokens)], Tensor), \
@@ -141,7 +142,7 @@ def test_post_process():
     returned_text = returned_val["generated_text"]
     assert not returned_text.startswith(
         prompt), f"{returned_text} doesn't start with {prompt}"
-    prompt_tokens: Tensor = generator.preprocess(prompt)
+    prompt_tokens, _, _, _ = generator.preprocess(prompt)
     assert not equal(returned_val["generated_token_ids"][:len(prompt_tokens)], prompt_tokens), \
         f"{returned_val['generated_token_ids'][:len(prompt_tokens)]} is equal to {prompt_tokens}"
 
