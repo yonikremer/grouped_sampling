@@ -151,26 +151,37 @@ def test_prefix():
     """Tests that the prefix option of the methods __call__ and preprocess works"""
     generator: TextGenerator = next(create_text_generators())
     prompt: str = "test prompt"
-    prefix = "This is a"
+    prefix = "This is a "
     answer: SingleAnswer = generator(
         prompt_s=prompt, max_new_tokens=10,
-        return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
+        return_tensors=True, return_text=True, return_full_text=True, prefix=prefix
     )
     assert prompt in answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}"
     assert prefix not in answer["generated_text"], f"{answer['generated_text']} doesn't contain {prefix}"
+    answer: str = generator(prompt_s=prompt, max_new_tokens=10,
+                            return_tensors=False, return_text=True, return_full_text=False, prefix=prefix
+                            )['generated_text']
+    assert prompt not in answer, f"{answer} contain {prompt}"
+    assert prefix not in answer, f"{answer} contain {prefix}"
 
 
 def test_postfix():
     """Tests that the postfix option of the methods __call__ and preprocess works"""
     generator: TextGenerator = next(create_text_generators())
-    prompt: str = "test prompt"
-    postfix = "This is a"
-    answer: SingleAnswer = generator(
+    prompt: str = "This is a"
+    postfix = " Test postfix"
+    answer: str = generator(
         prompt_s=prompt, max_new_tokens=10,
         return_tensors=False, return_text=True, return_full_text=True, postfix=postfix
-    )
-    assert prompt in answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}"
-    assert postfix not in answer["generated_text"], f"{answer['generated_text']} doesn't contain {postfix}"
+    )["generated_text"]
+    assert prompt in answer, f"{answer} doesn't contain {prompt}"
+    assert postfix not in answer, f"{answer} contain {postfix}"
+    answer = generator(
+        prompt_s=prompt, max_new_tokens=10,
+        return_tensors=False, return_text=True, return_full_text=False, postfix=postfix
+    )["generated_text"]
+    assert prompt not in answer, f"{answer} doesn't contain {prompt}"
+    assert postfix not in answer, f"{answer} doesn't contain {postfix}"
 
 
 def test_num_return_sequences():
