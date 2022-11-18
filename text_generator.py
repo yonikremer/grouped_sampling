@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
 
-from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor
+from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor, cat
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
@@ -57,7 +57,7 @@ class TextGenerator(Callable, ABC):
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0,
                  end_of_sentence_stop: bool = False,
-                 answer_length_multiplier: int = 16,):
+                 answer_length_multiplier: int = 16, ):
         """Model name: the name of the model
         used for loading from hugging face hub
         group size: int
@@ -154,34 +154,26 @@ class TextGenerator(Callable, ABC):
         del scaled_relevant_logits
         return prob_tensor
 
-    def preprocess(
+    def get_token_tensor(
             self,
-            prompt: str,
-            prefix: str = "",
+            text: str,
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
-            postfix: str = "",
     ) -> Tensor:
-        """A helper method for __call__ that tokenize the prompt
-        all the arguments are sent directly from the __call__ method
-        Returns:
-            the tokenized prompt as a list of ints"""
-
-        prompt = prefix + prompt + postfix
-        tokenizer_output = self.tokenizer(
-            prompt,
+        tokenized_text = self.tokenizer(
+            text,
             return_tensors=self.framework,
             padding=False,
             add_special_tokens=False,
             truncation=truncation,
             max_length=self.max_input_len,
         )
-        is_dict = isinstance(tokenizer_output, dict)
-        is_batch_encoding = isinstance(tokenizer_output,
+        is_dict = isinstance(tokenized_text, dict)
+        is_batch_encoding = isinstance(tokenized_text,
                                        BatchEncoding)
         if is_dict or is_batch_encoding:
-            token_tensor: Tensor = tokenizer_output["input_ids"]
-        elif isinstance(tokenizer_output, Tensor):
-            token_tensor: Tensor = tokenizer_output
+            token_tensor: Tensor = tokenized_text["input_ids"]
+        elif isinstance(tokenized_text, Tensor):
+            token_tensor: Tensor = tokenized_text
         else:
             raise TypeError("The tokenizer output is not one of:"
                             "dict, BatchEncoding, Tensor")
@@ -190,6 +182,30 @@ class TextGenerator(Callable, ABC):
             token_tensor = token_tensor[0]
 
         return token_tensor
+
+    def preprocess(
+            self,
+            prompt: str,
+            prefix: str = "",
+            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
+            postfix: str = "",
+    ) -> Tuple[Tensor, int, int, int]:
+        """A helper method for __call__ that tokenize the prompt
+        all the arguments are sent directly from the __call__ method
+        Returns:
+            the tokenized prompt as a list of ints"""
+
+        if len(prefix) > 0:
+            prefix_tokens = self.get_token_tensor(prefix, truncation)
+        else:
+            prefix_tokens = LongTensor([])
+        if len(postfix) > 0:
+            postfix_tokens = self.get_token_tensor(postfix, truncation)
+        else:
+            postfix_tokens = LongTensor([])
+        prompt_tokens = self.get_token_tensor(prompt, truncation)
+        token_tensor = cat((prefix_tokens, prompt_tokens, postfix_tokens))
+        return token_tensor, len(prefix_tokens), len(prompt_tokens), len(postfix_tokens)
 
     @abstractmethod
     def _forward(
@@ -217,8 +233,8 @@ class TextGenerator(Callable, ABC):
             return_tensors: bool,
             return_full_text: bool,
             clean_up_tokenization_spaces: bool,
-            prefix: str = "",
-            postfix: str = "",
+            prefix_len: int = 0,
+            postfix_len: int = 0,
     ):
         """A helper method for __call__
         that converts the token ids to dictionary
@@ -231,17 +247,15 @@ class TextGenerator(Callable, ABC):
         if num_new_tokens is None:
             shorten_token_list = token_ids
         else:
-            final_num_tokens = prompt_len + num_new_tokens
+            final_num_tokens = prefix_len + prompt_len + postfix_len + num_new_tokens
             if len(token_ids) > final_num_tokens:
                 shorten_token_list = token_ids[:final_num_tokens]
             else:
                 shorten_token_list = token_ids
 
-        generated_tokens = shorten_token_list[prompt_len:]
+        generated_tokens = shorten_token_list[prefix_len+prompt_len+postfix_len:]
         if return_full_text:
-            prefix_length = len(self.tokenizer.encode(prefix))
-            postfix_length = len(self.tokenizer.encode(postfix))
-            prompt_tokens = shorten_token_list[prefix_length:prompt_len-postfix_length]  # Without prefix and postfix
+            prompt_tokens = shorten_token_list[prefix_len:prefix_len + prompt_len]  # Without prefix and postfix
             final_token_list = prompt_tokens + generated_tokens
         else:
             final_token_list = generated_tokens
@@ -314,17 +328,19 @@ class TextGenerator(Callable, ABC):
                 truncation=truncation,
                 postfix=postfix,
             ) for prompt in prompt_s]
+        tokens: Tensor
+        prefix_len: int
+        postfix_len: int
+        prompt_len: int
 
-        tokenized_prompt: Tensor = self.preprocess(
+        tokens, prefix_len, prompt_len, postfix_len = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation, postfix=postfix)
 
-        prompt_len: int = len(tokenized_prompt)
-        # length for the prefix and the prompt
         if max_new_tokens is None:
             max_new_tokens = prompt_len * self.answer_length_multiplier
         tokenized_answers: List[TokenIDS]
         tokenized_answers = self._forward(
-            tokenized_prompt,
+            tokens,
             max_new_tokens,
             num_return_sequences
         )
@@ -338,8 +354,8 @@ class TextGenerator(Callable, ABC):
                 return_tensors=return_tensors,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                prefix=prefix,
-                postfix=postfix,
+                prefix_len=prefix_len,
+                postfix_len=postfix_len,
             ) for tokenized_answer in tokenized_answers]
         else:
             return self.postprocess(
@@ -350,7 +366,8 @@ class TextGenerator(Callable, ABC):
                 return_tensors=return_tensors,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                prefix=prefix,
+                prefix_len=prefix_len,
+                postfix_len=postfix_len,
             )
 
     @abstractmethod
