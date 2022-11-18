@@ -64,6 +64,27 @@ def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, 
     return subset_part1, subset_part2, language_code1, language_code2
 
 
+def sub_experiment_half(
+        my_evaluator: TranslationEvaluator,
+        sub_set_half: Dataset,
+        in_lang_code: str, out_lang_code: str,
+        generator: TextGenerator,
+        manager: ExperimentManager):
+    in_lang_name, out_lang_name = lang_code_to_name(in_lang_code), lang_code_to_name(out_lang_code)
+    prefix = f"Translate {in_lang_name} to {out_lang_name}: \n {in_lang_name}: "
+    postfix = f"\n {out_lang_name}: "
+    my_evaluator.METRIC_KWARGS = {"lang": out_lang_code}
+    my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
+    # noinspection PyTypeChecker
+    scores1: Dict[str, List[float] | Any] = my_evaluator.compute(
+        model_or_pipeline=generator,
+        data=sub_set_half,
+        input_column=in_lang_code,
+        label_column=out_lang_code
+    )
+    manager.log_sub_experiment(scores1)
+
+
 def run_experiment(generator: TextGenerator) -> None:
     generator.task = "translation"
     my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
@@ -76,31 +97,8 @@ def run_experiment(generator: TextGenerator) -> None:
         language_code1: str
         language_code2: str
         subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name)
-        language_name1, language_name2 = lang_code_to_name(language_code1), lang_code_to_name(language_code2)
-        prefix = f"Translate {language_name1} to {language_name2}: \n {language_name1}: "
-        postfix = f"\n {language_name2}: "
-        my_evaluator.METRIC_KWARGS = {"lang": language_code2}
-        my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
-        # noinspection PyTypeChecker
-        scores1: Dict[str, List[float] | Any] = my_evaluator.compute(
-            model_or_pipeline=generator,
-            data=subset_part1,
-            input_column=language_code1,
-            label_column=language_code2
-        )
-        manager.log_sub_experiment(scores1)
-        prefix = f"Translate {language_name2} to {language_name1}: \n {language_name2}: "
-        postfix = f"\n {language_name1}: "
-        my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
-        my_evaluator.METRIC_KWARGS = {"lang": language_code1}
-        # noinspection PyTypeChecker
-        scores2: Dict[str, List[float] | Any] = my_evaluator.compute(
-            model_or_pipeline=generator,
-            data=subset_part2,
-            input_column=language_code2,
-            label_column=language_code1
-        )
-        manager.log_sub_experiment(scores2)
+        sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, generator, manager)
+        sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager)
     manager.end_experiment()
 
 
