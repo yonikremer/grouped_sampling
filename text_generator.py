@@ -215,7 +215,8 @@ class TextGenerator(Callable, ABC):
             return_text: bool,
             return_tensors: bool,
             return_full_text: bool,
-            clean_up_tokenization_spaces: bool
+            clean_up_tokenization_spaces: bool,
+            prefix: str = "",
     ):
         """A helper method for __call__
         that converts the token ids to dictionary
@@ -233,7 +234,10 @@ class TextGenerator(Callable, ABC):
                 shorten_token_list = token_ids[:final_num_tokens]
             else:
                 shorten_token_list = token_ids
-        if not return_full_text:
+        if return_full_text:
+            prefix_length = len(self.tokenizer.encode(prefix))
+            shorten_token_list = shorten_token_list[prefix_length:]
+        else:
             shorten_token_list = shorten_token_list[prompt_len:]
         final_ans = {}
         if return_tensors:
@@ -305,6 +309,7 @@ class TextGenerator(Callable, ABC):
             prompt=prompt_s, prefix=prefix, truncation=truncation)
 
         prompt_len: int = len(tokenized_prompt)
+        # length for the prefix and the prompt
         if max_new_tokens is None:
             max_new_tokens = prompt_len * self.answer_length_multiplier
         tokenized_answers: List[TokenIDS]
@@ -322,7 +327,8 @@ class TextGenerator(Callable, ABC):
                 return_text=return_text,
                 return_tensors=return_tensors,
                 return_full_text=return_full_text,
-                clean_up_tokenization_spaces=clean_up_tokenization_spaces
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                prefix=prefix,
             ) for tokenized_answer in tokenized_answers]
         else:
             return self.postprocess(
@@ -332,7 +338,8 @@ class TextGenerator(Callable, ABC):
                 return_text=return_text,
                 return_tensors=return_tensors,
                 return_full_text=return_full_text,
-                clean_up_tokenization_spaces=clean_up_tokenization_spaces
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                prefix=prefix,
             )
 
     @abstractmethod

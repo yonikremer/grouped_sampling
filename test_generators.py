@@ -155,8 +155,7 @@ def test_prefix():
         prompt_s=prompt, max_new_tokens=10,
         return_tensors=False, return_text=True, return_full_text=True, prefix=prefix
     )
-    assert answer["generated_text"].startswith(prefix), f"{answer['generated_text']} doesn't start with {prefix}"
-    assert prompt in answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}"
+    assert prompt not in answer["generated_text"], f"{answer['generated_text']} doesn't contain {prompt}"
 
 
 def test_num_return_sequences():
