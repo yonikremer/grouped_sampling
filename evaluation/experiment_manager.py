@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 from comet_ml import Experiment
+from pandas import DataFrame
+import matplotlib.pyplot as plt
 
 try:
     # noinspection PyUnresolvedReferences
@@ -21,10 +23,10 @@ class ExperimentManager:
     per_example_f1: List[float] = []
     per_example_precision: List[float] = []
     per_example_recall: List[float] = []
-    num_examples: int = 0
     start_time: datetime
     experiment: Experiment
     COMET_ML_PROJECT_NAME = "grouped-sampling-evaluation"
+    df: DataFrame
 
     def __init__(self, generator: TextGenerator):
         self.experiment = Experiment(
@@ -38,6 +40,7 @@ class ExperimentManager:
         )
         self.experiment.log_parameters(generator.as_dict())
         self.start_time = datetime.now()
+        self.df = DataFrame(columns=["BERT_f1", "BERT_precision", "BERT_recall"], dtype=float)
 
     @staticmethod
     def get_comet_api_key() -> str:
@@ -68,20 +71,37 @@ class ExperimentManager:
         precision: List[float] = bert_scores["precision"]
         recall: List[float] = bert_scores["recall"]
         assert len(f_1) == len(precision) == len(recall)
-        self.per_example_f1.extend(f_1)
-        self.per_example_precision.extend(precision)
-        self.per_example_recall.extend(recall)
-        self.num_examples += len(f_1)
+        # add scores to the dataframe
+        for curr_f1, curr_precision, curr_recall in zip(f_1, precision, recall):
+            self.df = self.df.append({"BERT_f1": curr_f1,
+                                      "BERT_precision": curr_precision,
+                                      "BERT_recall": curr_recall}, ignore_index=True)
 
     def end_experiment(self) -> None:
-        per_example_scores: Dict[str, List[float]] = {"f1": self.per_example_f1,
-                                                      "precision": self.per_example_precision,
-                                                      "recall": self.per_example_recall}
-        averaged_scores = {}
-        for metric, scores in per_example_scores.items():
-            averaged_scores[f"average BERT {metric}"] = sum(scores) / self.num_examples
-        self.experiment.log_metrics(averaged_scores)
-        total_time_in_hours = (datetime.now() - self.start_time).total_seconds() / 3600
-        self.experiment.log_metric("time in hours", total_time_in_hours)
+        """Logs the experiment to comet ml"""
+        self.experiment.log_dataframe_profile(self.df, "BERT_scores", header=True)
+        for score_name in ("BERT_f1", "BERT_precision", "BERT_recall"):
+            curr_column = self.df[score_name]
+            score_stats = {
+                f"{score_name}_mean": curr_column.mean(),
+                f"{score_name}_std": curr_column.std(),
+                f"{score_name}_min": curr_column.min(),
+                f"{score_name}_max": curr_column.max(),
+                f"{score_name}_median": curr_column.median(),
+                f"{score_name}_25_percentile": curr_column.quantile(0.25),
+                f"{score_name}_75_percentile": curr_column.quantile(0.75),
+            }
+            self.experiment.log_metrics(score_stats)
+            plt.hist(curr_column, bins=20)
+            plt.title(f"Histogram of {score_name}")
+            self.experiment.log_figure(figure_name=f"{score_name}_histogram", figure=plt)
+        total_time_in_seconds = (datetime.now() - self.start_time).total_seconds()
+        num_examples = len(self.df)
+        total_time_in_hours = total_time_in_seconds / 3600
+        self.experiment.log_metrics({
+            "time in hours": total_time_in_hours,
+            "seconds per example": total_time_in_seconds / num_examples,
+            "examples per second": num_examples / total_time_in_seconds
+        })
         self.experiment.send_notification(f"Experiment finished successfully in {total_time_in_hours} hours")
         self.experiment.end()
