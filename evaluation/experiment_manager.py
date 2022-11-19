@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable, Tuple, Sequence
 
 from comet_ml import Experiment
 from pandas import DataFrame, concat
@@ -40,7 +40,13 @@ class ExperimentManager:
         )
         self.experiment.log_parameters(generator.as_dict())
         self.start_time = datetime.now()
-        self.df = DataFrame(columns=["BERT_f1", "BERT_precision", "BERT_recall"], dtype=float)
+        self.df = DataFrame(columns=[
+            "input_language",
+            "output_language",
+            "BERT_f1",
+            "BERT_precision",
+            "BERT_recall"
+        ], dtype=float)
 
     @staticmethod
     def get_comet_api_key() -> str:
@@ -62,17 +68,21 @@ class ExperimentManager:
             f.write(api_key)
         return api_key
 
-    def log_sub_experiment(self, bert_scores: Dict[str, List[float] | Any]) -> None:
+    def log_sub_experiment(self, bert_scores: Dict[str, List[float] | Any], input_lang: str, output_lang: str) -> None:
         """Args:
             bert_scores: Dict[str, Tensor]
                 with keys "f1", "precision", "recall"
-                values of shape (number of examples in the sub-experiment,) and type float"""
+                values of shape (number of examples in the sub-experiment,) and type float
+            input_lang: The name of the input language in this sub experiment half
+            output_lang: The name of the output language in this sub experiment half"""
         f_1: List[float] = bert_scores["f1"]
         precision: List[float] = bert_scores["precision"]
         recall: List[float] = bert_scores["recall"]
         assert len(f_1) == len(precision) == len(recall)
         # add scores to the dataframe
         new_data: DataFrame = DataFrame.from_dict({
+            "input_language": [input_lang] * len(f_1),
+            "output_language": [output_lang] * len(f_1),
             "BERT_f1": f_1,
             "BERT_precision": precision,
             "BERT_recall": recall,

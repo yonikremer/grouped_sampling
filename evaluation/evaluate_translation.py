@@ -82,7 +82,7 @@ def sub_experiment_half(
         input_column=in_lang_code,
         label_column=out_lang_code
     )
-    manager.log_sub_experiment(scores1)
+    manager.log_sub_experiment(scores1, in_lang_name, out_lang_name)
 
 
 def run_experiment(generator: TextGenerator) -> None:
