@@ -20,9 +20,6 @@ from text_generator import TextGenerator
 
 
 class ExperimentManager:
-    per_example_f1: List[float] = []
-    per_example_precision: List[float] = []
-    per_example_recall: List[float] = []
     start_time: datetime
     experiment: Experiment
     COMET_ML_PROJECT_NAME = "grouped-sampling-evaluation"
