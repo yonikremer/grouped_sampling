@@ -92,17 +92,19 @@ class ExperimentManager:
     def end_experiment(self) -> None:
         """Logs the experiment to comet ml"""
         self.experiment.log_dataframe_profile(self.df, "BERT_scores", header=True)
+        STAT_NAME_TO_FUNC: Sequence[Tuple[str, Callable]] = (
+            ("mean", lambda x: x.mean()),
+            ("standard_deviation", lambda x: x.std()),
+            ("min", lambda x: x.min()),
+            ("max", lambda x: x.max()),
+            ("median", lambda x: x.median()),
+            ("25_percentile", lambda x: x.quantile(0.25)),
+            ("75_percentile", lambda x: x.quantile(0.75))
+        )
         for score_name in ("BERT_f1", "BERT_precision", "BERT_recall"):
             curr_column = self.df[score_name]
-            score_stats = {
-                f"{score_name}_mean": curr_column.mean(),
-                f"{score_name}_std": curr_column.std(),
-                f"{score_name}_min": curr_column.min(),
-                f"{score_name}_max": curr_column.max(),
-                f"{score_name}_median": curr_column.median(),
-                f"{score_name}_25_percentile": curr_column.quantile(0.25),
-                f"{score_name}_75_percentile": curr_column.quantile(0.75),
-            }
+            score_stats = {f"{score_name}_{stat_name}": stat_func(curr_column)
+                           for stat_name, stat_func in STAT_NAME_TO_FUNC}
             self.experiment.log_metrics(score_stats)
             plt.hist(curr_column, bins=20)
             plt.title(f"Histogram of {score_name}")
