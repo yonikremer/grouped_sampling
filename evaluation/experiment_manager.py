@@ -69,7 +69,7 @@ class ExperimentManager:
             f.write(api_key)
         return api_key
 
-    def log_stats(self, scores: DataFrame, title: str):
+    def log_stats(self, scores: DataFrame, title: str) -> None:
         STAT_NAME_TO_FUNC: Sequence[Tuple[str, Callable[[Series], float]]] = (
             ("mean", lambda x: x.mean()),
             ("standard_deviation", lambda x: x.std()),

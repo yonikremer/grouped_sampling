@@ -69,7 +69,7 @@ def sub_experiment_half(
         sub_set_half: Dataset,
         in_lang_code: str, out_lang_code: str,
         generator: TextGenerator,
-        manager: ExperimentManager):
+        manager: ExperimentManager) -> None:
     in_lang_name, out_lang_name = lang_code_to_name(in_lang_code), lang_code_to_name(out_lang_code)
     prefix = f"Translate {in_lang_name} to {out_lang_name}: \n {in_lang_name}: "
     postfix = f"\n {out_lang_name}: "
@@ -102,7 +102,7 @@ def run_experiment(generator: TextGenerator) -> None:
     manager.end_experiment()
 
 
-def main():
+def main() -> None:
     for curr_text_generator in generate_text_generators():
         run_experiment(curr_text_generator)
 
