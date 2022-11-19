@@ -7,6 +7,9 @@ from typing import List, Dict, Any, Callable, Tuple, Sequence, Set
 from comet_ml import Experiment
 from pandas import DataFrame, concat, Series
 import matplotlib.pyplot as plt
+from datasets import Dataset
+
+from evaluation.helpers import lang_code_to_name
 
 try:
     # noinspection PyUnresolvedReferences
@@ -39,6 +42,8 @@ class ExperimentManager:
         self.experiment.log_parameters(generator.as_dict())
         self.start_time = datetime.now()
         self.df = DataFrame(columns=[
+            "input_text",
+            "target_text",
             "input_language",
             "output_language",
             "BERT_f1",
@@ -85,25 +90,35 @@ class ExperimentManager:
             plt.title(f"Histogram of {title}_{score_name}")
             self.experiment.log_figure(figure_name=f"{title}_{score_name}_histogram", figure=plt)
 
-    def log_sub_experiment(self, bert_scores: Dict[str, List[float] | Any], input_lang: str, output_lang: str) -> None:
+    def log_sub_experiment(
+            self,
+            bert_scores: Dict[str, List[float] | Any],
+            input_lang_code: str,
+            output_lang_code: str,
+            sub_set: Dataset,
+    ) -> None:
         """Args:
             bert_scores: Dict[str, Tensor]
                 with keys "f1", "precision", "recall"
                 values of shape (number of examples in the sub-experiment,) and type float
-            input_lang: The name of the input language in this sub experiment half
-            output_lang: The name of the output language in this sub experiment half"""
-        self.language_pairs.add((input_lang, output_lang))
+            input_lang_code: The name of the input language in this sub experiment half
+            output_lang_code: The name of the output language in this sub experiment half
+            sub_set: The dataset that was used for this sub experiment half"""
+        input_lang_name, output_lang_name = lang_code_to_name(input_lang_code), lang_code_to_name(output_lang_code)
+        self.language_pairs.add((input_lang_name, output_lang_name))
         f_1: List[float] = bert_scores["f1"]
         precision: List[float] = bert_scores["precision"]
         recall: List[float] = bert_scores["recall"]
         assert len(f_1) == len(precision) == len(recall)
         # add scores to the dataframe
         new_data: DataFrame = DataFrame.from_dict({
-            "input_language": [input_lang] * len(f_1),
-            "output_language": [output_lang] * len(f_1),
+            "input_language": [input_lang_name] * len(f_1),
+            "output_language": [output_lang_name] * len(f_1),
             "BERT_f1": f_1,
             "BERT_precision": precision,
             "BERT_recall": recall,
+            "input_text": sub_set[input_lang_code],
+            "target_text": sub_set[output_lang_code],
         })
         self.df = concat([self.df, new_data], ignore_index=True, copy=False)
 
@@ -113,7 +128,9 @@ class ExperimentManager:
         self.log_stats(self.df, "general")
         for input_lang, output_lang in self.language_pairs:
             pair_scores: DataFrame
-            pair_scores = self.df[(self.df["input_lang"] == input_lang) & (self.df["output_language"] == output_lang)]
+            pair_scores = self.df[
+                (self.df["input_lang_name"] == input_lang) & (self.df["output_language"] == output_lang)
+                ]
             self.log_stats(pair_scores, f"{input_lang} to {output_lang}")
         total_time_in_seconds = (datetime.now() - self.start_time).total_seconds()
         num_examples = len(self.df)

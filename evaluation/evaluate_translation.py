@@ -8,9 +8,9 @@ import datasets
 from transformers.utils.logging import set_verbosity_error
 
 from evaluation.experiment_manager import ExperimentManager
+from evaluation.helpers import lang_code_to_name
 from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
-
 
 datasets.utils.logging.set_verbosity_error()
 set_verbosity_error()
@@ -30,22 +30,6 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
     )
 
 
-def lang_code_to_name(language_code: str) -> str:
-    """Converts language's ISO_639_1 code to language name
-    Raises KeyError if language code is not one of the languages in the ted_talks_iwslt dataset"""
-    ISO_639_1 = {
-        "de": "German",
-        "en": "English",
-        "nl": "Dutch",
-        "eu": "Basque",
-        "ja": "Japanese",
-        "ca": "Catalan",
-        "fr-ca": "Canadian French",
-        "hi": "Hindi",
-    }
-    return ISO_639_1[language_code]
-
-
 def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
@@ -57,8 +41,10 @@ def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, 
         translation: Dict[str, str] = x["translation"]
         return {input_lang: translation[input_lang], output_lang: translation[output_lang]}
 
-    subset_part1 = sub_set.map(rename_keys, fn_kwargs={"input_lang": language_code1, "output_lang": language_code2})
-    subset_part2 = sub_set.map(rename_keys, fn_kwargs={"input_lang": language_code2, "output_lang": language_code1})
+    subset_part1 = sub_set.map(rename_keys,
+                               fn_kwargs={"input_lang_name": language_code1, "output_lang_name": language_code2})
+    subset_part2 = sub_set.map(rename_keys,
+                               fn_kwargs={"input_lang_name": language_code2, "output_lang_name": language_code1})
     return subset_part1, subset_part2, language_code1, language_code2
 
 
@@ -68,19 +54,19 @@ def sub_experiment_half(
         in_lang_code: str, out_lang_code: str,
         generator: TextGenerator,
         manager: ExperimentManager) -> None:
-    in_lang_name, out_lang_name = lang_code_to_name(in_lang_code), lang_code_to_name(out_lang_code)
-    prefix = f"Translate {in_lang_name} to {out_lang_name}: \n {in_lang_name}: "
-    postfix = f"\n {out_lang_name}: "
+    input_lang_name, output_lang_name = lang_code_to_name(in_lang_code), lang_code_to_name(out_lang_code)
+    prefix = f"Translate {input_lang_name} to {output_lang_name}: \n {input_lang_name}: "
+    postfix = f"\n {output_lang_name}: "
     my_evaluator.METRIC_KWARGS = {"lang": out_lang_code}
     my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
     # noinspection PyTypeChecker
-    scores1: Dict[str, List[float] | Any] = my_evaluator.compute(
+    scores: Dict[str, List[float] | Any] = my_evaluator.compute(
         model_or_pipeline=generator,
         data=sub_set_half,
         input_column=in_lang_code,
         label_column=out_lang_code
     )
-    manager.log_sub_experiment(scores1, in_lang_name, out_lang_name)
+    manager.log_sub_experiment(scores, in_lang_code, out_lang_code, sub_set_half)
 
 
 def run_experiment(generator: TextGenerator) -> None:
