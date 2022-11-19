@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import List, Dict, Any, Callable, Tuple, Sequence
+from typing import List, Dict, Any, Callable, Tuple, Sequence, Set
 
 from comet_ml import Experiment
-from pandas import DataFrame, concat
+from pandas import DataFrame, concat, Series
 import matplotlib.pyplot as plt
 
 try:
@@ -27,6 +27,7 @@ class ExperimentManager:
     experiment: Experiment
     COMET_ML_PROJECT_NAME = "grouped-sampling-evaluation"
     df: DataFrame
+    language_pairs: Set[Tuple[str, str]] = set()
 
     def __init__(self, generator: TextGenerator):
         self.experiment = Experiment(
@@ -68,6 +69,25 @@ class ExperimentManager:
             f.write(api_key)
         return api_key
 
+    def log_stats(self, scores: DataFrame, title: str):
+        STAT_NAME_TO_FUNC: Sequence[Tuple[str, Callable[[Series], float]]] = (
+            ("mean", lambda x: x.mean()),
+            ("standard_deviation", lambda x: x.std()),
+            ("min", lambda x: x.min()),
+            ("max", lambda x: x.max()),
+            ("median", lambda x: x.median()),
+            ("25_percentile", lambda x: x.quantile(0.25)),
+            ("75_percentile", lambda x: x.quantile(0.75)),
+        )
+        for score_name in ("BERT_f1", "BERT_precision", "BERT_recall"):
+            curr_column = scores[score_name]
+            score_stats = {f"{title}_{score_name}_{stat_name}": stat_func(curr_column)
+                           for stat_name, stat_func in STAT_NAME_TO_FUNC}
+            self.experiment.log_metrics(score_stats)
+            plt.hist(curr_column, bins=20)
+            plt.title(f"Histogram of {title}_{score_name}")
+            self.experiment.log_figure(figure_name=f"{title}_{score_name}_histogram", figure=plt)
+
     def log_sub_experiment(self, bert_scores: Dict[str, List[float] | Any], input_lang: str, output_lang: str) -> None:
         """Args:
             bert_scores: Dict[str, Tensor]
@@ -75,6 +95,7 @@ class ExperimentManager:
                 values of shape (number of examples in the sub-experiment,) and type float
             input_lang: The name of the input language in this sub experiment half
             output_lang: The name of the output language in this sub experiment half"""
+        self.language_pairs.add((input_lang, output_lang))
         f_1: List[float] = bert_scores["f1"]
         precision: List[float] = bert_scores["precision"]
         recall: List[float] = bert_scores["recall"]
@@ -92,23 +113,11 @@ class ExperimentManager:
     def end_experiment(self) -> None:
         """Logs the experiment to comet ml"""
         self.experiment.log_dataframe_profile(self.df, "BERT_scores", header=True)
-        STAT_NAME_TO_FUNC: Sequence[Tuple[str, Callable]] = (
-            ("mean", lambda x: x.mean()),
-            ("standard_deviation", lambda x: x.std()),
-            ("min", lambda x: x.min()),
-            ("max", lambda x: x.max()),
-            ("median", lambda x: x.median()),
-            ("25_percentile", lambda x: x.quantile(0.25)),
-            ("75_percentile", lambda x: x.quantile(0.75))
-        )
-        for score_name in ("BERT_f1", "BERT_precision", "BERT_recall"):
-            curr_column = self.df[score_name]
-            score_stats = {f"{score_name}_{stat_name}": stat_func(curr_column)
-                           for stat_name, stat_func in STAT_NAME_TO_FUNC}
-            self.experiment.log_metrics(score_stats)
-            plt.hist(curr_column, bins=20)
-            plt.title(f"Histogram of {score_name}")
-            self.experiment.log_figure(figure_name=f"{score_name}_histogram", figure=plt)
+        self.log_stats(self.df, "general")
+        for input_lang, output_lang in self.language_pairs:
+            pair_scores: DataFrame
+            pair_scores = self.df[(self.df["input_lang"] == input_lang) & (self.df["output_language"] == output_lang)]
+            self.log_stats(pair_scores, f"{input_lang} to {output_lang}")
         total_time_in_seconds = (datetime.now() - self.start_time).total_seconds()
         num_examples = len(self.df)
         total_time_in_hours = total_time_in_seconds / 3600
