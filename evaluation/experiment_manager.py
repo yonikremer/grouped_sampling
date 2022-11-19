@@ -44,7 +44,7 @@ class ExperimentManager:
             "BERT_f1",
             "BERT_precision",
             "BERT_recall"
-        ], dtype=float)
+        ])
 
     @staticmethod
     def get_comet_api_key() -> str:
