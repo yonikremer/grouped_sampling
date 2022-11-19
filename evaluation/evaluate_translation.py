@@ -41,9 +41,9 @@ def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, 
     processed_data1_dict: Dataset
     processed_data2_dict: Dataset
 
-    def rename_keys(x: Dict[str, Any], input_lang: str, output_lang: str) -> Dict[str, str]:
+    def rename_keys(x: Dict[str, Any], input_lang_name: str, output_lang_name: str) -> Dict[str, str]:
         translation: Dict[str, str] = x["translation"]
-        return {input_lang: translation[input_lang], output_lang: translation[output_lang]}
+        return {input_lang_name: translation[input_lang_name], output_lang_name: translation[output_lang_name]}
 
     subset_part1 = sub_set.map(rename_keys,
                                fn_kwargs={"input_lang_name": language_code1, "output_lang_name": language_code2})
