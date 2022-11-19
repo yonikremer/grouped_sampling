@@ -24,7 +24,7 @@ else:  # if we are using kaggle, we need to set the api key
 class ExperimentManager:
     start_time: datetime
     experiment: Experiment
-    COMET_ML_PROJECT_NAME = "grouped-sampling-evaluation"
+    COMET_ML_PROJECT_NAME = "grouped-sampling-debug" if __debug__ else "grouped-sampling-evaluation"
     df: DataFrame
     language_pairs: Set[Tuple[str, str]] = set()
 
