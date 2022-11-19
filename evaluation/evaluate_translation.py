@@ -33,7 +33,11 @@ def generate_text_generators() -> Generator[TextGenerator, None, None]:
 def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
-    sub_set: Dataset = load_dataset(DATASET_NAME, sub_set_name, split="train")
+    # noinspection PyUnreachableCode
+    if __debug__:
+        sub_set = load_dataset(DATASET_NAME, sub_set_name, split="train[:2]")
+    else:
+        sub_set = load_dataset(DATASET_NAME, sub_set_name, split="train")
     processed_data1_dict: Dataset
     processed_data2_dict: Dataset
 
