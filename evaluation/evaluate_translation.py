@@ -10,9 +10,6 @@ from evaluation.helpers import lang_code_to_name
 from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 
-DATASET_NAME = "ted_talks_iwslt"
-METRIC_NAME = "bertscore"
-
 from transformers.utils.logging import disable_progress_bar
 
 disable_progress_bar()
@@ -20,6 +17,9 @@ disable_progress_bar()
 from datasets.utils.logging import disable_progress_bar
 
 disable_progress_bar()
+
+DATASET_NAME = "ted_talks_iwslt"
+METRIC_NAME = "bertscore"
 
 
 def generate_text_generators() -> Generator[TextGenerator, None, None]:
