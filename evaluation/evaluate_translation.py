@@ -4,18 +4,22 @@ from typing import Generator, Any, Dict, Tuple, List
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
-import datasets
-from transformers.utils.logging import set_verbosity_error
 
 from evaluation.experiment_manager import ExperimentManager
 from evaluation.helpers import lang_code_to_name
 from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 
-datasets.utils.logging.set_verbosity_error()
-set_verbosity_error()
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
+
+from transformers.utils.logging import disable_progress_bar
+
+disable_progress_bar()
+
+from datasets.utils.logging import disable_progress_bar
+
+disable_progress_bar()
 
 
 def generate_text_generators() -> Generator[TextGenerator, None, None]:
