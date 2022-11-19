@@ -98,7 +98,7 @@ class ExperimentManager:
             sub_set: Dataset,
     ) -> None:
         """Args:
-            bert_scores: Dict[str, Tensor]
+            bert_scores: Dict[str, List[float] | Any]
                 with keys "f1", "precision", "recall"
                 values of shape (number of examples in the sub-experiment,) and type float
             input_lang_code: The name of the input language in this sub experiment half
