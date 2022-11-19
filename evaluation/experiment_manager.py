@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from datasets import Dataset
 
 from evaluation.helpers import lang_code_to_name
+from text_generator import TextGenerator
 
 try:
     # noinspection PyUnresolvedReferences
@@ -18,8 +19,6 @@ except ImportError:
     using_kaggle = False
 else:  # if we are using kaggle, we need to set the api key
     using_kaggle = True
-
-from text_generator import TextGenerator
 
 
 class ExperimentManager:
