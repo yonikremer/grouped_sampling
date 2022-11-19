@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 from comet_ml import Experiment
-from pandas import DataFrame
+from pandas import DataFrame, concat
 import matplotlib.pyplot as plt
 
 try:
@@ -72,10 +72,12 @@ class ExperimentManager:
         recall: List[float] = bert_scores["recall"]
         assert len(f_1) == len(precision) == len(recall)
         # add scores to the dataframe
-        for curr_f1, curr_precision, curr_recall in zip(f_1, precision, recall):
-            self.df = self.df.append({"BERT_f1": curr_f1,
-                                      "BERT_precision": curr_precision,
-                                      "BERT_recall": curr_recall}, ignore_index=True)
+        new_data: DataFrame = DataFrame.from_dict({
+            "BERT_f1": f_1,
+            "BERT_precision": precision,
+            "BERT_recall": recall,
+        })
+        self.df = concat([self.df, new_data], ignore_index=True, copy=False)
 
     def end_experiment(self) -> None:
         """Logs the experiment to comet ml"""
