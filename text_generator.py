@@ -381,6 +381,12 @@ class TextGenerator(Callable, ABC):
     def as_dict(self) -> Dict[str, Any]:
         pass
 
+    @classmethod
+    def from_dict(cls, my_dict: Dict):
+        """Creates an TextGenerator from a dictionary
+        The dictionary should have the same format as the dictionary returned by the as_dict method"""
+        return cls(**my_dict)
+
 
 class NoCompletionsFound(Exception):
     def __init__(
