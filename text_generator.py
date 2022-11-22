@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
 
+import psutil
 from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor, cat
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
@@ -72,8 +73,12 @@ class TextGenerator(Callable, ABC):
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name)
+        try:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name)
+        except RuntimeError as e:
+            raise RuntimeError(f"Failed to execute model loading,"
+                               f"Using the AutoModelForCausalLM.from_pretrained({model_name}) command") from e
         if cuda.is_available():
             self.model = self.model.cuda()
         self.vocab_size = self.tokenizer.vocab_size
@@ -253,7 +258,7 @@ class TextGenerator(Callable, ABC):
             else:
                 shorten_token_list = token_ids
 
-        generated_tokens = shorten_token_list[prefix_len+prompt_len+postfix_len:]
+        generated_tokens = shorten_token_list[prefix_len + prompt_len + postfix_len:]
         if return_full_text:
             prompt_tokens = shorten_token_list[prefix_len:prefix_len + prompt_len]  # Without prefix and postfix
             final_token_list = prompt_tokens + generated_tokens
@@ -382,9 +387,11 @@ class TextGenerator(Callable, ABC):
         pass
 
     @classmethod
-    def from_dict(cls, my_dict: Dict):
+    def from_dict(cls, my_dict: Dict[str, Any]):
         """Creates an TextGenerator from a dictionary
         The dictionary should have the same format as the dictionary returned by the as_dict method"""
+        if "generation_type" in my_dict.keys():
+            my_dict.pop("generation_type")
         return cls(**my_dict)
 
 
