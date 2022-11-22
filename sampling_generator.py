@@ -261,9 +261,10 @@ class SamplingGenerator(TextGenerator):
         return {
             "model_name": self.model_name,
             "group_size": self.group_size,
-            "temperature": self.temp,
+            "temp": self.temp,
             "generation_type": self.generation_type,
             "top_p": self.top_p,
             "top_k": self.top_k,
-
+            "end_of_sentence_stop": self.end_of_sentence_stop,
+            "answer_length_multiplier": self.answer_length_multiplier
         }
