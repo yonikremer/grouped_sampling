@@ -77,17 +77,17 @@ def sub_experiment_half(
     manager.log_sub_experiment(scores, in_lang_code, out_lang_code, sub_set_half)
 
 
-def run_experiment(generator: TextGenerator) -> None:
+def run_experiment(
+        generator: TextGenerator,
+        my_evaluator: TranslationEvaluator,
+        sub_sut_names: List[str]
+) -> None:
     generator.task = "translation"
-    my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
-    my_evaluator.PREDICTION_PREFIX = "generated"
     manager = ExperimentManager(generator)
-    sub_sut_names = get_dataset_config_names(DATASET_NAME)
-    if __debug__:
-        sub_sut_names = sub_sut_names[:1]
     for i, sub_set_name in enumerate(sub_sut_names):
         print(f"Running sub-experiment {i + 1} out of {len(sub_sut_names)}")
-        processed_sub_set: Dataset
+        subset_part1: Dataset
+        subset_part2: Dataset
         language_code1: str
         language_code2: str
         subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name)
@@ -99,8 +99,13 @@ def run_experiment(generator: TextGenerator) -> None:
 
 
 def main() -> None:
+    my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
+    my_evaluator.PREDICTION_PREFIX = "generated"
+    sub_sut_names = get_dataset_config_names(DATASET_NAME)
+    if __debug__:
+        sub_sut_names = sub_sut_names[:1]
     for curr_text_generator in generate_text_generators():
-        run_experiment(curr_text_generator)
+        run_experiment(curr_text_generator, my_evaluator, sub_sut_names)
 
 
 if __name__ == "__main__":
