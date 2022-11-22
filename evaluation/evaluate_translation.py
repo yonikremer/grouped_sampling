@@ -92,7 +92,9 @@ def run_experiment(generator: TextGenerator) -> None:
         language_code2: str
         subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name)
         sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, generator, manager)
-        sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager)
+        # noinspection PyUnreachableCode
+        if not __debug__:
+            sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager)
     manager.end_experiment()
 
 
