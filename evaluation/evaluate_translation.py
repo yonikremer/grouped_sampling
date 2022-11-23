@@ -25,7 +25,7 @@ METRIC_NAME = "bertscore"
 def generate_text_generators() -> Generator[TextGenerator, None, None]:
     yield SamplingGenerator(
         model_name="facebook/opt-125m",
-        group_size=8,
+        group_size=7,
         temp=1.0,
         top_k=None,
         top_p=1.0,
