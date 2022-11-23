@@ -87,6 +87,7 @@ class ExperimentManager:
             self.experiment.log_metrics(score_stats)
             plt.hist(curr_column, bins=20)
             plt.title(f"Histogram of {title}_{score_name}")
+            plt.legend()
             self.experiment.log_figure(figure_name=f"{title}_{score_name}_histogram", figure=plt)
 
     def log_sub_experiment(
