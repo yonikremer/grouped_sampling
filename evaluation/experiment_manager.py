@@ -71,6 +71,7 @@ class ExperimentManager:
         return api_key
 
     def log_stats(self, scores: DataFrame, title: str) -> None:
+        self.experiment.log_dataframe_profile(scores, f"{title}_BERT_scores", header=True)
         STAT_NAME_TO_FUNC: Sequence[Tuple[str, Callable[[Series], float]]] = (
             ("mean", lambda x: x.mean()),
             ("standard_deviation", lambda x: x.std()),
@@ -126,7 +127,6 @@ class ExperimentManager:
 
     def end_experiment(self) -> None:
         """Logs the experiment to comet ml"""
-        self.experiment.log_dataframe_profile(self.df, "BERT_scores", header=True)
         self.log_stats(self.df, "general")
         for input_lang, output_lang in self.language_pairs:
             pair_scores: DataFrame
