@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Generator, Any, Dict, Tuple, List
+import json
+import os
+from pathlib import Path
+from typing import Any, Dict, Tuple, List
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
@@ -20,18 +23,6 @@ disable_progress_bar()
 
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
-
-
-def generate_text_generators() -> Generator[TextGenerator, None, None]:
-    yield SamplingGenerator(
-        model_name="facebook/opt-125m",
-        group_size=7,
-        temp=1.0,
-        top_k=None,
-        top_p=1.0,
-        end_of_sentence_stop=True,
-        answer_length_multiplier=2,
-    )
 
 
 def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
@@ -107,8 +98,11 @@ def main() -> None:
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
     if __debug__:
         sub_sut_names = sub_sut_names[:1]
-    for curr_text_generator in generate_text_generators():
-        run_experiment(curr_text_generator, my_evaluator, sub_sut_names)
+    parent_folder = Path(__file__).parent
+    with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
+        evaluated_text_generator_dict = json.load(json_file)
+    curr_text_generator = SamplingGenerator.from_dict(evaluated_text_generator_dict)
+    run_experiment(curr_text_generator, my_evaluator, sub_sut_names)
 
 
 if __name__ == "__main__":

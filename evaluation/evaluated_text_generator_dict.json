@@ -1,0 +1,9 @@
+{
+  "model_name": "facebook/opt-125m",
+  "group_size": 6,
+  "temp": 1.0,
+  "top_k":null,
+  "top_p":1.0,
+  "end_of_sentence_stop":true,
+  "answer_length_multiplier":2
+}
