@@ -1,6 +1,6 @@
 {
   "model_name": "facebook/opt-125m",
-  "group_size": 6,
+  "group_size": 5,
   "temp": 1.0,
   "top_k":null,
   "top_p":1.0,
