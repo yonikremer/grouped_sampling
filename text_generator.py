@@ -185,6 +185,8 @@ class TextGenerator(Callable, ABC):
             text: str,
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
     ) -> Tensor:
+        """Complexity: O(n) where n is the number of characters in the text"""
+        # tokenizing a string is O(n) where n is the length of the string
         tokenized_text = self.tokenizer(
             text,
             return_tensors=self.framework,
@@ -194,18 +196,24 @@ class TextGenerator(Callable, ABC):
             max_length=self.max_input_len,
         )
         is_dict = isinstance(tokenized_text, dict)
+        # O(1)
         is_batch_encoding = isinstance(tokenized_text,
                                        BatchEncoding)
+        # O(1)
         if is_dict or is_batch_encoding:
             token_tensor: Tensor = tokenized_text["input_ids"]
+            # O(1) because we are accessing a single element in a dictionary and saving the reference to it.
         elif isinstance(tokenized_text, Tensor):
             token_tensor: Tensor = tokenized_text
+            # O(1) because we are saving the reference to the tensor
         else:
             raise TypeError("The tokenizer output is not one of:"
                             "dict, BatchEncoding, Tensor")
 
-        while token_tensor.shape[0] == 1:
-            token_tensor = token_tensor[0]
+        token_tensor = token_tensor.squeeze()
+        # O(n) where n is the number of tokens in the text
+        # because we are copying n elements from one tensor to the other
+        # the number of tokens in the text is always less than the number of characters in the text
 
         return token_tensor
 
@@ -219,18 +227,31 @@ class TextGenerator(Callable, ABC):
         """A helper method for __call__ that tokenize the prompt
         all the arguments are sent directly from the __call__ method
         Returns:
-            the tokenized prompt as a list of ints"""
+            the tokenized prompt as a list of ints
+
+        Complexity: O(a + b + c) where:
+            'a' is the number of characters in the prefix
+            'b' is the number of characters in the prompt
+            'c' is the number of characters in the postfix"""
 
         if len(prefix) > 0:
             prefix_tokens = self.get_token_tensor(prefix, truncation)
+            # O(n) where n is the number of characters in the prefix.
         else:
             prefix_tokens = LongTensor([])
+            # O(1)
         if len(postfix) > 0:
             postfix_tokens = self.get_token_tensor(postfix, truncation)
+            # O(n) where n is the number of characters in the postfix.
         else:
             postfix_tokens = LongTensor([])
+            # O(1)
         prompt_tokens = self.get_token_tensor(prompt, truncation)
+        # O(n) where n is the number of characters in the prompt.
         token_tensor = cat((prefix_tokens, prompt_tokens, postfix_tokens))
+        # O(a + b + c) where 'a' is the number of tokens in the prefix.
+        # 'b' is the number of tokens in the prompt.
+        # 'c' is the number of tokens in the postfix.
         return token_tensor, len(prefix_tokens), len(prompt_tokens), len(postfix_tokens)
 
     @abstractmethod
@@ -269,31 +290,45 @@ class TextGenerator(Callable, ABC):
         the rest of the arguments are the arguments
         from the __call__ method
         look up the documentation of the __call__ method for more info
+        Complexity: O(n) where n is the number of tokens in token_ids
         """
+        # define n as the length of the token_ids
         if num_new_tokens is None:
             shorten_token_list = token_ids
+            # O(1)
         else:
             final_num_tokens = prefix_len + prompt_len + postfix_len + num_new_tokens
+            # O(1)
             if len(token_ids) > final_num_tokens:
                 shorten_token_list = token_ids[:final_num_tokens]
+                # O(final_num_tokens) because we are copying final_num_tokens elements from one list to the other
             else:
                 shorten_token_list = token_ids
+                # O(1)
 
         generated_tokens = shorten_token_list[prefix_len + prompt_len + postfix_len:]
+        # O(num_new_tokens) because we are copying num_new_tokens elements from one list to the other
         if return_full_text:
             prompt_tokens = shorten_token_list[prefix_len:prefix_len + prompt_len]  # Without prefix and postfix
+            # O(prompt_len) because we are copying prompt_len elements from one list to the other
             final_token_list = prompt_tokens + generated_tokens
+            # O(prompt_len + num_new_tokens) because we are copying elements from one list to the other
         else:
             final_token_list = generated_tokens
+            # O(1) because we are saving the reference to the list
         final_ans = {}
         if return_tensors:
             final_ans["generated_token_ids"] = tensor(final_token_list)
+            # O(prompt_len + num_new_tokens)
+            # because we are copying at maximum prompt_len + num_new_tokens elements from a list to a tensor
         if return_text:
             final_ans["generated_text"] = self.tokenizer.decode(
                 final_token_list,
                 skip_special_tokens=True,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces
             )
+            # decoding is O(m) where m is the number of tokens in the text
+            # so the complexity of this line is O(n) because final_token_list could be at most n tokens long
         return final_ans
 
     def __call__(
@@ -361,9 +396,11 @@ class TextGenerator(Callable, ABC):
 
         tokens, prefix_len, prompt_len, postfix_len = self.preprocess(
             prompt=prompt_s, prefix=prefix, truncation=truncation, postfix=postfix)
+        # O(len(prompt) + len(prefix) + len(postfix))
 
         if max_new_tokens is None:
             max_new_tokens = prompt_len * self.answer_length_multiplier
+            # O(1)
         tokenized_answers: List[TokenIDS]
         tokenized_answers = self._forward(
             tokens,
@@ -372,6 +409,7 @@ class TextGenerator(Callable, ABC):
         )
 
         if num_return_sequences > 1:
+            # O(sum(len(tokenized_answer) for tokenized_answer in tokenized_answers))
             return [self.postprocess(
                 token_ids=tokenized_answer,
                 num_new_tokens=max_new_tokens,
@@ -384,6 +422,7 @@ class TextGenerator(Callable, ABC):
                 postfix_len=postfix_len,
             ) for tokenized_answer in tokenized_answers]
         else:
+            # O(len(tokenized_answers[0]))
             return self.postprocess(
                 token_ids=tokenized_answers[0],
                 num_new_tokens=max_new_tokens,
