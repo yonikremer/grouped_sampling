@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
 
-import psutil
 from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor, cat
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
@@ -122,11 +121,17 @@ class TextGenerator(Callable, ABC):
     def get_prob_mat(self, token_list: List[int]) \
             -> Tensor:
         """Returns the probability matrix
-         as a list of lists of floats"""
+         as a list of lists of floats
+         Time complexity: O(n^2 + group_size^2)
+         where n is the number of tokens"""
+        # define n as the number of tokens in token_list
         padded_token_list = token_list + self.padding_tokens
-
+        # the length of padded_token_list is n + group_size - 1
         if len(padded_token_list) > self.max_input_len:
             padded_token_list = padded_token_list[-self.max_input_len:]
+        # the length of padded_token_list is now = min(n + group_size - 1, self.max_input_len)
+        # but self.max_input_len is so big that it is unlikely to be reached
+        # so the length of padded_token_list is n + group_size - 1
         attention_len = len(padded_token_list)
         longer_token_tensor = LongTensor([padded_token_list])
         attention_mask = ones([1, attention_len])
@@ -136,27 +141,43 @@ class TextGenerator(Callable, ABC):
         inputs = {"input_ids": longer_token_tensor,
                   "attention_mask": attention_mask,
                   "labels": longer_token_tensor}
+        # the length of all the inputs is n + group_size - 1
 
         with no_grad():
+            # The time complexity of causal language model`s __call__ function
+            # is O(n^2) where n is the length of the inputs
             outputs = self.model(**inputs)
+            # so the complexity of this line is O((n + group_size - 1)^2)
+            # which is O(n^2 + group_size^2 + group_size * n)
+            # we now that if a > b and a, b > 1 then a^2 > ab so the complexity is O(n^2 + group_size^2)
 
         unscaled_logits: Tensor = outputs.logits.squeeze(0)
+        # output.logits is a tensor of shape (1, n + group_size - 1, vocab_size)
+        # so unscaled_logits is a tensor of shape (n + group_size - 1, vocab_size).
+        # outputs.logits.squeeze(0) is equivalent to outputs.logits[0]
+        # so the complexity of this line should be O(n + group_size)
+        # because we copy (n + group_size - 1) * vocab_size from one tensor to the other where vocab_size is constant
         unscaled_relevant_logits: Tensor
-        unscaled_relevant_logits = unscaled_logits[-self.group_size:, :]
+        unscaled_relevant_logits = unscaled_logits[-self.group_size:, :self.vocab_size]
+        # The shape of unscaled_relevant_logits is (group_size, vocab_size)
+        # So the complexity of this line should be O(group_size) because we are coping group_size * vocab_size
+        # elements from one tensor to the another
         scaled_relevant_logits = unscaled_relevant_logits / self.temp
-        if scaled_relevant_logits.shape[1] >= self.vocab_size:
-            scaled_relevant_logits: Tensor
-            scaled_relevant_logits = scaled_relevant_logits[:, :self.vocab_size]
+        # We are dividing group_size * vocab_size elements so the complexity is O(group_size)
         prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
+        # We are doing a softmax operator of group_size different vectors of size vocab_size
+        # The complexity of the softmax for each vector is O(1) because the size of the vector is constant
+        # the complexity of this line is O(1) because the softmax for each vector is done in parallel (Assuming a GPU).
         if cuda.is_available():
-            # move to cpu and detach
             prob_tensor = prob_tensor.cpu().detach()
-            # empty cuda cache
+            # Coping a tensor so the complexity is O(group_size)
             cuda.empty_cache()
+            # This is an async operation so the complexity is O(1) because we are not waiting for it to finish
         if not self.end_of_sentence_stop:
             for prob_vec in prob_tensor:
                 prob_vec[self.end_of_sentence_id] = 0.0
-        del scaled_relevant_logits
+                # This line is O(1) because we are accessing a single element in a vector
+                # So the complexity of this loop is O(group_size)
         return prob_tensor
 
     def get_token_tensor(
