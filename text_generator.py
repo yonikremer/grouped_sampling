@@ -83,11 +83,6 @@ class TextGenerator(Callable, ABC):
         self.vocab_size = self.tokenizer.vocab_size
         self.temp = temp
         self.group_size = group_size
-        pad_id = self.tokenizer.pad_token_id
-
-        if not isinstance(pad_id, int):
-            pad_id = 0
-        self.padding_tokens = [pad_id] * (self.group_size - 1)
         self.end_of_sentence_id = self.tokenizer.eos_token_id
         self.end_of_sentence_stop = end_of_sentence_stop and self.end_of_sentence_id is not None
         self.max_input_len = self.tokenizer.model_max_length
@@ -101,22 +96,21 @@ class TextGenerator(Callable, ABC):
                     "The maximum length of the model is too big"
                 )
         self.answer_length_multiplier = answer_length_multiplier
-        self.generation_type = self.choose_generation_type()
 
+    @property
     @abstractmethod
-    def choose_generation_type(self) -> GenerationType:
+    def generation_type(self) -> GenerationType:
         """A method that chooses the generation type
         Returns:
             a GenerationType object"""
         raise NotImplementedError
 
-    def __setattr__(self, key, value):
-        super().__setattr__(key, value)
-        if key == "group_size":
-            pad_id = self.tokenizer.pad_token_id
-            if pad_id is None:
-                pad_id = 0
-            self.padding_tokens = [pad_id] * (self.group_size - 1)
+    @property
+    def padding_tokens(self):
+        pad_id = self.tokenizer.pad_token_id
+        if pad_id is None:
+            pad_id = 0
+        return [pad_id] * (self.group_size - 1)
 
     def get_prob_mat(self, token_list: List[int]) \
             -> Tensor:

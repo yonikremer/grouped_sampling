@@ -115,9 +115,10 @@ class SamplingGenerator(TextGenerator):
             seed(value)
             torch.manual_seed(value)
 
-    def choose_generation_type(self) -> GenerationType:
-        top_k = self.top_k
+    @property
+    def generation_type(self) -> GenerationType:
         top_p = self.top_p
+        top_k = self.top_k
         if top_k is None and top_p is None:
             return GenerationType.RANDOM
         if top_k == 1 or top_p == 0.0:
@@ -130,7 +131,7 @@ class SamplingGenerator(TextGenerator):
             if top_p < 1.0:
                 return GenerationType.TOP_P
             return GenerationType.RANDOM
-        raise RuntimeError
+        raise RuntimeError("Uncovered case in generation_type property")
 
     @staticmethod
     def all_tokens(probs: ProbDict) \

@@ -30,7 +30,8 @@ class TreeGenerator(TextGenerator):
             answer_length_multiplier=answer_length_multiplier
         )
 
-    def choose_generation_type(self) -> GenerationType:
+    @property
+    def generation_type(self) -> GenerationType:
         top_p, top_k = self.top_p, self.top_k
         if top_k is None and top_p is None:
             self.top_k = self.vocab_size
@@ -46,7 +47,7 @@ class TreeGenerator(TextGenerator):
             if top_p < 1.0:
                 return GenerationType.TOP_P
             return GenerationType.TREE
-        raise RuntimeError
+        raise RuntimeError("Uncovered case in generation_type property")
 
     @staticmethod
     def no_duplicates(
