@@ -127,7 +127,7 @@ class SamplingGenerator(TextGenerator):
     @property
     def sampling_func(self) -> Callable[[Tensor], int]:
         gen_type_to_filter_method: Dict[GenerationType, Callable[[Tensor, ], int]] = {
-            GenerationType.TOP_K: self.top_k_tokens,
+            GenerationType.TOP_K: self.top_k_sampling,
             GenerationType.TOP_P: self.top_p_sampling,
             GenerationType.GREEDY: SamplingGenerator.highest_prob_token,
             GenerationType.RANDOM: SamplingGenerator.unfiltered_sampling,
@@ -167,7 +167,7 @@ class SamplingGenerator(TextGenerator):
         scaled_new_probs = new_probs / prob_sum
         return multinomial(scaled_new_probs, 1).item()
 
-    def top_k_tokens(self, prob_vec: Tensor) -> int:
+    def top_k_sampling(self, prob_vec: Tensor) -> int:
         """Gets a token id: probability mapping
         returns the TOP_K tokens
         with the highest probability.
