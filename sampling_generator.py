@@ -4,9 +4,10 @@ from random import seed
 from typing import Callable, List, Dict, Optional, Any, Set
 
 import torch
-from torch import Tensor, tensor
+from torch import Tensor, zeros, argmax, LongTensor
+from torch.nn.functional import one_hot
 
-from text_generator import TextGenerator, GenerationType, NoCompletionsFound
+from text_generator import TextGenerator, GenerationType
 
 ProbDict = Dict[int, Tensor]
 
@@ -81,7 +82,7 @@ class SamplingGenerator(TextGenerator):
     """A TextGenerator that generates text
     using random sampling
     with top-k or top-p filtering."""
-    filter_tokens: Callable[[ProbDict], ProbDict]
+    filter_tokens_func: Callable[[Tensor], Tensor]
     top_k: Optional[int] = None
     top_p: Optional[float] = None
     default_seed: int = 0
@@ -101,13 +102,6 @@ class SamplingGenerator(TextGenerator):
             end_of_sentence_stop=end_of_sentence_stop,
             answer_length_multiplier=answer_length_multiplier,
         )
-        gen_type_to_filter_method = {
-            GenerationType.TOP_K: self.top_k_tokens,
-            GenerationType.TOP_P: self.top_p_tokens,
-            GenerationType.GREEDY: SamplingGenerator.highest_prob_token,
-            GenerationType.RANDOM: SamplingGenerator.all_tokens,
-        }
-        self.filter_tokens = gen_type_to_filter_method[self.generation_type]
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -133,70 +127,72 @@ class SamplingGenerator(TextGenerator):
             return GenerationType.RANDOM
         raise RuntimeError("Uncovered case in generation_type property")
 
+    @property
+    def filter_tokens_func(self) -> Callable[[Tensor], Tensor]:
+        gen_type_to_filter_method: Dict[GenerationType, Callable[[Tensor, ], Tensor]] = {
+            GenerationType.TOP_K: self.top_k_tokens,
+            GenerationType.TOP_P: self.top_p_tokens,
+            GenerationType.GREEDY: SamplingGenerator.highest_prob_token,
+            GenerationType.RANDOM: SamplingGenerator.all_tokens,
+        }
+        return gen_type_to_filter_method[self.generation_type]
+
     @staticmethod
-    def all_tokens(probs: ProbDict) \
-            -> ProbDict:
+    def all_tokens(prob_vec: Tensor) \
+            -> Tensor:
         """A filtering function that doesn't filter any tokens.
-        returns all the tokens with their probabilities."""
-        return probs
+        returns the same probability vector it gets"""
+        return prob_vec
 
     @staticmethod
     def highest_prob_token(
-            probs: ProbDict) \
-            -> ProbDict:
-        """Gets a token id: probability mapping
-        as a sorted dictionary
-        returns the token with the highest probability.
-        as a {token: 1.0} dictionary."""
-        highest_prob_token_id: int = max(probs, key=probs.get)
-        return {highest_prob_token_id: tensor(1.0)}
+            prob_vec: Tensor) \
+            -> Tensor:
+        """Gets a probability vector of shape (vocab_size,)
+        returns one hot vector of shape (vocab_size,)
+         where the token with the highest probability gets to be 1 and the rest are 0"""
+        highest_prob_token_id: Tensor = argmax(prob_vec)
+        return one_hot(highest_prob_token_id, num_classes=prob_vec.shape[0])
 
     def top_p_tokens(
-            self, probs: ProbDict) \
-            -> ProbDict:
-        """Gets a token id: probability mapping
-        returns the tokens with the highest probability
-        such that their sum is <= self.top_p.
+            self, prob_vec: Tensor) \
+            -> Tensor:
+        """Gets a probability vector of shape (vocab_size,)
+        returns a probability vector with the top p tokens
+        such that their sum in the original vector is <= self.top_p.
         or the token with the highest probability
         if it's higher than top_p.
-        assuming the values of the dict are between 0 and 1, inclusive
-        this is the bottleneck of the sampling generator."""
+        The rest of the tokens are set to 0"""
         top_p_probs: ProbDict = {}
         prob_sum: float = 0.0
         converted_probs: List[TokenProb]
-        converted_probs = [TokenProb(token_id, prob) for token_id, prob in probs.items()]
+        converted_probs = [TokenProb(i, prob) for i, prob in enumerate(prob_vec)]
         heapq.heapify(converted_probs)
         while prob_sum < self.top_p and len(converted_probs) > 0:
             curr_prob: TokenProb = heapq.heappop(converted_probs)
             token_id = curr_prob.token_id
-            prob_sum += probs[token_id]
-            top_p_probs[token_id] = probs[token_id]
+            prob_sum += prob_vec[token_id]
+            top_p_probs[token_id] = prob_vec[token_id]
         if len(top_p_probs) == 0:
-            raise NoCompletionsFound(
-                self, "The probabilities of all the tokens "
-                      "is (rounded to) 0 . "
-                      "Please try a higher temperature.")
-        weighted_probs = {
-            k: v / prob_sum
-            for k, v in top_p_probs.items()}
-        return weighted_probs
+            return one_hot(heapq.heappop(converted_probs), prob_vec.shape[0])
+        new_probs = zeros(prob_vec.shape, dtype=float)
+        for token_id, token_prob in top_p_probs.items():
+            new_probs[token_id] = token_prob / prob_sum
+        return new_probs
 
     def top_k_tokens(
-            self, probs: ProbDict) \
-            -> ProbDict:
+            self, prob_vec: Tensor) \
+            -> Tensor:
         """Gets a token id: probability mapping
         returns the TOP_K tokens
         with the highest probability.
         this is the bottleneck of the sampling generator."""
-        top_k_keys: List[int] = heapq.nlargest(self.top_k, probs, key=probs.get)
-        top_k_probs = {
-            k: probs[k]
-            for k in top_k_keys}
-        prob_sum = sum(top_k_probs.values())
-        weighted_probs = {
-            k: v / prob_sum
-            for k, v in top_k_probs.items()}
-        return weighted_probs
+        top_k_keys: List[int] = heapq.nlargest(self.top_k, range(prob_vec.shape[0]), key=lambda x: prob_vec[x])
+        prob_sum = sum(prob_vec[token_id] for token_id in top_k_keys)
+        new_probs = zeros(prob_vec.shape, dtype=float)
+        for token_id in top_k_keys:
+            new_probs[token_id] = prob_vec[token_id] / prob_sum
+        return new_probs
 
     def generate_group(
             self, prob_mat: Tensor,
@@ -221,7 +217,11 @@ class SamplingGenerator(TextGenerator):
             if len(curr_token_probs) > self.vocab_size:
                 curr_token_probs = curr_token_probs[:self.vocab_size]
                 # coping a tensor of size (vocab_size) so it's O(1)
-            sampled_token: int = torch.multinomial(curr_token_probs, 1).item()
+            filtered_probs: Tensor = self.filter_tokens_func(curr_token_probs)
+            if isinstance(filtered_probs, LongTensor):
+                sampled_token = argmax(filtered_probs).item()
+            else:
+                sampled_token: int = torch.multinomial(filtered_probs, 1).item()
             # the complexity of torch.multinomial for vector of size n is O(n)
             # is O(vocab_size) so it's O(1) because vocab_size is constant
             new_group.append(sampled_token)
