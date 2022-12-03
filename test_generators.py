@@ -23,60 +23,34 @@ TEST_PROMPT = "This is a test prompt."
 
 
 def create_text_generators() -> Generator[TextGenerator, None, None]:
-    curr_tree_gen = TreeGenerator(model_name=MODEL_NAMES[0],
-                                  group_size=GROUP_SIZES[0],
-                                  top_k=TOP_KS[0],
-                                  top_p=TOP_PS[0],
-                                  temp=TEMPERATURES[0],
-                                  end_of_sentence_stop=True)
     top_p_sampling_gen = SamplingGenerator(model_name=MODEL_NAMES[0],
-                                           group_size=GROUP_SIZES[0],
+                                           group_size=GROUP_SIZES[1],
                                            top_k=None,
-                                           top_p=TOP_PS[0],
-                                           temp=TEMPERATURES[0],
-                                           end_of_sentence_stop=True)
-    yield top_p_sampling_gen
-    del top_p_sampling_gen
-    yield curr_tree_gen
-    del curr_tree_gen
-
-    model_name = MODEL_NAMES[1]
-    top_p_sampling_gen = SamplingGenerator(model_name=model_name,
-                                           group_size=GROUP_SIZES[0],
-                                           top_k=None,
-                                           top_p=TOP_PS[0],
+                                           top_p=TOP_PS[1],
                                            temp=TEMPERATURES[0])
 
-    top_k_sampling_gen = SamplingGenerator(model_name=model_name,
+    top_k_sampling_gen = SamplingGenerator(model_name=MODEL_NAMES[1],
                                            group_size=GROUP_SIZES[0],
                                            top_k=TOP_KS[0],
                                            top_p=None,
                                            temp=TEMPERATURES[0])
 
-    curr_tree_gen = TreeGenerator(model_name=model_name,
+    curr_tree_gen = TreeGenerator(model_name=MODEL_NAMES[1],
                                   group_size=GROUP_SIZES[0],
-                                  top_k=TOP_KS[0],
-                                  top_p=TOP_PS[0],
+                                  top_k=TOP_KS[1],
+                                  top_p=TOP_PS[1],
                                   temp=TEMPERATURES[0])
 
-    for group_size, temp in product(GROUP_SIZES, TEMPERATURES):
-        top_p_sampling_gen.temp = temp
-        top_k_sampling_gen.temp = temp
-        curr_tree_gen.temp = temp
-        top_p_sampling_gen.group_size = group_size
-        top_k_sampling_gen.group_size = group_size
-        curr_tree_gen.group_size = group_size
+    for top_k in TOP_KS:
+        top_k_sampling_gen.top_k = top_k
+        curr_tree_gen.top_k = top_k
+        yield top_k_sampling_gen
 
-        for top_k in TOP_KS:
-            top_k_sampling_gen.top_k = top_k
-            curr_tree_gen.top_k = top_k
-            yield top_k_sampling_gen
-
-            for top_p in TOP_PS:
-                top_p_sampling_gen.top_p = top_p
-                curr_tree_gen.top_p = top_p
-                yield top_p_sampling_gen
-                yield curr_tree_gen
+        for top_p in TOP_PS:
+            top_p_sampling_gen.top_p = top_p
+            curr_tree_gen.top_p = top_p
+            yield top_p_sampling_gen
+            yield curr_tree_gen
 
 
 def test_initialization():
@@ -201,8 +175,9 @@ def test_num_return_sequences():
             f"{curr_answer['generated_text']} is too short"
 
 
-@pytest.mark.parametrize("curr_text_generator", islice(create_text_generators(), 2))
-def test_max_new_tokens_is_none(curr_text_generator: TextGenerator):
+def test_max_new_tokens_is_none():
+    curr_text_generator = next(create_text_generators())
+    curr_text_generator.end_of_sentence_stop = True
     answer: SingleAnswer = curr_text_generator(
         prompt_s=TEST_PROMPT, max_new_tokens=None, return_tensors=False, return_text=True,
         return_full_text=True
