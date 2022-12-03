@@ -241,25 +241,24 @@ def test_calling_generators(curr_text_generator):
     assert len(answer) > len(PROMPT), f"{answer} is too short"
 
 
-def test_dict_conversions():
-    for curr_text_generator in create_text_generators():
-        new_generator = type(curr_text_generator).from_dict(curr_text_generator.as_dict())
-        assert type(curr_text_generator) == type(new_generator)
-        assert curr_text_generator.model_name == new_generator.model_name
-        assert curr_text_generator.group_size == new_generator.group_size
-        assert curr_text_generator.temp == new_generator.temp
-        assert curr_text_generator.generation_type == new_generator.generation_type
-        assert curr_text_generator.end_of_sentence_id == new_generator.end_of_sentence_id
-        assert curr_text_generator.end_of_sentence_stop == new_generator.end_of_sentence_stop
-        assert curr_text_generator.max_input_len == new_generator.max_input_len
-        assert curr_text_generator.framework == new_generator.framework
-        assert curr_text_generator.answer_length_multiplier == new_generator.answer_length_multiplier
-        assert curr_text_generator.vocab_size == new_generator.vocab_size
-        if hasattr(curr_text_generator, "top_k"):
-            assert curr_text_generator.top_k == new_generator.top_k
-        if hasattr(curr_text_generator, "top_p"):
-            assert curr_text_generator.top_p == new_generator.top_p
-
+@pytest.mark.parametrize("curr_text_generator", create_text_generators())
+def test_dict_conversions(curr_text_generator):
+    new_generator = type(curr_text_generator).from_dict(curr_text_generator.as_dict())
+    assert type(curr_text_generator) == type(new_generator)
+    assert curr_text_generator.model_name == new_generator.model_name
+    assert curr_text_generator.group_size == new_generator.group_size
+    assert curr_text_generator.temp == new_generator.temp
+    assert curr_text_generator.generation_type == new_generator.generation_type
+    assert curr_text_generator.end_of_sentence_id == new_generator.end_of_sentence_id
+    assert curr_text_generator.end_of_sentence_stop == new_generator.end_of_sentence_stop
+    assert curr_text_generator.max_input_len == new_generator.max_input_len
+    assert curr_text_generator.framework == new_generator.framework
+    assert curr_text_generator.answer_length_multiplier == new_generator.answer_length_multiplier
+    assert curr_text_generator.vocab_size == new_generator.vocab_size
+    if hasattr(curr_text_generator, "top_k"):
+        assert curr_text_generator.top_k == new_generator.top_k
+    if hasattr(curr_text_generator, "top_p"):
+        assert curr_text_generator.top_p == new_generator.top_p
 
 
 if __name__ == '__main__':
