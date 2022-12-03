@@ -201,23 +201,35 @@ class SamplingGenerator(TextGenerator):
             self, prob_mat: Tensor,
             org_used_tokens: List[int]) -> List[int]:
         """Generates a group of tokens
-         using the choice_function."""
+         using the choice_function.
+         Complexity: O(group_size * org_used_tokens + group_size ^ 2)"""
         prob_mat.cpu()
+        # coping a tensor of size (group_size, vocab_size)
+        # so the complexity is O(group_size) (vocab_size is constant)
         used_tokens: Set[int] = set(org_used_tokens)
+        # the complexity of list to set is O(len(list)) so it's O(len(org_used_tokens))
         new_group: List[int] = []
-        for curr_token_probs in prob_mat:
+        for curr_token_probs in prob_mat:  # group_size iterations
             curr_token_probs: Tensor
             for used_token in used_tokens:
+                # len(used_tokens) <= group_size + len(org_used_tokens)
                 curr_token_probs[used_token] = 0.0
+                # this line is O(1)
+            # so the complexity of the inner loop is O(group_size + len(org_used_tokens))
             # for tokens with index >= self.vocab_size
             if len(curr_token_probs) > self.vocab_size:
                 curr_token_probs = curr_token_probs[:self.vocab_size]
+                # coping a tensor of size (vocab_size) so it's O(1)
             sampled_token: int = torch.multinomial(curr_token_probs, 1).item()
+            # the complexity of torch.multinomial for vector of size n is O(n)
+            # is O(vocab_size) so it's O(1) because vocab_size is constant
             new_group.append(sampled_token)
+            # appending to a list is O(1)
             if sampled_token == self.end_of_sentence_id:
                 # end the loop
                 break
             used_tokens.add(sampled_token)
+            # adding to a set is O(1)
         del prob_mat
         return new_group
 
@@ -227,25 +239,41 @@ class SamplingGenerator(TextGenerator):
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[List[int]]:
+        """Complexity: O(num_return_sequences * ((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size))
+        where l is the number of tokens in the prompt
+        and n is the number of new tokens to generate"""
+        # let's define l = len(tokenized_prompt), n = num_new_tokens
         answers: List[List[int]] = []
         curr_token_list: List[int] = tokenized_prompt.tolist()
+        # coping a tensor of size lso O(l)
+        if num_new_tokens is None:
+            raise RuntimeError("num_new_tokens is None")
         for _ in ChangingSeed(
                 default_seed=self.default_seed,
-                max_num_calls=num_return_sequences):
-            if num_new_tokens is None:
-                raise RuntimeError("num_new_tokens is None")
-            else:
-                num_groups = num_new_tokens // self.group_size
-                the_range = range(num_groups)
-            for _ in the_range:
+                max_num_calls=num_return_sequences):  # num_return_sequences iterations
+            for _ in range(num_new_tokens // self.group_size):
+                # and each iteration is O(n ^ 2 + l ^ 2 + group_size ^ 2)
+                # so the complexity of the loop is O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size)
                 prob_mat: Tensor = self.get_prob_mat(curr_token_list)
+                # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
+                # len(curr_token_list) <= n + l
+                # so the complexity is O(group_size ^ 2 + (n + l) ^ 2) = O(n ^ 2 + nl + l ^ 2 + group_size ^ 2)
+                # but nl <= max(n^2, l^2) so the complexity is O(n ^ 2 + l ^ 2 + group_size ^ 2)
                 new_tokens = self.generate_group(
                     prob_mat, curr_token_list)
-                if self.end_of_sentence_id in new_tokens:
+                # complexity: O(group_size * len(curr_token_list) + group_size ^ 2)
+                # len(curr_token_list) <= n + l
+                # so the complexity is O(group_size * (n + l + group_size))
+                # len(new_tokens) = group_size
+                if self.end_of_sentence_id in new_tokens:  # the check is O(group_size)
                     end_of_sentence_index = new_tokens.index(self.end_of_sentence_id)
+                    # O(group_size) because len(new_tokens) <= group_size
                     new_tokens = new_tokens[:end_of_sentence_index]
+                    # O(group_size) because end_of_sentence_index < group_size
                 curr_token_list.extend(new_tokens)
+                # O(group_size) because len(new_tokens) <= group_size
             answers.append(curr_token_list)
+            # O(1)
         return answers
 
     def __repr__(self):
