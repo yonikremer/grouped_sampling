@@ -156,3 +156,6 @@ mercury_demo/input_*.ipynb
 
 # api key
 evaluation/comet_ml_api_key.txt
+
+# sub projects
+model/.idea/
