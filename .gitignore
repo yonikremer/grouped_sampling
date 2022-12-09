@@ -159,3 +159,5 @@ evaluation/comet_ml_api_key.txt
 
 # sub projects
 model/.idea/
+model/.idea/sonarlint/issuestore
+model/.idea/sonarlint/
