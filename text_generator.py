@@ -52,7 +52,6 @@ class TextGenerator(Callable, ABC):
     max_input_len: int
     framework: str = "pt"
     answer_length_multiplier: int = 16
-    vocab_size: int
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0,
