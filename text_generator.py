@@ -220,7 +220,10 @@ class TextGenerator(Callable, ABC):
         """A helper method for __call__ that tokenize the prompt
         all the arguments are sent directly from the __call__ method
         Returns:
-            the tokenized prompt as a list of ints
+            the tokenized prompt as a list of ints,
+             the length of the prompt,
+             the length of the prefix,
+             the length of the postfix
 
         Complexity: O(a + b + c) where:
             'a' is the number of characters in the prefix
