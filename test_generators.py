@@ -159,9 +159,14 @@ def test_postfix():
 
 
 def test_num_return_sequences():
-    generator = next(create_text_generators())
+    for curr_generator in create_text_generators():
+        if isinstance(curr_generator, TreeGenerator) and curr_generator.generation_type == "greedy":
+            continue
+        else:
+            selected_generator = curr_generator
+            break
     num_return_sequences = 2
-    answer: List[SingleAnswer] = generator(
+    answer: List[SingleAnswer] = selected_generator(
         prompt_s=TEST_PROMPT, max_new_tokens=8, return_tensors=False, return_text=True,
         return_full_text=True, num_return_sequences=num_return_sequences
     )
