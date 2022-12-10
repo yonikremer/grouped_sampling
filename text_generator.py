@@ -164,14 +164,13 @@ class TextGenerator(Callable, ABC):
         prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
         # We are doing a softmax operator of group_size different vectors of size vocab_size
         # The complexity of the softmax for each vector is O(1) because the size of the vector is constant
-        # the complexity of this line is O(1) because the softmax for each vector is done in parallel (Assuming a GPU).
+        # the complexity of this line is O(group_size) because we are doing group_size softmax operations
         if cuda.is_available():
             prob_tensor = prob_tensor.cpu().detach()
             # Coping a tensor so the complexity is O(group_size)
             cuda.empty_cache()
-            # This is an async operation so the complexity is O(1) because we are not waiting for it to finish
         if not self.end_of_sentence_stop:
-            for prob_vec in prob_tensor:
+            for prob_vec in prob_tensor:  # group_size iterations
                 prob_vec[self.end_of_sentence_id] = 0.0
                 # This line is O(1) because we are accessing a single element in a vector
                 # So the complexity of this loop is O(group_size)
