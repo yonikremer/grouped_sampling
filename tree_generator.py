@@ -63,18 +63,15 @@ class TreeGenerator(TextGenerator):
             mat: Sequence[Sequence[Any]],
             prompt_length: int) -> List[List[Any]]:
         """Returns all the lists such that list[j] is in mat[j]
-        runtime function:
-        prod([len(mat[i]) for i in range(len(mat))])"""
+        complexity: O(prod(len(vec) for vec in mat))
+        the length of the returned list is the product of the lengths of the vectors in mat"""
         mat_at_zero = mat[0]
         if len(mat) == 1:
-            return [[mat_at_zero[i]] for i in range(len(mat_at_zero))]
+            return [[item] for item in mat_at_zero]  # complexity: O(len(mat_at_zero))
         res: List[List[Any]] = []
-        for i in mat_at_zero:
-            for j in TreeGenerator.combinations(
-                    mat[1:],
-                    prompt_length
-            ):
-                res.append([i] + j)
+        for item in mat_at_zero:  # complexity: O(len(mat_at_zero))
+            for j in TreeGenerator.combinations(mat[1:], prompt_length):
+                res.append([item] + j)
         filtered_res: List[List[Any]]
         filtered_res = list(filter(lambda x: TreeGenerator.no_duplicates(x, prompt_length), res))
         return filtered_res
