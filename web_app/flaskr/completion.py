@@ -8,7 +8,7 @@ from flask import Blueprint, g, render_template, request, redirect, url_for
 from werkzeug.datastructures import ImmutableMultiDict
 import pandas as pd
 
-from text_generator import TextGenerator, SingleAnswer
+from text_generator import TextGenerator, CompletionDict
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
 from .auth import login_required
@@ -124,7 +124,7 @@ def create():
                 top_k=new_request['top_k'],
                 temp=new_request['temperature']
         )
-        raw_answers: List[SingleAnswer] = text_generator(
+        raw_answers: List[CompletionDict] = text_generator(
             prompt_s=new_request['prompt'],
             max_new_tokens=new_request['num_tokens'],
             num_return_sequences=new_request['num_return_sequences'],

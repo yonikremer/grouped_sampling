@@ -17,7 +17,7 @@ from transformers import (AutoTokenizer,
 from transformers.tokenization_utils_base import TruncationStrategy
 
 TokenIDS = Union[List[int], Tuple[int]]
-SingleAnswer = Dict[str, Union[str, Tensor]]
+CompletionDict = Dict[str, Union[str, LongTensor]]
 MAX_MODEL_INPUT_SIZE = 8192
 
 
@@ -177,7 +177,7 @@ class TextGenerator(Callable, ABC):
             self,
             text: str,
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
-    ) -> Tensor:
+    ) -> LongTensor:
         """Complexity: O(n) where n is the number of characters in the text"""
         if len(text) == 0:
             return LongTensor([])
@@ -191,14 +191,14 @@ class TextGenerator(Callable, ABC):
             max_length=self.max_input_len,
         )
         if isinstance(tokenized_text, dict) or isinstance(tokenized_text, BatchEncoding):
-            token_tensor: Tensor = tokenized_text["input_ids"]
+            token_tensor: LongTensor = tokenized_text["input_ids"]
             # O(1) because we are accessing a single element in a dictionary and saving the reference to it.
-        elif isinstance(tokenized_text, Tensor):
-            token_tensor: Tensor = tokenized_text
+        elif isinstance(tokenized_text, LongTensor):
+            token_tensor: LongTensor = tokenized_text
             # O(1) because we are saving the reference to the tensor
         else:
             raise TypeError("The tokenizer output is not one of:"
-                            "dict, BatchEncoding, Tensor")
+                            "dict, BatchEncoding, LongTensor")
 
         token_tensor = token_tensor.squeeze()
         # O(n) where n is the number of tokens in the text
@@ -213,7 +213,7 @@ class TextGenerator(Callable, ABC):
             prefix: str = "",
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
             postfix: str = "",
-    ) -> Tuple[Tensor, int, int, int]:
+    ) -> Tuple[LongTensor, int, int, int]:
         """A helper method for __call__ that tokenize the prompt
         all the arguments are sent directly from the __call__ method
         Returns:
@@ -242,7 +242,7 @@ class TextGenerator(Callable, ABC):
     @abstractmethod
     def _forward(
             self,
-            tokenized_prompt: Tensor,
+            tokenized_prompt: LongTensor,
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[TokenIDS]:
@@ -328,7 +328,7 @@ class TextGenerator(Callable, ABC):
             num_return_sequences: int = 1,
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
             postfix: str = "",
-    ) -> SingleAnswer | List[SingleAnswer] | List[List[SingleAnswer]]:
+    ) -> CompletionDict | List[CompletionDict] | List[List[CompletionDict]]:
         """The function that outside code should call to generate text
         Args:
             prompt_s: str or list of str - the prompt(s) to start the generation from
@@ -374,7 +374,7 @@ class TextGenerator(Callable, ABC):
                 truncation=truncation,
                 postfix=postfix,
             ) for prompt in prompt_s]
-        tokens: Tensor
+        tokens: LongTensor
         prefix_len: int
         postfix_len: int
         prompt_len: int
