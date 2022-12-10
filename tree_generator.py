@@ -254,10 +254,11 @@ class TreeGenerator(TextGenerator):
         new_prompts = [tokens_list + ans for ans in tokenized_ans_list]
         # O(sum(len(seq) for seq in tokenized_ans_list) + n * len(tokenized_ans_list))
         # so O(group_size * (actual_top_k ** group_size + n))
-        # new_prompts shape is [group_size + n, (actual_top_k ** group_size + n)]
+        # new_prompts shape is [(actual_top_k ** group_size + n), (group_size + n)]
         completion_probs: Dict[Tuple[int], float]
         completion_probs = self.remove_duplicates(new_prompts, prob_list, len(org_prompt))
         # O(group_size * (actual_top_k ** group_size + n))
+        # the maximum length of new_prompts is (actual_top_k ** group_size + n)
         all_completions_ended: bool = all(self.end_of_sentence_id in tokenized_ans
                                           for tokenized_ans in completion_probs.keys())
         # O(group_size * len(completion_probs))
@@ -274,6 +275,7 @@ class TreeGenerator(TextGenerator):
         else:
             new_number_tokens = num_tokens - self.group_size
         for curr_new_prompt, curr_new_prompt_prob in completion_probs.items():
+            # at maximum there are group_size * (actual_top_k ** group_size) iterations
             curr_new_prompt: List[int]
             curr_completions: Dict[Tuple[int], float]
             curr_completions = self.rec_gen(
