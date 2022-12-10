@@ -90,12 +90,11 @@ class TreeGenerator(TextGenerator):
         of the sequence.
         prob_mat[a][b] is the probability of
         the token with id b the a-th
-        token in the sequence"""
+        token in the sequence
+        complexity: O(n) where n is the length of the sequence"""
         probability = org_prompt_prob
-        sequence_length = len(tokens)
-        for i in range(sequence_length):
-            curr_token = tokens[i]
-            probability *= prob_mat[i][curr_token]
+        for i, curr_token in enumerate(tokens):
+            probability *= prob_mat[i][curr_token]  # complexity: O(1)
         return probability
 
     @staticmethod
@@ -127,21 +126,25 @@ class TreeGenerator(TextGenerator):
         """Given a list of tokenized answers
          and the probability of each completion,
         removes every repeated completion
-         and every completion that have repeated tokens"""
+         and every completion that have repeated tokens
+         complexity: prod([len(completion) for completion in completions])"""
         filtered_completions: Dict[Tuple[int], float]
         filtered_completions = dict()
         for curr_comp, curr_prob in zip(completions, probs):
-            if self.end_of_sentence_id in curr_comp:
+            if self.end_of_sentence_id in curr_comp:  # complexity: O(m) where m is the length of the sequence
                 end_of_sentence_index = curr_comp.index(self.end_of_sentence_id)
+                # complexity: O(m)
                 completion_body = curr_comp[prompt_length:end_of_sentence_index]
+                # complexity: O(m)
             else:
                 completion_body = curr_comp[prompt_length:]
-            if len(completion_body) == len(set(completion_body)):
-                curr_comp_tuple = tuple(curr_comp)
-                filtered_completions[curr_comp_tuple] = curr_prob
+                # complexity: O(prompt_length)
+            if len(completion_body) == len(set(completion_body)):  # complexity: O(m)
+                curr_comp_tuple = tuple(curr_comp)  # complexity: O(m)
+                filtered_completions[curr_comp_tuple] = curr_prob  # complexity: O(1)
             else:
                 print("This method is useful")
-        if len(filtered_completions) == 0:
+        if len(filtered_completions) == 0:  # complexity: O(1)
             raise NoCompletionsFound(self, f"all completions contained duplicates, "
                                            f"completions: {completions}")
         return filtered_completions
@@ -215,11 +218,11 @@ class TreeGenerator(TextGenerator):
         )
         if len(new_sequences) == 0:
             raise NoCompletionsFound(self)
-        # theta(prod(len(indices[i])
+        # O(prod(len(indices[i]))
         # for i in range(group_size)))
         # len(indices[i]) < min(TOP_K, vocab_size)
         # therefore the complexity is
-        # O(min(TOP_K, vocab_size) * group_size)
+        # O(min(TOP_K, vocab_size) * group_size) = O(vocab_size * group_size) = O(group_size)
 
         return new_sequences
 
