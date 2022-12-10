@@ -179,6 +179,8 @@ class TextGenerator(Callable, ABC):
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
     ) -> Tensor:
         """Complexity: O(n) where n is the number of characters in the text"""
+        if len(text) == 0:
+            return LongTensor([])
         # tokenizing a string is O(n) where n is the length of the string
         tokenized_text = self.tokenizer(
             text,
@@ -188,12 +190,7 @@ class TextGenerator(Callable, ABC):
             truncation=truncation,
             max_length=self.max_input_len,
         )
-        is_dict = isinstance(tokenized_text, dict)
-        # O(1)
-        is_batch_encoding = isinstance(tokenized_text,
-                                       BatchEncoding)
-        # O(1)
-        if is_dict or is_batch_encoding:
+        if isinstance(tokenized_text, dict) or isinstance(tokenized_text, BatchEncoding):
             token_tensor: Tensor = tokenized_text["input_ids"]
             # O(1) because we are accessing a single element in a dictionary and saving the reference to it.
         elif isinstance(tokenized_text, Tensor):
@@ -230,18 +227,10 @@ class TextGenerator(Callable, ABC):
             'b' is the number of characters in the prompt
             'c' is the number of characters in the postfix"""
 
-        if len(prefix) > 0:
-            prefix_tokens = self.get_token_tensor(prefix, truncation)
-            # O(n) where n is the number of characters in the prefix.
-        else:
-            prefix_tokens = LongTensor([])
-            # O(1)
-        if len(postfix) > 0:
-            postfix_tokens = self.get_token_tensor(postfix, truncation)
-            # O(n) where n is the number of characters in the postfix.
-        else:
-            postfix_tokens = LongTensor([])
-            # O(1)
+        prefix_tokens = self.get_token_tensor(prefix, truncation)
+        # O(n) where n is the number of characters in the prefix.
+        postfix_tokens = self.get_token_tensor(postfix, truncation)
+        # O(n) where n is the number of characters in the postfix.
         prompt_tokens = self.get_token_tensor(prompt, truncation)
         # O(n) where n is the number of characters in the prompt.
         token_tensor = cat((prefix_tokens, prompt_tokens, postfix_tokens))
