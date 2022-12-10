@@ -111,14 +111,18 @@ class TextGenerator(Callable, ABC):
             pad_id = 0
         return [pad_id] * (self.group_size - 1)
 
-    def get_prob_mat(self, token_list: List[int]) \
-            -> Tensor:
+    def get_prob_mat(self, tokens: TokenIDS) -> Tensor:
         """Returns the probability matrix
          as a list of lists of floats
          Time complexity: O(n^2 + group_size^2)
          where n is the number of tokens"""
-        # define n as the number of tokens in token_list
-        padded_token_list = token_list + self.padding_tokens
+        if isinstance(tokens, list):
+            # define n as the number of tokens in tokens
+            padded_token_list = tokens + self.padding_tokens
+        elif isinstance(tokens, tuple):
+            padded_token_list = list(tokens) + self.padding_tokens
+        else:
+            raise TypeError("tokens must be a list or a tuple")
         # the length of padded_token_list is n + group_size - 1
         if len(padded_token_list) > self.max_input_len:
             padded_token_list = padded_token_list[-self.max_input_len:]
