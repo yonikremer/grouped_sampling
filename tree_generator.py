@@ -249,7 +249,7 @@ class TreeGenerator(TextGenerator):
         # so O(group_size * len(tokenized_ans_list)) so O(group_size * (actual_top_k ** group_size))
         new_prompts: List[List[int]]
         ans: List[int]
-        new_prompts = [tokens_list + ans for ans in tokenized_ans_list]
+        new_prompts = [org_prompt + ans for ans in tokenized_ans_list]
         # O(sum(len(seq) for seq in tokenized_ans_list) + n * len(tokenized_ans_list))
         # so O(group_size * (actual_top_k ** group_size + n))
         # new_prompts shape is [(actual_top_k ** group_size + n), (group_size + n)]
