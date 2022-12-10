@@ -237,9 +237,7 @@ class TreeGenerator(TextGenerator):
         if self.end_of_sentence_id in org_prompt:  # O(n)
             end_of_sentence_index = org_prompt.index(self.end_of_sentence_id)  # O(n)
             return {tuple(org_prompt[:end_of_sentence_index]): org_prompt_prob}  # O(n)
-        tokens_list: List[int]
-        tokens_list = TreeGenerator.flatten(org_prompt)
-        prob_mat: Tensor = self.get_prob_mat(tokens_list)  # O(n^2 + group_size^2)
+        prob_mat: Tensor = self.get_prob_mat(org_prompt)  # O(n^2 + group_size^2)
         tokenized_ans_list: List[List[int]] = self.generate_group(prob_mat, org_prompt)  # O(group_size)
         # tokenized_ans_list maximum length is actual_top_k ** group_size
         prob_list: List[float]
