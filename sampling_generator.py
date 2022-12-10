@@ -163,7 +163,7 @@ class SamplingGenerator(TextGenerator):
             prob_sum += curr_prob.prob
             new_probs[token_id] = curr_prob.prob
         if prob_sum == 0.0:
-            heapq.heappop(converted_probs).prob.item()
+            return converted_probs[0].token_id
         scaled_new_probs = new_probs / prob_sum
         return multinomial(scaled_new_probs, 1).item()
 
