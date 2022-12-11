@@ -1,4 +1,5 @@
 evaluate
+evaluate[evaluator]
 datasets
 scipy
 bert_score
