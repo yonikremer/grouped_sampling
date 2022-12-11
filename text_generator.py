@@ -231,15 +231,16 @@ class TextGenerator(Callable, ABC):
             'c' is the number of characters in the postfix"""
 
         prefix_tokens = self.get_token_tensor(prefix, truncation)
-        # O(n) where n is the number of characters in the prefix.
+        # O(A) where A is the number of characters in the prefix.
         postfix_tokens = self.get_token_tensor(postfix, truncation)
-        # O(n) where n is the number of characters in the postfix.
+        # O(B) where B is the number of characters in the postfix.
         prompt_tokens = self.get_token_tensor(prompt, truncation)
-        # O(n) where n is the number of characters in the prompt.
+        # O(C) where C is the number of characters in the prompt.
         token_tensor = cat((prefix_tokens, prompt_tokens, postfix_tokens))
-        # O(a + b + c) where 'a' is the number of tokens in the prefix.
+        # O( + b + c) where 'a' is the number of tokens in the prefix.
         # 'b' is the number of tokens in the prompt.
         # 'c' is the number of tokens in the postfix.
+        # we know that the number of tokens is less than the number of characters
         return token_tensor, len(prefix_tokens), len(prompt_tokens), len(postfix_tokens)
 
     @abstractmethod
