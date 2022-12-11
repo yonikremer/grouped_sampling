@@ -51,12 +51,12 @@ class TextGenerator(Callable, ABC):
     end_of_sentence_stop: bool
     max_input_len: int
     framework: str = "pt"
-    answer_length_multiplier: int = 16
+    answer_length_multiplier: float = 16
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0,
                  end_of_sentence_stop: bool = False,
-                 answer_length_multiplier: int = 16, ):
+                 answer_length_multiplier: float = 16, ):
         """Model name: the name of the model
         used for loading from hugging face hub
         group size: int
@@ -388,7 +388,7 @@ class TextGenerator(Callable, ABC):
         # O(len(prompt) + len(prefix) + len(postfix))
 
         if max_new_tokens is None:
-            max_new_tokens = prompt_len * self.answer_length_multiplier
+            max_new_tokens = int(prompt_len * self.answer_length_multiplier)
             # O(1)
         tokenized_answers: List[TokenIDS]
         tokenized_answers = self._forward(
