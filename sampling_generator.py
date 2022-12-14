@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from random import seed
 from typing import Callable, List, Dict, Optional, Any, Set
 
-from torch import Tensor, zeros, argmax, multinomial, manual_seed
+from torch import Tensor, zeros, argmax, multinomial, manual_seed, isclose, tensor
 
 from text_generator import TextGenerator, GenerationType
 
@@ -135,9 +135,23 @@ class SamplingGenerator(TextGenerator):
         return gen_type_to_filter_method[self.generation_type]
 
     @staticmethod
+    def is_multinomial(prob_vec: Tensor) -> bool:
+        """Checks if a probability vector is a valid multinomial distribution.
+        A valid multinomial distribution is a probability vector of shape (vocab_size,)
+        where the sum of all the probabilities is 1
+        and each probability is between 0 and 1"""
+        if any(prob < 0 or prob > 1 for prob in prob_vec):
+            return False
+        return isclose(prob_vec.sum(), tensor(1.0))
+
+    @staticmethod
     def unfiltered_sampling(prob_vec: Tensor) -> int:
         """A filtering function that doesn't filter any tokens.
         returns a random token id sampled from the probability vector"""
+        if not SamplingGenerator.is_multinomial(prob_vec):
+            prob_vec = prob_vec / prob_vec.sum()
+            assert SamplingGenerator.is_multinomial(prob_vec), \
+                f"scaled_new_probs is not a valid multinomial distribution: {prob_vec}"
         return multinomial(prob_vec, 1).item()
 
     @staticmethod
@@ -153,18 +167,24 @@ class SamplingGenerator(TextGenerator):
         and samples from that vector.
         If token with the highest probability have a probability higher than top_p, it will be sampled"""
         prob_sum: float = 0.0
-        converted_probs: List[TokenProb]
         converted_probs = [TokenProb(i, prob) for i, prob in enumerate(prob_vec)]
         heapq.heapify(converted_probs)
         new_probs = zeros(prob_vec.shape, dtype=float)
         while prob_sum < self.top_p and len(converted_probs) > 0:
             curr_prob: TokenProb = heapq.heappop(converted_probs)
             token_id = curr_prob.token_id
+            if curr_prob.prob <= 0.0:
+                break
+            if curr_prob.prob > 1:
+                raise ValueError(f"Probability of token {token_id}  in the vector {prob_vec} is {curr_prob.prob}"
+                                 f" which is higher than 1")
             prob_sum += curr_prob.prob
             new_probs[token_id] = curr_prob.prob
         if prob_sum == 0.0:
             return converted_probs[0].token_id
         scaled_new_probs = new_probs / prob_sum
+        assert SamplingGenerator.is_multinomial(new_probs), \
+            f"scaled_new_probs is not a valid multinomial distribution: {scaled_new_probs}"
         return multinomial(scaled_new_probs, 1).item()
 
     def top_k_sampling(self, prob_vec: Tensor) -> int:
@@ -177,6 +197,8 @@ class SamplingGenerator(TextGenerator):
         new_probs = zeros(prob_vec.shape, dtype=float)
         for token_id in top_k_keys:
             new_probs[token_id] = prob_vec[token_id] / prob_sum
+        assert SamplingGenerator.is_multinomial(new_probs), \
+            f"new_probs is not a valid multinomial distribution: {new_probs}"
         return multinomial(new_probs, 1).item()
 
     def generate_group(
