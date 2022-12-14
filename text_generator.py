@@ -135,15 +135,14 @@ class TextGenerator(Callable, ABC):
         if cuda.is_available():
             longer_token_tensor = longer_token_tensor.cuda()
             attention_mask = attention_mask.cuda()
-        inputs = {"input_ids": longer_token_tensor,
-                  "attention_mask": attention_mask,
-                  "labels": longer_token_tensor}
-        # the length of all the inputs is n + group_size - 1
-
         with no_grad():
             # The time complexity of causal language model`s __call__ function
             # is O(n^2) where n is the length of the inputs
-            outputs = self.model(**inputs)
+            outputs = self.model(
+                input_ids=longer_token_tensor,
+                attention_mask=attention_mask
+            )
+            # the length of all the inputs is n + group_size - 1
             # so the complexity of this line is O((n + group_size - 1)^2)
             # which is O(n^2 + group_size^2 + group_size * n)
             # we now that if a > b and a, b > 1 then a^2 > ab so the complexity is O(n^2 + group_size^2)
