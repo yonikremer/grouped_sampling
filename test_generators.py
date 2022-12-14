@@ -8,7 +8,7 @@ from torch import Tensor, equal
 
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
-from text_generator import TextGenerator, SingleAnswer
+from text_generator import TextGenerator, CompletionDict, GenerationType
 
 MODEL_NAMES = "gpt2", "facebook/opt-125m"
 GROUP_SIZES = 3, 1
@@ -80,7 +80,7 @@ def test_pre_and_post_process():
     """Tests the different returning options"""
     generator: TextGenerator = next(create_text_generators())
     prompt: str = "This is a test prompt"
-    returned_val: SingleAnswer = generator(
+    returned_val: CompletionDict = generator(
         prompt_s=prompt,
         max_new_tokens=10,
         return_tensors=True,
@@ -109,7 +109,7 @@ def test_pre_and_post_process():
         clean_up_tokenization_spaces=True)['generated_text']
     assert returned_text == post_processed_text, f"{returned_text} is not equal to {post_processed_text}"
 
-    returned_val: SingleAnswer = generator(
+    returned_val: CompletionDict = generator(
         prompt_s=prompt, max_new_tokens=10,
         return_tensors=True, return_text=True, return_full_text=False
     )
@@ -126,7 +126,7 @@ def test_prefix():
     generator: TextGenerator = next(create_text_generators())
     prompt: str = "test prompt"
     prefix = "This is a "
-    answer: SingleAnswer = generator(
+    answer: CompletionDict = generator(
         prompt_s=prompt, max_new_tokens=10,
         return_tensors=True, return_text=True, return_full_text=True, prefix=prefix
     )
@@ -160,19 +160,19 @@ def test_postfix():
 
 def test_num_return_sequences():
     for curr_generator in create_text_generators():
-        if isinstance(curr_generator, TreeGenerator) and curr_generator.generation_type == "greedy":
+        if isinstance(curr_generator, TreeGenerator) and curr_generator.generation_type == GenerationType.GREEDY:
             continue
         else:
             selected_generator = curr_generator
             break
     num_return_sequences = 2
-    answer: List[SingleAnswer] = selected_generator(
+    answer: List[CompletionDict] = selected_generator(
         prompt_s=TEST_PROMPT, max_new_tokens=8, return_tensors=False, return_text=True,
         return_full_text=True, num_return_sequences=num_return_sequences
     )
     assert len(answer) == num_return_sequences, f"len(answer) is not {num_return_sequences}"
     for curr_answer in answer:
-        curr_answer: SingleAnswer
+        curr_answer: CompletionDict
         assert curr_answer["generated_text"].startswith(TEST_PROMPT), \
             f"{curr_answer['generated_text']} doesn't start with {TEST_PROMPT}"
 
@@ -183,7 +183,7 @@ def test_num_return_sequences():
 def test_max_new_tokens_is_none():
     curr_text_generator = next(create_text_generators())
     curr_text_generator.end_of_sentence_stop = True
-    answer: SingleAnswer = curr_text_generator(
+    answer: CompletionDict = curr_text_generator(
         prompt_s=TEST_PROMPT, max_new_tokens=None, return_tensors=False, return_text=True,
         return_full_text=True
     )
@@ -198,7 +198,7 @@ def test_call_many_prompts():
     """Tests the __call__ method when many prompts are given"""
     generator = next(create_text_generators())
     PROMPTS: List[str] = ["This is a test prompt", "This is another test prompt"]
-    answers: List[SingleAnswer] = generator(
+    answers: List[CompletionDict] = generator(
         prompt_s=PROMPTS, max_new_tokens=10,
         return_text=True, return_full_text=True
     )
