@@ -54,11 +54,21 @@ class TextGenerator(Callable, ABC):
     framework: str = "pt"
     answer_length_multiplier: float = 16
     repetition_penalty_theta: float = 1.2
+    descriptive_attrs = (
+        "model_name",
+        "group_size",
+        "generation_type",
+        "temp",
+        "end_of_sentence_stop",
+        "answer_length_multiplier",
+        "repetition_penalty_theta",
+    )
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0,
                  end_of_sentence_stop: bool = False,
-                 answer_length_multiplier: float = 16,):
+                 answer_length_multiplier: float = 16,
+                 repetition_penalty_theta: float = 1.2,):
         """Model name: the name of the model
         used for loading from hugging face hub
         group size: int
@@ -69,6 +79,8 @@ class TextGenerator(Callable, ABC):
             if the answer length is not given,
             the maximum answer length is set to:
             the length of the prompt * answer_length_multiplier
+        repetition_penalty_theta: float
+            the theta parameter for the repetition penalty computation.
         """
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -97,6 +109,7 @@ class TextGenerator(Callable, ABC):
                     "The maximum length of the model is too big"
                 )
         self.answer_length_multiplier = answer_length_multiplier
+        self.repetition_penalty_theta = repetition_penalty_theta
 
     @property
     @abstractmethod
@@ -462,16 +475,17 @@ class TextGenerator(Callable, ABC):
                 postfix_len=postfix_len,
             )
 
-    @abstractmethod
     def __repr__(self):
-        pass
+        return f"{self.__class__.__name__}" \
+               f"{'/n'.join(f'{attr}={getattr(self, attr)}' for attr in self.descriptive_attrs)}"
 
     def __str__(self):
         return repr(self)
 
-    @abstractmethod
     def as_dict(self) -> Dict[str, Any]:
-        pass
+        """Returns a dictionary representation of the generator
+        such that it can be saved and loaded using the from_dict method"""
+        return {key: getattr(self, key) for key in self.descriptive_attrs}
 
     @classmethod
     def from_dict(cls, my_dict: Dict[str, Any]):

@@ -85,20 +85,13 @@ class SamplingGenerator(TextGenerator):
     default_seed: int = 0
     seed(default_seed)
     manual_seed(default_seed)
+    unique_attrs = "top_k", "top_p"
 
-    def __init__(self, model_name: str, group_size: int,
-                 temp: float = 1.0, top_k: Optional[int] = None,
-                 top_p: Optional[float] = None,
-                 end_of_sentence_stop: bool = False,
-                 answer_length_multiplier: int = 16, ):
-        self.top_p, self.top_k = top_p, top_k
-        super().__init__(
-            model_name=model_name,
-            group_size=group_size,
-            temp=temp,
-            end_of_sentence_stop=end_of_sentence_stop,
-            answer_length_multiplier=answer_length_multiplier,
-        )
+    def __init__(self, top_k: Optional[int] = None,
+                 top_p: Optional[float] = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.top_p = top_p
+        self.top_k = top_k
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -270,22 +263,12 @@ class SamplingGenerator(TextGenerator):
         return answers
 
     def __repr__(self):
-        return f"SamplingGenerator: " \
-               f"model name: {self.model_name}, " \
-               f"group size: {self.group_size}, " \
-               f"temperature: {self.temp}, " \
-               f"generation type: {self.generation_type}, " \
-               f"top_p: {self.top_p}, " \
-               f"top_k: {self.top_k}"
+        super_representation = super().__repr__()
+        unique_representation = '/n'.join(f"{unique_attr_name}={getattr(self, unique_attr_name)}"
+                                          for unique_attr_name in self.unique_attrs)
+        return super_representation + unique_representation
 
     def as_dict(self) -> Dict[str, Any]:
-        return {
-            "model_name": self.model_name,
-            "group_size": self.group_size,
-            "temp": self.temp,
-            "generation_type": self.generation_type,
-            "top_p": self.top_p,
-            "top_k": self.top_k,
-            "end_of_sentence_stop": self.end_of_sentence_stop,
-            "answer_length_multiplier": self.answer_length_multiplier
-        }
+        super_dict = super(SamplingGenerator, self).as_dict()
+        super_dict.update({unique_attr: self.__getattribute__(unique_attr) for unique_attr in self.unique_attrs})
+        return super_dict

@@ -15,20 +15,14 @@ class TreeGenerator(TextGenerator):
      without random sampling."""
     top_p: float
     top_k: int
+    unique_attrs = "top_k", "top_p"
 
-    def __init__(self, model_name: str, group_size: int,
-                 top_k: Optional[int], top_p: Optional[float],
-                 temp: float = 1.0,
-                 end_of_sentence_stop: bool = False,
-                 answer_length_multiplier: int = 16):
-        self.top_p, self.top_k = top_p, top_k
+    def __init__(self, top_k: Optional[int], top_p: Optional[float], *args, **kwargs):
         super().__init__(
-            model_name=model_name,
-            group_size=group_size,
-            temp=temp,
-            end_of_sentence_stop=end_of_sentence_stop,
-            answer_length_multiplier=answer_length_multiplier
+            *args, **kwargs
         )
+        self.top_p = top_p
+        self.top_k = top_k
 
     @property
     def generation_type(self) -> GenerationType:
@@ -294,22 +288,12 @@ class TreeGenerator(TextGenerator):
                 in highest_prob_answers]
 
     def __repr__(self):
-        return f"TreeGenerator: " \
-               f"model name: {self.model_name}, " \
-               f"group size: {self.group_size}, " \
-               f"temperature: {self.temp}, " \
-               f"generation type: {self.generation_type}, " \
-               f"top_p: {self.top_p}, " \
-               f"top_k: {self.top_k}"
+        super_representation = super().__repr__()
+        unique_representation = '/n'.join(f"{unique_attr_name}={getattr(self, unique_attr_name)}"
+                                          for unique_attr_name in self.unique_attrs)
+        return super_representation + unique_representation
 
     def as_dict(self) -> Dict[str, Any]:
-        return {
-            "model_name": self.model_name,
-            "group_size": self.group_size,
-            "temp": self.temp,
-            "generation_type": self.generation_type,
-            "top_p": self.top_p,
-            "top_k": self.top_k,
-            "end_of_sentence_stop": self.end_of_sentence_stop,
-            "answer_length_multiplier": self.answer_length_multiplier
-        }
+        super_dict = super(TreeGenerator, self).as_dict()
+        super_dict.update({unique_attr: self.__getattribute__(unique_attr) for unique_attr in self.unique_attrs})
+        return super_dict
