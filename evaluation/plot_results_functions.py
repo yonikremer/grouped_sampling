@@ -12,6 +12,9 @@ stat_names = tuple(stat_name for stat_name, _ in STAT_NAME_TO_FUNC)
 metric_names = BERT_SCORES
 USERNAME: str = "yonikremer"
 X_LABEL = "group size"
+FIGURE_SIZE = (10, 7.5)
+
+plt.autoscale(False)
 
 
 def experiment_filter(exp: APIExperiment) -> bool:
@@ -63,6 +66,7 @@ def plot_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
     """
     curr_figure = plt.gcf()
     curr_figure.clear()
+    plt.figure(figsize=FIGURE_SIZE)
     colors = ["red", "green", "blue"]
     for curr_metric_name, curr_color in zip(metric_names, colors):
         plt.scatter(
@@ -106,6 +110,7 @@ def plot_duration():
     plt.autoscale(True)
     curr_figure = plt.gcf()
     curr_figure.clear()
+    plt.figure(figsize=FIGURE_SIZE)
     plt.scatter(
         group_size_to_duration.keys(),
         group_size_to_duration.values(),
