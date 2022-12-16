@@ -111,18 +111,14 @@ class TextGenerator(Callable, ABC):
             pad_id = 0
         return [pad_id] * (self.group_size - 1)
 
-    def get_prob_mat(self, tokens: TokenIDS) -> Tensor:
-        """Returns the probability matrix
-         as a list of lists of floats
-         Time complexity: O(n^2 + group_size^2)
-         where n is the number of tokens"""
-        if isinstance(tokens, list):
-            # define n as the number of tokens in tokens
-            padded_token_list = tokens + self.padding_tokens
-        elif isinstance(tokens, tuple):
-            padded_token_list = list(tokens) + self.padding_tokens
-        else:
-            raise TypeError("tokens must be a list or a tuple")
+    def get_logits_matrix(self, tokens: TokenIDS) -> Tensor:
+        """Given a sequence of tokens,
+        returns the logits matrix of shape (group_size, vocab_size)
+        where logits[i] is the logits vector of the i-th next token
+        complexity: O(n^2 + group_size^2) where n is the length of the tokens
+        notice that the logits are not divided by the temperature in this function."""
+        # define n as the number of tokens in tokens
+        padded_token_list = list(tokens) + self.padding_tokens
         # the length of padded_token_list is n + group_size - 1
         if len(padded_token_list) > self.max_input_len:
             padded_token_list = padded_token_list[-self.max_input_len:]
@@ -153,11 +149,19 @@ class TextGenerator(Callable, ABC):
         # outputs.logits.squeeze(0) is equivalent to outputs.logits[0]
         # so the complexity of this line should be O(n + group_size)
         # because we copy (n + group_size - 1) * vocab_size from one tensor to the other where vocab_size is constant
-        unscaled_relevant_logits: Tensor
-        unscaled_relevant_logits = unscaled_logits[-self.group_size:, :self.vocab_size]
+        unscaled_relevant_logits: Tensor = unscaled_logits[-self.group_size:, :self.vocab_size]
         # The shape of unscaled_relevant_logits is (group_size, vocab_size)
         # So the complexity of this line should be O(group_size) because we are coping group_size * vocab_size
         # elements from one tensor to the another
+        return unscaled_relevant_logits
+
+    def get_prob_mat(self, tokens: TokenIDS) -> Tensor:
+        """Returns the probability matrix
+         as a list of lists of floats
+         Time complexity: O(n^2 + group_size^2)
+         where n is the number of tokens"""
+        unscaled_relevant_logits = self.get_logits_matrix(tokens)  # O(n^2 + group_size^2)
+        # unscaled_relevant_logits is a tensor of shape (group_size, vocab_size)
         scaled_relevant_logits = unscaled_relevant_logits / self.temp
         # We are dividing group_size * vocab_size elements so the complexity is O(group_size)
         prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
