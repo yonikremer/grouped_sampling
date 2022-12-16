@@ -14,12 +14,12 @@ else:  # if we are using kaggle, we need to set the api key
 
 STAT_NAME_TO_FUNC: Tuple[Tuple[str, Callable[[Series], float]]] = (
             ("mean", lambda x: x.mean()),
-            ("standard_deviation", lambda x: x.std()),
-            ("min", lambda x: x.min()),
-            ("max", lambda x: x.max()),
             ("median", lambda x: x.median()),
             ("25_percentile", lambda x: x.quantile(0.25)),
             ("75_percentile", lambda x: x.quantile(0.75)),
+            ("min", lambda x: x.min()),
+            ("max", lambda x: x.max()),
+            ("standard_deviation", lambda x: x.std()),
         )
 
 BERT_SCORES = ("BERT_f1", "BERT_precision", "BERT_recall")
