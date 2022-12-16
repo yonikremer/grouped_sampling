@@ -1,28 +1,27 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Dict, Any, Callable, Tuple, Sequence, Set
+from typing import List, Dict, Any, Tuple, Set
 
 from comet_ml import Experiment
-from pandas import DataFrame, concat, Series
+from pandas import DataFrame, concat
 import matplotlib.pyplot as plt
 from datasets import Dataset
 
-from evaluation.helpers import lang_code_to_name, get_comet_api_key
+from evaluation.helpers import lang_code_to_name, get_comet_api_key, STAT_NAME_TO_FUNC, BERT_SCORES, get_project_name
 from text_generator import TextGenerator
 
 
 class ExperimentManager:
     start_time: datetime
     experiment: Experiment
-    COMET_ML_PROJECT_NAME = "grouped-sampling-debug" if __debug__ else "grouped-sampling-evaluation"
     df: DataFrame
     language_pairs: Set[Tuple[str, str]] = set()
 
     def __init__(self, generator: TextGenerator):
         self.experiment = Experiment(
             api_key=get_comet_api_key(),
-            project_name=self.COMET_ML_PROJECT_NAME,
+            project_name=get_project_name(debug=__debug__),
             auto_param_logging=False,
             auto_metric_logging=False,
             log_code=False,
@@ -36,23 +35,11 @@ class ExperimentManager:
             "target_text",
             "input_language",
             "output_language",
-            "BERT_f1",
-            "BERT_precision",
-            "BERT_recall"
-        ])
+        ] + list(BERT_SCORES))
 
     def log_stats(self, scores: DataFrame, title: str) -> None:
         self.experiment.log_dataframe_profile(scores, f"{title}_BERT_scores", header=True)
-        STAT_NAME_TO_FUNC: Sequence[Tuple[str, Callable[[Series], float]]] = (
-            ("mean", lambda x: x.mean()),
-            ("standard_deviation", lambda x: x.std()),
-            ("min", lambda x: x.min()),
-            ("max", lambda x: x.max()),
-            ("median", lambda x: x.median()),
-            ("25_percentile", lambda x: x.quantile(0.25)),
-            ("75_percentile", lambda x: x.quantile(0.75)),
-        )
-        for score_name in ("BERT_f1", "BERT_precision", "BERT_recall"):
+        for score_name in BERT_SCORES:
             curr_column = scores[score_name]
             score_stats = {f"{title}_{score_name}_{stat_name}": stat_func(curr_column)
                            for stat_name, stat_func in STAT_NAME_TO_FUNC}

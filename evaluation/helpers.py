@@ -1,4 +1,7 @@
 import os
+from typing import Callable, Tuple
+
+from pandas import Series
 
 try:
     # noinspection PyUnresolvedReferences
@@ -7,6 +10,19 @@ except ImportError:
     using_kaggle = False
 else:  # if we are using kaggle, we need to set the api key
     using_kaggle = True
+
+
+STAT_NAME_TO_FUNC: Tuple[Tuple[str, Callable[[Series], float]]] = (
+            ("mean", lambda x: x.mean()),
+            ("standard_deviation", lambda x: x.std()),
+            ("min", lambda x: x.min()),
+            ("max", lambda x: x.max()),
+            ("median", lambda x: x.median()),
+            ("25_percentile", lambda x: x.quantile(0.25)),
+            ("75_percentile", lambda x: x.quantile(0.75)),
+        )
+
+BERT_SCORES = ("BERT_f1", "BERT_precision", "BERT_recall")
 
 
 def lang_code_to_name(language_code: str) -> str:
@@ -43,3 +59,9 @@ def get_comet_api_key() -> str:
     with open(api_key_file, "w") as f:
         f.write(api_key)
     return api_key
+
+
+def get_project_name(debug: bool = __debug__) -> str:
+    if debug:
+        print("WARING: RUNNING ON DEBUG MODE")
+    return "grouped-sampling-debug" if debug else "grouped-sampling-evaluation"
