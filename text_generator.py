@@ -4,7 +4,7 @@ import timeit
 from enum import Enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Optional, List, Union, Dict, Tuple, Any
+from typing import Optional, List, Union, Dict, Tuple, Any, Set
 
 from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor, cat
 from torch.nn import Softmax
@@ -19,6 +19,7 @@ from transformers.tokenization_utils_base import TruncationStrategy
 TokenIDS = Union[List[int], Tuple[int]]
 CompletionDict = Dict[str, Union[str, LongTensor]]
 MAX_MODEL_INPUT_SIZE = 8192
+dim_one_softmax = Softmax(dim=1)
 
 
 class GenerationType(Enum):
@@ -52,11 +53,12 @@ class TextGenerator(Callable, ABC):
     max_input_len: int
     framework: str = "pt"
     answer_length_multiplier: float = 16
+    repetition_penalty_theta: float = 1.2
 
     def __init__(self, model_name: str, group_size: int,
                  temp: float = 1.0,
                  end_of_sentence_stop: bool = False,
-                 answer_length_multiplier: float = 16, ):
+                 answer_length_multiplier: float = 16,):
         """Model name: the name of the model
         used for loading from hugging face hub
         group size: int
@@ -111,6 +113,33 @@ class TextGenerator(Callable, ABC):
             pad_id = 0
         return [pad_id] * (self.group_size - 1)
 
+    def softmax_with_repetition_penalty(self, logits_mat: Tensor, generated_tokens: Set[int]) -> Tensor:
+        """Given a logits matrix of shape (group_size, vocab_size) and a set of generated tokens,
+        computes the softmax function with repetition penalty
+        using the repetition_penalty_theta parameter defined in the class
+        the formula is:
+        pi = exp(xi/(T · h(i)) / sum(exp(xj/(T · h(i)))
+        which is equivalent to:
+        pi = exp((xi/h(i)) / T / sum(exp(xj/(T · h(i)))
+        and to:
+        zi = xi / h(i)
+        pi = softmax(z)
+        where:
+            h(i) = θ if i in generated_tokens else 1
+            T is the temperature parameter
+        Args:
+            logits_mat: the logits matrix of shape (group_size, vocab_size)
+            generated_tokens: a set of generated tokens
+        Returns:
+            the probability vector
+        complexity: O(vocab_size)
+        """
+        for token_id in generated_tokens:  # len(generated_tokens) <= vocab size
+            logits_mat[:, token_id] /= self.repetition_penalty_theta
+            # O(group_size) because we are taking a slice of size group_size
+        logits_mat /= self.temp  # O(group_size * vocab_size) so O(group_size)
+        return dim_one_softmax(logits_mat)  # O(group_size * vocab_size) so O(group_size)
+
     def get_logits_matrix(self, tokens: TokenIDS) -> Tensor:
         """Given a sequence of tokens,
         returns the logits matrix of shape (group_size, vocab_size)
@@ -155,16 +184,27 @@ class TextGenerator(Callable, ABC):
         # elements from one tensor to the another
         return unscaled_relevant_logits
 
-    def get_prob_mat(self, tokens: TokenIDS) -> Tensor:
+    def get_prob_mat(self, tokens: TokenIDS, generation_start: int) -> Tensor:
         """Returns the probability matrix
          as a list of lists of floats
          Time complexity: O(n^2 + group_size^2)
          where n is the number of tokens"""
         unscaled_relevant_logits = self.get_logits_matrix(tokens)  # O(n^2 + group_size^2)
         # unscaled_relevant_logits is a tensor of shape (group_size, vocab_size)
-        scaled_relevant_logits = unscaled_relevant_logits / self.temp
-        # We are dividing group_size * vocab_size elements so the complexity is O(group_size)
-        prob_tensor: Tensor = Softmax(dim=1)(scaled_relevant_logits)
+        if not self.end_of_sentence_stop:
+            unscaled_relevant_logits[:, self.end_of_sentence_id] = -float('inf')
+            # setting a vector of size vocab_size so the complexity is O(group_size)
+            # setting the logits to -inf so the probability will be 0
+        if self.repetition_penalty_theta != 1:
+            generated_tokens = set(tokens[generation_start:])
+            # the complexity of this line is O(n)
+            prob_tensor = self.softmax_with_repetition_penalty(
+                unscaled_relevant_logits, generated_tokens
+            )  # O(group_size^2)
+        else:
+            scaled_relevant_logits = unscaled_relevant_logits / self.temp
+            # We are dividing group_size * vocab_size elements so the complexity is O(group_size)
+            prob_tensor: Tensor = dim_one_softmax(scaled_relevant_logits)
         # We are doing a softmax operator of group_size different vectors of size vocab_size
         # The complexity of the softmax for each vector is O(1) because the size of the vector is constant
         # the complexity of this line is O(group_size) because we are doing group_size softmax operations
@@ -172,11 +212,6 @@ class TextGenerator(Callable, ABC):
             prob_tensor = prob_tensor.cpu().detach()
             # Coping a tensor so the complexity is O(group_size)
             cuda.empty_cache()
-        if not self.end_of_sentence_stop:
-            for prob_vec in prob_tensor:  # group_size iterations
-                prob_vec[self.end_of_sentence_id] = 0.0
-                # This line is O(1) because we are accessing a single element in a vector
-                # So the complexity of this loop is O(group_size)
         return prob_tensor
 
     def get_token_tensor(

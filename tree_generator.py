@@ -150,19 +150,10 @@ class TreeGenerator(TextGenerator):
         # let's call len(org_prompt) = n
         # prob_tensor.shape is (group_size, vocab_size)
         possible_tokens: List[List[int]] = []  # complexity: O(1)
-        already_predicted = set(org_prompt)  # complexity: O(n)
         for token_prob in prob_mat:  # group_size times
             token_prob: Tensor  # token_prob.shape is (vocab_size,)
-            for token_id in already_predicted:
-                token_prob[token_id] = 0.0  # complexity: O(1)
-                # We never use the same token twice,
-                # so the probability
-                # of a token that
-                # was already predicted is 0
-
-            vocab_size = len(token_prob)  # O(1)
             indexed_prob = list(
-                zip(token_prob, range(vocab_size)))
+                zip(token_prob, range(self.vocab_size)))
             # O(vocab_size) so O(1)
             sorted_indexed_prob = sorted(indexed_prob, key=lambda x: x[0], reverse=True)
             # O(vocab_size*log(vocab_size)) so O(1)
@@ -175,11 +166,9 @@ class TreeGenerator(TextGenerator):
                 top_k_break: bool = curr_k == self.top_k
                 if top_p_break or top_k_break:
                     break
-                if token not in already_predicted:  # O(1)
-                    already_predicted.add(token)  # O(1)
-                    curr_k += 1
-                    total_prob += prob
-                    curr_indices.append(token)  # O(1)
+                curr_k += 1
+                total_prob += prob
+                curr_indices.append(token)  # O(1)
             # the complexity of this loop is O(1)
             # curr_indices maximum length is max(top_k, vocab_size * top_p) and I will call it actual_top_k
             if len(curr_indices) == 0:
@@ -187,7 +176,6 @@ class TreeGenerator(TextGenerator):
                 # we sample the most probable token
                 highest_prob_token_id = sorted_indexed_prob[0][1]  # O(1)
                 curr_indices.append(highest_prob_token_id)  # O(1)
-                already_predicted.add(highest_prob_token_id)  # O(1)
 
             possible_tokens.append(curr_indices)  # O(1)
         # possible_tokens maximum size is group_size * k
@@ -208,7 +196,8 @@ class TreeGenerator(TextGenerator):
 
     def rec_gen(self, org_prompt: TokenIDS,
                 num_tokens: Optional[int],
-                org_prompt_prob: float = 1.0) \
+                org_prompt_prob: float,
+                prompt_length: int) \
             -> Dict[Tuple[int], float]:
         """Recursively generates the next group of tokens
          in a TREE like behavior"""
@@ -217,7 +206,7 @@ class TreeGenerator(TextGenerator):
         if self.end_of_sentence_id in org_prompt:  # O(n)
             end_of_sentence_index = org_prompt.index(self.end_of_sentence_id)  # O(n)
             return {tuple(org_prompt[:end_of_sentence_index]): org_prompt_prob}  # O(n)
-        prob_mat: Tensor = self.get_prob_mat(org_prompt)  # O(n^2 + group_size^2)
+        prob_mat: Tensor = self.get_prob_mat(org_prompt, prompt_length)  # O(n^2 + group_size^2)
         tokenized_ans_list: List[List[int]] = self.generate_group(prob_mat, org_prompt)  # O(group_size)
         # tokenized_ans_list maximum length is actual_top_k ** group_size
         prob_list: List[float]
@@ -257,8 +246,11 @@ class TreeGenerator(TextGenerator):
             curr_new_prompt: List[int]
             curr_completions: Dict[Tuple[int], float]
             curr_completions = self.rec_gen(
-                curr_new_prompt, new_number_tokens,
-                curr_new_prompt_prob)
+                org_prompt=curr_new_prompt,
+                num_tokens=new_number_tokens,
+                org_prompt_prob=curr_new_prompt_prob,
+                prompt_length=prompt_length
+            )
             tokens: Tuple[int]
             prob: float
             for tokens, prob in curr_completions.items():  # O(len(curr_completions))
@@ -281,7 +273,11 @@ class TreeGenerator(TextGenerator):
                 sys.setrecursionlimit(num_groups + 100)
         seq_prob_dict: Dict[Tuple[int], float]
         seq_prob_dict = self.rec_gen(
-            tokenized_prompt.tolist(), num_new_tokens)
+            org_prompt=tokenized_prompt.tolist(),
+            num_tokens=num_new_tokens,
+            org_prompt_prob=1.0,
+            prompt_length=len(tokenized_prompt)
+        )
         if len(seq_prob_dict) < num_return_sequences:
             raise NoCompletionsFound(
                 self,

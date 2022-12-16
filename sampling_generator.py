@@ -1,7 +1,7 @@
 import heapq
 from collections.abc import Iterator
 from random import seed
-from typing import Callable, List, Dict, Optional, Any, Set
+from typing import Callable, List, Dict, Optional, Any
 
 from torch import Tensor, zeros, argmax, multinomial, manual_seed, isclose, tensor
 
@@ -142,7 +142,8 @@ class SamplingGenerator(TextGenerator):
         and each probability is between 0 and 1"""
         if any(prob < 0 or prob > 1 for prob in prob_vec):
             return False
-        return isclose(prob_vec.sum(), tensor(1.0))
+        prob_sum = prob_vec.sum()
+        return bool(isclose(prob_sum, tensor(1.0, dtype=prob_sum.dtype)))
 
     @staticmethod
     def unfiltered_sampling(prob_vec: Tensor) -> int:
@@ -151,7 +152,8 @@ class SamplingGenerator(TextGenerator):
         if not SamplingGenerator.is_multinomial(prob_vec):
             prob_vec = prob_vec / prob_vec.sum()
             assert SamplingGenerator.is_multinomial(prob_vec), \
-                f"scaled_new_probs is not a valid multinomial distribution: {prob_vec}"
+                f"prob_vec is not a valid multinomial distribution." \
+                f"prob_vec is {prob_vec}"
         return multinomial(prob_vec, 1).item()
 
     @staticmethod
@@ -201,24 +203,16 @@ class SamplingGenerator(TextGenerator):
             f"new_probs is not a valid multinomial distribution: {new_probs}"
         return multinomial(new_probs, 1).item()
 
-    def generate_group(
-            self, prob_mat: Tensor,
-            org_used_tokens: List[int]) -> List[int]:
+    def generate_group(self, prob_mat: Tensor) -> List[int]:
         """Generates a group of tokens
          using the choice_function.
          Complexity: O(group_size * org_used_tokens + group_size ^ 2)"""
         prob_mat.cpu()
         # coping a tensor of size (group_size, vocab_size)
         # so the complexity is O(group_size) (vocab_size is constant)
-        used_tokens: Set[int] = set(org_used_tokens)
-        # the complexity of list to set is O(len(list)) so it's O(len(org_used_tokens))
         new_group: List[int] = []
         for curr_token_probs in prob_mat:  # group_size iterations
             curr_token_probs: Tensor
-            for used_token in used_tokens:
-                # len(used_tokens) <= group_size + len(org_used_tokens)
-                curr_token_probs[used_token] = 0.0
-                # this line is O(1)
             # so the complexity of the inner loop is O(group_size + len(org_used_tokens))
             # for tokens with index >= self.vocab_size
             if len(curr_token_probs) > self.vocab_size:
@@ -230,8 +224,6 @@ class SamplingGenerator(TextGenerator):
             # appending to a list is O(1)
             if sampled_token == self.end_of_sentence_id:
                 break
-            used_tokens.add(sampled_token)
-            # adding to a set is O(1)
         del prob_mat
         return new_group
 
@@ -256,13 +248,12 @@ class SamplingGenerator(TextGenerator):
             for _ in range(num_new_tokens // self.group_size):
                 # and each iteration is O(n ^ 2 + l ^ 2 + group_size ^ 2)
                 # so the complexity of the loop is O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size)
-                prob_mat: Tensor = self.get_prob_mat(curr_token_list)
+                prob_mat: Tensor = self.get_prob_mat(curr_token_list, len(tokenized_prompt))
                 # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
                 # len(curr_token_list) <= n + l
                 # so the complexity is O(group_size ^ 2 + (n + l) ^ 2) = O(n ^ 2 + nl + l ^ 2 + group_size ^ 2)
                 # but nl <= max(n^2, l^2) so the complexity is O(n ^ 2 + l ^ 2 + group_size ^ 2)
-                new_tokens = self.generate_group(
-                    prob_mat, curr_token_list)
+                new_tokens = self.generate_group(prob_mat)
                 # complexity: O(group_size * len(curr_token_list) + group_size ^ 2)
                 # len(curr_token_list) <= n + l
                 # so the complexity is O(group_size * (n + l + group_size))
