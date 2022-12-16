@@ -27,7 +27,8 @@ def create_text_generators() -> Generator[TextGenerator, None, None]:
                                            group_size=GROUP_SIZES[0],
                                            top_k=TOP_KS[0],
                                            top_p=None,
-                                           temp=TEMPERATURES[0])
+                                           temp=TEMPERATURES[0],
+                                           answer_length_multiplier=1.0,)
     for top_k in TOP_KS:
         top_k_sampling_gen.top_k = top_k
         yield top_k_sampling_gen
@@ -37,7 +38,9 @@ def create_text_generators() -> Generator[TextGenerator, None, None]:
                                            group_size=GROUP_SIZES[1],
                                            top_k=None,
                                            top_p=TOP_PS[1],
-                                           temp=TEMPERATURES[0])
+                                           temp=TEMPERATURES[0],
+                                           answer_length_multiplier=1.0,
+                                           )
     for top_p in TOP_PS:
         top_p_sampling_gen.top_p = top_p
         yield top_p_sampling_gen
@@ -47,7 +50,8 @@ def create_text_generators() -> Generator[TextGenerator, None, None]:
                                   group_size=GROUP_SIZES[0],
                                   top_k=TOP_KS[1],
                                   top_p=TOP_PS[1],
-                                  temp=TEMPERATURES[0])
+                                  temp=TEMPERATURES[1],
+                                  answer_length_multiplier=1.0,)
 
     for top_k in TOP_KS:
         curr_tree_gen.top_k = top_k
