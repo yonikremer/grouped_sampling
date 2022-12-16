@@ -98,26 +98,6 @@ class TreeGenerator(TextGenerator):
             probability *= prob_mat[i][curr_token]  # complexity: O(1)
         return probability
 
-    @staticmethod
-    def flatten(ids: TokenIDS) -> List:
-        """Gets a list where some elements might be lists
-        and adds every item
-        in the inner list to the outer list.
-        example:
-        [1, [2, 3], 4, [[5]]] -> [1, 2, 3, 4, 5]
-        Complexity:
-        n - len(the flatten list)
-        m - the number of different lists
-        O(m + n)"""
-        new_list = []
-        for item in ids:
-            if isinstance(item, list) or isinstance(item, tuple):
-                new_list.extend(
-                    TreeGenerator.flatten(item))
-            else:
-                new_list.append(item)
-        return new_list
-
     def remove_duplicates(
             self,
             completions: List[List[int]],
@@ -249,7 +229,7 @@ class TreeGenerator(TextGenerator):
         # so O(group_size * len(tokenized_ans_list)) so O(group_size * (actual_top_k ** group_size))
         new_prompts: List[List[int]]
         ans: List[int]
-        new_prompts = [org_prompt + ans for ans in tokenized_ans_list]
+        new_prompts = [list(org_prompt) + list(ans) for ans in tokenized_ans_list]
         # O(sum(len(seq) for seq in tokenized_ans_list) + n * len(tokenized_ans_list))
         # so O(group_size * (actual_top_k ** group_size + n))
         # new_prompts shape is [(actual_top_k ** group_size + n), (group_size + n)]
