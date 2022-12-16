@@ -10,7 +10,7 @@ from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
 from text_generator import TextGenerator, CompletionDict, GenerationType
 
-MODEL_NAMES = "gpt2", "facebook/opt-125m"
+MODEL_NAME = "gpt2"
 GROUP_SIZES = 3, 1
 TOP_KS = 1, 4
 TOP_PS = 0.0, 0.5, 1.0
@@ -23,34 +23,38 @@ TEST_PROMPT = "This is a test prompt."
 
 
 def create_text_generators() -> Generator[TextGenerator, None, None]:
-    top_p_sampling_gen = SamplingGenerator(model_name=MODEL_NAMES[0],
-                                           group_size=GROUP_SIZES[1],
-                                           top_k=None,
-                                           top_p=TOP_PS[1],
-                                           temp=TEMPERATURES[0])
-
-    top_k_sampling_gen = SamplingGenerator(model_name=MODEL_NAMES[1],
+    top_k_sampling_gen = SamplingGenerator(model_name=MODEL_NAME,
                                            group_size=GROUP_SIZES[0],
                                            top_k=TOP_KS[0],
                                            top_p=None,
                                            temp=TEMPERATURES[0])
+    for top_k in TOP_KS:
+        top_k_sampling_gen.top_k = top_k
+        yield top_k_sampling_gen
+    del top_k_sampling_gen
 
-    curr_tree_gen = TreeGenerator(model_name=MODEL_NAMES[1],
+    top_p_sampling_gen = SamplingGenerator(model_name=MODEL_NAME,
+                                           group_size=GROUP_SIZES[1],
+                                           top_k=None,
+                                           top_p=TOP_PS[1],
+                                           temp=TEMPERATURES[0])
+    for top_p in TOP_PS:
+        top_p_sampling_gen.top_p = top_p
+        yield top_p_sampling_gen
+    del top_p_sampling_gen
+
+    curr_tree_gen = TreeGenerator(model_name=MODEL_NAME,
                                   group_size=GROUP_SIZES[0],
                                   top_k=TOP_KS[1],
                                   top_p=TOP_PS[1],
                                   temp=TEMPERATURES[0])
 
     for top_k in TOP_KS:
-        top_k_sampling_gen.top_k = top_k
         curr_tree_gen.top_k = top_k
-        yield top_k_sampling_gen
-
         for top_p in TOP_PS:
-            top_p_sampling_gen.top_p = top_p
             curr_tree_gen.top_p = top_p
-            yield top_p_sampling_gen
             yield curr_tree_gen
+    del curr_tree_gen
 
 
 def test_initialization():
