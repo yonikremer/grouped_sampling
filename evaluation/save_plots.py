@@ -1,7 +1,7 @@
-"""The purpose of this file is to refactor code from the plot_results.ipynb notebook into a python file"""
+"""This is a script that plots the results of the experiments and saves the figures to the plots folder"""
+from os.path import join, dirname, abspath
 from typing import List, Dict, Optional
 
-from IPython.core.display import Markdown, display
 from comet_ml import API, APIExperiment
 from matplotlib import pyplot as plt
 
@@ -12,14 +12,14 @@ stat_names = tuple(stat_name for stat_name, _ in STAT_NAME_TO_FUNC)
 metric_names = BERT_SCORES
 USERNAME: str = "yonikremer"
 X_LABEL = "group size"
-FIGURE_SIZE = (10, 7.5)
+PLOTS_FOLDER = join(dirname(abspath(__file__)), "plots", "second_part")
 
 plt.autoscale(False)
 
 
 def experiment_filter(exp: APIExperiment) -> bool:
     try:
-        return get_parameter(exp, "answer_length_multiplier") == "1.25"
+        return get_parameter(exp, "answer_length_multiplier") in (None, "2")
     except RuntimeError:
         return False
 
@@ -66,7 +66,6 @@ def plot_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
     """
     curr_figure = plt.gcf()
     curr_figure.clear()
-    plt.figure(figsize=FIGURE_SIZE)
     colors = ["red", "green", "blue"]
     for curr_metric_name, curr_color in zip(metric_names, colors):
         plt.scatter(
@@ -76,17 +75,23 @@ def plot_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
             label=curr_metric_name,
         )
     plt.legend()
+    plt.ylim(0, 1)
     plt.xlabel(X_LABEL)
     y_label = f"BERT scores {stat}"
     plt.ylabel(y_label)
-    plt.title(f"{y_label} as a function of {X_LABEL}")
-    plt.ylim(0, 1)
-    plt.show()
+    title = f"{y_label} as a function of {X_LABEL}"
+    plt.title(title)
+    fig_path = join(PLOTS_FOLDER, f"{title}.png")
+    plt.savefig(
+        fig_path,
+        bbox_inches='tight',
+        pad_inches=0,
+    )
+    print(f"Saved a plot in {fig_path}")
     plt.clf()
 
 
 def generate_plot(stat_name: str) -> None:
-    display(Markdown(f"## {stat_name}"))
     group_size_to_score_stats: Dict[int, Dict[str, float]] = {}
     for exp in get_relevant_experiments():
         group_size: int = get_group_size(exp)
@@ -96,13 +101,13 @@ def generate_plot(stat_name: str) -> None:
     if len(group_size_to_score_stats) > 0:
         plot_data(group_size_to_score_stats, stat_name)
     else:
-        display(Markdown("No experiments with this stat"))
+        raise RuntimeError(f"Could not find any experiments with the stat {stat_name}.")
 
 
 def get_duration(exp: APIExperiment) -> float:
     """Returns the duration of an experiment in hours"""
     duration_milliseconds = exp.get_metadata()["durationMillis"]
-    return duration_milliseconds / (1000*60*60)
+    return duration_milliseconds / (1000 * 60 * 60)
 
 
 def plot_duration():
@@ -110,7 +115,6 @@ def plot_duration():
     plt.autoscale(True)
     curr_figure = plt.gcf()
     curr_figure.clear()
-    plt.figure(figsize=FIGURE_SIZE)
     plt.scatter(
         group_size_to_duration.keys(),
         group_size_to_duration.values(),
@@ -118,6 +122,16 @@ def plot_duration():
     plt.xlabel(X_LABEL)
     y_label = "experiment duration in hours"
     plt.ylabel(y_label)
-    plt.title(f"{y_label} as a function of {X_LABEL}")
-    plt.show()
+    title = f"{y_label} as a function of {X_LABEL}"
+    plt.title(title)
+    fig_path = join(PLOTS_FOLDER, join(PLOTS_FOLDER, f"{title}.png")),
+    plt.savefig(fig_path, bbox_inches='tight', pad_inches=0)
+    print(f"Saved a plot in {fig_path}")
     plt.clf()
+
+
+if __name__ == "__main__":
+    for curr_stat_name in stat_names:
+        generate_plot(curr_stat_name)
+    plot_duration()
+    print("Done")
