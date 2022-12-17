@@ -166,15 +166,15 @@ class SamplingGenerator(TextGenerator):
         heapq.heapify(converted_probs)
         new_probs = zeros(prob_vec.shape, dtype=float)
         while prob_sum < self.top_p and len(converted_probs) > 0:
-            curr_prob: TokenProb = heapq.heappop(converted_probs)
-            token_id = curr_prob.token_id
-            if curr_prob.prob <= 0.0:
+            curr_token_prob: TokenProb = heapq.heappop(converted_probs)
+            token_id = curr_token_prob.token_id
+            if curr_token_prob.prob <= 0.0:
                 break
-            if curr_prob.prob > 1:
-                raise ValueError(f"Probability of token {token_id}  in the vector {prob_vec} is {curr_prob.prob}"
+            if curr_token_prob.prob > 1:
+                raise ValueError(f"Probability of token {token_id}  in the vector {prob_vec} is {curr_token_prob.prob}"
                                  f" which is higher than 1")
-            prob_sum += curr_prob.prob
-            new_probs[token_id] = curr_prob.prob
+            prob_sum += curr_token_prob.prob
+            new_probs[token_id] = curr_token_prob.prob
         if prob_sum == 0.0:
             return converted_probs[0].token_id
         scaled_new_probs = new_probs / prob_sum
