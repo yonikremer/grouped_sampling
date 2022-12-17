@@ -117,8 +117,6 @@ class TreeGenerator(TextGenerator):
             if len(completion_body) == len(set(completion_body)):  # complexity: O(m)
                 curr_comp_tuple = tuple(curr_comp)  # complexity: O(m)
                 filtered_completions[curr_comp_tuple] = curr_prob  # complexity: O(1)
-            else:
-                print("This method is useful")
         if len(filtered_completions) == 0:  # complexity: O(1)
             raise NoCompletionsFound(self, f"all completions contained duplicates, "
                                            f"completions: {completions}")
