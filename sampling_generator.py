@@ -144,9 +144,6 @@ class SamplingGenerator(TextGenerator):
         returns a random token id sampled from the probability vector"""
         if not SamplingGenerator.is_multinomial(prob_vec):
             prob_vec = prob_vec / prob_vec.sum()
-            assert SamplingGenerator.is_multinomial(prob_vec), \
-                f"prob_vec is not a valid multinomial distribution." \
-                f"prob_vec is {prob_vec}"
         return multinomial(prob_vec, 1).item()
 
     @staticmethod
@@ -177,10 +174,7 @@ class SamplingGenerator(TextGenerator):
             new_probs[token_id] = curr_token_prob.prob
         if prob_sum == 0.0:
             return converted_probs[0].token_id
-        scaled_new_probs = new_probs / prob_sum
-        assert SamplingGenerator.is_multinomial(new_probs), \
-            f"scaled_new_probs is not a valid multinomial distribution: {scaled_new_probs}"
-        return multinomial(scaled_new_probs, 1).item()
+        return SamplingGenerator.unfiltered_sampling(new_probs)
 
     def top_k_sampling(self, prob_vec: Tensor) -> int:
         """Gets a token id: probability mapping
@@ -192,9 +186,7 @@ class SamplingGenerator(TextGenerator):
         new_probs = zeros(prob_vec.shape, dtype=float)
         for token_id in top_k_keys:
             new_probs[token_id] = prob_vec[token_id] / prob_sum
-        assert SamplingGenerator.is_multinomial(new_probs), \
-            f"new_probs is not a valid multinomial distribution: {new_probs}"
-        return multinomial(new_probs, 1).item()
+        return SamplingGenerator.unfiltered_sampling(new_probs)
 
     def generate_group(self, prob_mat: Tensor) -> List[int]:
         """Generates a group of tokens
