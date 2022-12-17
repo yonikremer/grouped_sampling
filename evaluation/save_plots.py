@@ -19,7 +19,7 @@ plt.autoscale(False)
 
 def experiment_filter(exp: APIExperiment) -> bool:
     try:
-        return get_parameter(exp, "answer_length_multiplier") in (None, "2")
+        return get_parameter(exp, "answer_length_multiplier") == "1.25"
     except RuntimeError:
         return False
 
@@ -131,6 +131,7 @@ def plot_duration():
 
 
 if __name__ == "__main__":
+    print("started")
     for curr_stat_name in stat_names:
         generate_plot(curr_stat_name)
     plot_duration()
