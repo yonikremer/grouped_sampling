@@ -80,8 +80,8 @@ class ExperimentManager:
             "target_text": sub_set[output_lang_code],
         })
         self.df = concat([self.df, new_data], ignore_index=True, copy=False)
-        curr_time_diff_hours = (datetime.now() - self.start_time).total_seconds() / 3600
-        print(f"Translated {len(self.df)} examples in {curr_time_diff_hours} hours")
+        curr_time_diff = (datetime.now() - self.start_time)
+        print(f"Translated {len(self.df)} examples in {curr_time_diff} hours")
 
     def end_experiment(self) -> None:
         """Logs the experiment to comet ml"""
