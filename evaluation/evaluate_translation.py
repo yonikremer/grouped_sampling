@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 import os
+from threading import Thread
+from time import sleep
 from pathlib import Path
 from typing import Any, Dict, Tuple, List
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
+from nvidia_smi import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtilizationRates
 
 from evaluation.experiment_manager import ExperimentManager
 from evaluation.helpers import lang_code_to_name
@@ -23,6 +26,27 @@ disable_progress_bar()
 
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
+
+
+def check_gpu_utilization():
+    # Initialize the NVML library
+    nvmlInit()
+
+    while True:
+        # Get the handle to the GPU device
+        device_index = 0  # index of the GPU device to use
+        handle = nvmlDeviceGetHandleByIndex(device_index)
+
+        # Get the GPU utilization using nvidia_smi
+        utilization = nvmlDeviceGetUtilizationRates(handle)
+        gpu_utilization = utilization.gpu
+
+        # Print a warning if the GPU utilization is zero
+        if gpu_utilization == 0:
+            print("Warning: GPU utilization is zero")
+
+        # Sleep for 30 seconds before checking the utilization again
+        sleep(30)
 
 
 def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
@@ -102,6 +126,8 @@ def main() -> None:
     with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
     curr_text_generator = SamplingGenerator.from_dict(evaluated_text_generator_dict)
+    utilization_thread = Thread(target=check_gpu_utilization)
+    utilization_thread.start()
     run_experiment(curr_text_generator, my_evaluator, sub_sut_names)
 
 

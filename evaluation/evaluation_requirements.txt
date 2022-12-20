@@ -6,3 +6,4 @@ bert_score
 comet_ml
 pandas
 matplotlib
+nvidia_smi
