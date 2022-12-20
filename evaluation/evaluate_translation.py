@@ -26,15 +26,16 @@ disable_progress_bar()
 
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
+stop_gpu_check = False
 
 
 def check_gpu_utilization():
     # Initialize the NVML library
     nvmlInit()
+    device_index = 0  # index of the GPU device to use
 
-    while True:
+    while not stop_gpu_check:
         # Get the handle to the GPU device
-        device_index = 0  # index of the GPU device to use
         handle = nvmlDeviceGetHandleByIndex(device_index)
 
         # Get the GPU utilization using nvidia_smi
@@ -129,6 +130,9 @@ def main() -> None:
     utilization_thread = Thread(target=check_gpu_utilization)
     utilization_thread.start()
     run_experiment(curr_text_generator, my_evaluator, sub_sut_names)
+    global stop_gpu_check
+    stop_gpu_check = True
+    utilization_thread.join()
 
 
 if __name__ == "__main__":
