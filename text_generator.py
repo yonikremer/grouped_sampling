@@ -97,6 +97,8 @@ class TextGenerator(Callable, ABC):
                                f"Using the AutoModelForCausalLM.from_pretrained({model_name}) command") from e
         if cuda.is_available():
             self.model = self.model.cuda()
+        elif not __debug__:
+            print("Warning: CUDA is not available, using CPU")
         self.vocab_size = self.tokenizer.vocab_size
         self.temp = temp
         self.group_size = group_size
@@ -180,6 +182,8 @@ class TextGenerator(Callable, ABC):
         if cuda.is_available():
             longer_token_tensor = longer_token_tensor.cuda()
             attention_mask = attention_mask.cuda()
+        elif not __debug__:
+            print("Warning: CUDA is not available, using CPU")
         with no_grad():
             # The time complexity of causal language model`s __call__ function
             # is O(n^2) where n is the length of the inputs
