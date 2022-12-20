@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from threading import Thread
-from time import sleep
+from time import sleep, strftime, localtime
 from pathlib import Path
 from typing import Any, Dict, Tuple, List
 
@@ -44,7 +44,7 @@ def check_gpu_utilization():
 
         # Print a warning if the GPU utilization is zero
         if gpu_utilization == 0:
-            print("Warning: GPU utilization is zero")
+            print("Warning: GPU utilization is zero", strftime("%H:%M:%S", localtime()))
 
         # Sleep for 30 seconds before checking the utilization again
         sleep(30)
