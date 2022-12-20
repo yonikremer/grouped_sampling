@@ -81,7 +81,7 @@ class ExperimentManager:
         })
         self.df = concat([self.df, new_data], ignore_index=True, copy=False)
         curr_time_diff = (datetime.now() - self.start_time)
-        print(f"Translated {len(self.df)} examples in {curr_time_diff} hours")
+        print(f"Translated {len(self.df)} examples in {curr_time_diff}")
 
     def end_experiment(self) -> None:
         """Logs the experiment to comet ml"""
