@@ -64,7 +64,7 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event):
         # Print a warning if the GPU utilization is zero
         if gpu_utilization == 0:
             current_time = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            warning_message = f"Warning: GPU utilization is zero at {current_time}"
+            warning_message = f"GPU utilization is zero at {current_time}"
             warn(warning_message)
 
         # Sleep for 30 seconds before checking the utilization again
