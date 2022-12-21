@@ -173,7 +173,7 @@ class TextGenerator(Callable, ABC):
         """
         if not isinstance(tokens, Tensor):
             tokens = LongTensor(tokens)  # O(n)
-        padded_tokens = cat(tokens, self.padding_tokens)
+        padded_tokens = cat((tokens, self.padding_tokens), dim=0)
         # the length of padded_tokens is n + group_size - 1
         # so creating it is O(n + group_size)
         attention_len = len(padded_tokens)  # n + group_size - 1
