@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from random import seed
 from typing import Callable, List, Dict, Optional, Any
 
-from torch import Tensor, zeros, argmax, multinomial, manual_seed, isclose, tensor
+from torch import Tensor, zeros, argmax, multinomial, manual_seed
 
 from text_generator import TextGenerator, GenerationType
 
@@ -128,22 +128,9 @@ class SamplingGenerator(TextGenerator):
         return gen_type_to_filter_method[self.generation_type]
 
     @staticmethod
-    def is_multinomial(prob_vec: Tensor) -> bool:
-        """Checks if a probability vector is a valid multinomial distribution.
-        A valid multinomial distribution is a probability vector of shape (vocab_size,)
-        where the sum of all the probabilities is 1
-        and each probability is between 0 and 1"""
-        if any(prob < 0 or prob > 1 for prob in prob_vec):
-            return False
-        prob_sum = prob_vec.sum()
-        return bool(isclose(prob_sum, tensor(1.0, dtype=prob_sum.dtype)))
-
-    @staticmethod
     def unfiltered_sampling(prob_vec: Tensor) -> int:
-        """A filtering function that doesn't filter any tokens.
+        """A sampling function that doesn't filter any tokens.
         returns a random token id sampled from the probability vector"""
-        if not SamplingGenerator.is_multinomial(prob_vec):
-            prob_vec = prob_vec / prob_vec.sum()
         return multinomial(prob_vec, 1).item()
 
     @staticmethod
@@ -214,7 +201,7 @@ class SamplingGenerator(TextGenerator):
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[List[int]]:
-        """Complexity: O(num_return_sequences * ((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size))
+        """Complexity: O(num_return_sequences * ((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n))
         where l is the number of tokens in the prompt
         and n is the number of new tokens to generate"""
         # let's define l = len(tokenized_prompt), n = num_new_tokens
@@ -227,8 +214,8 @@ class SamplingGenerator(TextGenerator):
                 default_seed=self.default_seed,
                 max_num_calls=num_return_sequences):  # num_return_sequences iterations
             for _ in range(num_new_tokens // self.group_size):
-                # and each iteration is O(n ^ 2 + l ^ 2 + group_size ^ 2)
-                # so the complexity of the loop is O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size)
+                # and each iteration is O(n ^ 2 + l ^ 2 + group_size ^ 2 + group_size)
+                # so the complexity of the loop is O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
                 prob_mat: Tensor = self.get_prob_mat(curr_token_list, len(tokenized_prompt))
                 # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
                 # len(curr_token_list) <= n + l
