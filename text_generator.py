@@ -98,7 +98,7 @@ class TextGenerator(Callable, ABC):
                                f"Using the AutoModelForCausalLM.from_pretrained({model_name}) command") from e
         if cuda.is_available():
             self.model = self.model.cuda()
-        elif not __debug__:
+        else:
             warn("CUDA is not available, using CPU")
         self.vocab_size = self.tokenizer.vocab_size
         self.temp = temp
@@ -185,6 +185,8 @@ class TextGenerator(Callable, ABC):
         if cuda.is_available():
             padded_tokens = padded_tokens.cuda()  # O(n + group_size)
             attention_mask = attention_mask.cuda()  # O(n + group_size)
+        else:
+            warn("CUDA is not available, using CPU")
         return {
             "input_ids": padded_tokens.unsqueeze(0),
             "attention_mask": attention_mask,
@@ -208,14 +210,7 @@ class TextGenerator(Callable, ABC):
             # so the complexity of this line is O((n + group_size - 1)^2)
             # which is O(n^2 + group_size^2 + group_size * n)
             # we now that if a > b and a, b > 1 then a^2 > ab so the complexity is O(n^2 + group_size^2)
-
-        unscaled_logits: Tensor = outputs.logits.squeeze(0)
-        # output.logits is a tensor of shape (1, n + group_size - 1, vocab_size)
-        # so unscaled_logits is a tensor of shape (n + group_size - 1, vocab_size).
-        # outputs.logits.squeeze(0) is equivalent to outputs.logits[0]
-        # so the complexity of this line should be O(n + group_size)
-        # because we copy (n + group_size - 1) * vocab_size from one tensor to the other where vocab_size is constant
-        unscaled_relevant_logits: Tensor = unscaled_logits[-self.group_size:, :self.vocab_size]
+        unscaled_relevant_logits: Tensor = outputs.logits[0, -self.group_size:, :self.vocab_size]
         # The shape of unscaled_relevant_logits is (group_size, vocab_size)
         # So the complexity of this line should be O(group_size) because we are coping group_size * vocab_size
         # elements from one tensor to the another
@@ -253,6 +248,8 @@ class TextGenerator(Callable, ABC):
             prob_tensor = prob_tensor.cpu().detach()
             # Coping a tensor so the complexity is O(group_size)
             cuda.empty_cache()
+        else:
+            warn("CUDA is not available, using CPU")
         return prob_tensor
 
     def get_token_tensor(
