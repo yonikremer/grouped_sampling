@@ -140,21 +140,33 @@ def run_experiment(
     manager.end_experiment()
 
 
+def create_text_generator() -> TextGenerator:
+    """Creates a text generator from the evaluated_text_generator_dict.json file"""
+    parent_folder = Path(__file__).parent
+    with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
+        evaluated_text_generator_dict = json.load(json_file)
+    my_generator = SamplingGenerator.from_dict(evaluated_text_generator_dict)
+    return my_generator
+
+
+def create_evaluator() -> TranslationEvaluator:
+    """Creates a translation evaluator"""
+    my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
+    my_evaluator.PREDICTION_PREFIX = "generated"
+    my_evaluator.compute = check_gpu_utilization(my_evaluator.compute, 30)
+    return my_evaluator
+
+
 def main() -> None:
     if __debug__:
         # send a warning
         warn("Running in debug mode, only a small subset of the data will be used")
-    my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
-    my_evaluator.PREDICTION_PREFIX = "generated"
-    my_evaluator.compute = check_gpu_utilization(my_evaluator.compute, 30)
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
     if __debug__:
         sub_sut_names = sub_sut_names[:1]
-    parent_folder = Path(__file__).parent
-    with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
-        evaluated_text_generator_dict = json.load(json_file)
-    curr_text_generator = SamplingGenerator.from_dict(evaluated_text_generator_dict)
-    run_experiment(curr_text_generator, my_evaluator, sub_sut_names)
+    curr_text_generator = create_text_generator()
+    curr_evaluator = create_evaluator()
+    run_experiment(curr_text_generator, curr_evaluator, sub_sut_names)
 
 
 if __name__ == "__main__":
