@@ -63,16 +63,17 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, int
      during the execution of the wrapped function
      and sends a warning if the gpu utilization is zero for interval seconds"""
     my_timezone = timezone("Asia/Jerusalem")
+    checks_per_second = 50
     while not stop_flag.is_set():
         # Get the GPU utilization using nvidia_smi
         utilization_sum = 0.0
-        for _ in range(interval * 10):
+        for _ in range(interval * checks_per_second):
             utilization = nvmlDeviceGetUtilizationRates(handle)
             gpu_utilization = utilization.gpu
             utilization_sum += gpu_utilization
             if stop_flag.is_set():
                 return
-            sleep(0.1)
+            sleep(1 / checks_per_second)
         if utilization_sum == 0:
             # Print a warning if the GPU utilization is zero
             current_time = datetime.now(my_timezone).strftime("%H:%M:%S")
