@@ -143,7 +143,7 @@ def run_experiment(
 def main() -> None:
     if __debug__:
         # send a warning
-        print("WARING: debug mode is on, only a small subset of the data will be used")
+        warn("Running in debug mode, only a small subset of the data will be used")
     my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
     my_evaluator.PREDICTION_PREFIX = "generated"
     my_evaluator.compute = check_gpu_utilization(my_evaluator.compute, 30)
