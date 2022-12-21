@@ -5,6 +5,7 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
+from warnings import warn
 
 from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor, cat
 from torch.nn import Softmax
@@ -98,7 +99,7 @@ class TextGenerator(Callable, ABC):
         if cuda.is_available():
             self.model = self.model.cuda()
         elif not __debug__:
-            print("Warning: CUDA is not available, using CPU")
+            warn("CUDA is not available, using CPU")
         self.vocab_size = self.tokenizer.vocab_size
         self.temp = temp
         self.group_size = group_size
@@ -126,11 +127,11 @@ class TextGenerator(Callable, ABC):
         raise NotImplementedError
 
     @property
-    def padding_tokens(self):
+    def padding_tokens(self) -> LongTensor:
         pad_id = self.tokenizer.pad_token_id
         if pad_id is None:
             pad_id = 0
-        return [pad_id] * (self.group_size - 1)
+        return ones(self.group_size, dtype=LongTensor) * pad_id
 
     def penalize_logits(self, logits: Tensor, tokens: TokenIDS, generation_start: int) -> Tensor:
         """applies repetition penalty,
@@ -162,6 +163,33 @@ class TextGenerator(Callable, ABC):
             # O(group_size) because we are taking a slice of size group_size
         return logits
 
+    def prepare_model_kwargs(self, tokens: TokenIDS) -> Dict[str, LongTensor]:
+        """preparing the arguments for the model call
+        Args:
+            tokens: the tokens to be sent to the model
+        Returns:
+            a dictionary of the arguments for the model call
+        Complexity: O(group_size + n) where n is the number of tokens
+        """
+        if not isinstance(tokens, Tensor):
+            tokens = LongTensor(tokens)  # O(n)
+        padded_tokens = cat(tokens, self.padding_tokens)
+        # the length of padded_tokens is n + group_size - 1
+        # so creating it is O(n + group_size)
+        attention_len = len(padded_tokens)  # n + group_size - 1
+        if attention_len > self.max_input_len:
+            padded_tokens = padded_tokens[-self.max_input_len:]
+            # O(self.max_input_len) which is constant so O(1)
+        attention_mask = ones([1, attention_len])
+        # O(attention_len) so O(n + group_size)
+        if cuda.is_available():
+            padded_tokens = padded_tokens.cuda()  # O(n + group_size)
+            attention_mask = attention_mask.cuda()  # O(n + group_size)
+        return {
+            "input_ids": padded_tokens,
+            "attention_mask": attention_mask,
+        }
+
     def get_logits_matrix(self, tokens: TokenIDS) -> Tensor:
         """Given a sequence of tokens,
         returns the logits matrix of shape (group_size, vocab_size)
@@ -169,27 +197,12 @@ class TextGenerator(Callable, ABC):
         complexity: O(n^2 + group_size^2) where n is the length of the tokens
         notice that the logits are not divided by the temperature in this function."""
         # define n as the number of tokens in tokens
-        padded_token_list = list(tokens) + self.padding_tokens
-        # the length of padded_token_list is n + group_size - 1
-        if len(padded_token_list) > self.max_input_len:
-            padded_token_list = padded_token_list[-self.max_input_len:]
-        # the length of padded_token_list is now = min(n + group_size - 1, self.max_input_len)
-        # but self.max_input_len is so big that it is unlikely to be reached
-        # so the length of padded_token_list is n + group_size - 1
-        attention_len = len(padded_token_list)
-        longer_token_tensor = LongTensor([padded_token_list])
-        attention_mask = ones([1, attention_len])
-        if cuda.is_available():
-            longer_token_tensor = longer_token_tensor.cuda()
-            attention_mask = attention_mask.cuda()
-        elif not __debug__:
-            print("Warning: CUDA is not available, using CPU")
+        model_kwargs = self.prepare_model_kwargs(tokens)  # O(n + group_size)
         with no_grad():
             # The time complexity of causal language model`s __call__ function
             # is O(n^2) where n is the length of the inputs
             outputs = self.model(
-                input_ids=longer_token_tensor,
-                attention_mask=attention_mask
+                model_kwargs
             )
             # the length of all the inputs is n + group_size - 1
             # so the complexity of this line is O((n + group_size - 1)^2)
