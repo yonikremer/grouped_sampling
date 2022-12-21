@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 import os
-from threading import Thread
+from threading import Thread, Event
 from time import sleep, strftime, localtime
 from pathlib import Path
-from typing import Any, Dict, Tuple, List
+from typing import Any, Dict, Tuple, List, Callable
+from warnings import warn
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
@@ -26,25 +27,45 @@ disable_progress_bar()
 
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
-stop_gpu_check = False
 
 
-def check_gpu_utilization():
-    # Initialize the NVML library
-    nvmlInit()
-    device_index = 0  # index of the GPU device to use
+def check_gpu_utilization(func: Callable) -> Callable:
+    def wrapper(*args, **kwargs):
+        # Initialize the NVML library
+        nvmlInit()
 
-    while not stop_gpu_check:
         # Get the handle to the GPU device
+        device_index = 0  # index of the GPU device to use
         handle = nvmlDeviceGetHandleByIndex(device_index)
 
+        # Start the GPU utilization checking thread
+        stop_flag = Event()
+        utilization_thread = Thread(target=_check_utilization, args=(handle, stop_flag))
+        utilization_thread.start()
+
+        # Run the original function
+        result = func(*args, **kwargs)
+
+        # Stop the GPU utilization checking thread
+        stop_flag.set()
+        utilization_thread.join()
+
+        return result
+
+    return wrapper
+
+
+def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event):
+    while not stop_flag.is_set():
         # Get the GPU utilization using nvidia_smi
         utilization = nvmlDeviceGetUtilizationRates(handle)
         gpu_utilization = utilization.gpu
 
         # Print a warning if the GPU utilization is zero
         if gpu_utilization == 0:
-            print("Warning: GPU utilization is zero", strftime("%H:%M:%S", localtime()))
+            current_time = strftime("%Y-%m-%d %H:%M:%S", localtime())
+            warning_message = f"Warning: GPU utilization is zero at {current_time}"
+            warn(warning_message)
 
         # Sleep for 30 seconds before checking the utilization again
         sleep(30)
@@ -93,6 +114,7 @@ def sub_experiment_half(
     manager.log_sub_experiment(scores, in_lang_code, out_lang_code, sub_set_half)
 
 
+@check_gpu_utilization
 def run_experiment(
         generator: TextGenerator,
         my_evaluator: TranslationEvaluator,
@@ -127,12 +149,7 @@ def main() -> None:
     with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
     curr_text_generator = SamplingGenerator.from_dict(evaluated_text_generator_dict)
-    utilization_thread = Thread(target=check_gpu_utilization)
-    utilization_thread.start()
     run_experiment(curr_text_generator, my_evaluator, sub_sut_names)
-    global stop_gpu_check
-    stop_gpu_check = True
-    utilization_thread.join()
 
 
 if __name__ == "__main__":
