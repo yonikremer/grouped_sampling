@@ -18,10 +18,10 @@ class ExperimentManager:
     df: DataFrame
     language_pairs: Set[Tuple[str, str]] = set()
 
-    def __init__(self, generator: TextGenerator):
+    def __init__(self, generator: TextGenerator, debug: bool):
         self.experiment = Experiment(
             api_key=get_comet_api_key(),
-            project_name=get_project_name(debug=__debug__),
+            project_name=get_project_name(debug=debug),
             auto_param_logging=False,
             auto_metric_logging=False,
             log_code=False,

@@ -123,10 +123,11 @@ def sub_experiment_half(
 def run_experiment(
         generator: TextGenerator,
         my_evaluator: TranslationEvaluator,
-        sub_sut_names: List[str]
+        sub_sut_names: List[str],
+        debug: bool,
 ) -> None:
     generator.task = "translation"
-    manager = ExperimentManager(generator)
+    manager = ExperimentManager(generator, debug=debug)
     for i, sub_set_name in enumerate(sub_sut_names):
         print(f"Running sub-experiment {i + 1} out of {len(sub_sut_names)}")
         subset_part1: Dataset
@@ -135,8 +136,7 @@ def run_experiment(
         language_code2: str
         subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name)
         sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, generator, manager)
-        # noinspection PyUnreachableCode
-        if not __debug__:
+        if not debug:
             sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager)
     manager.end_experiment()
 
@@ -159,12 +159,12 @@ def create_evaluator() -> TranslationEvaluator:
     return my_evaluator
 
 
-def main() -> None:
-    if __debug__:
+def main(debug: bool = __debug__) -> None:
+    if debug:
         # send a warning
         warn("Running in debug mode, only a small subset of the data will be used")
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
-    if __debug__:
+    if debug:
         sub_sut_names = sub_sut_names[:1]
     curr_text_generator = create_text_generator()
     curr_evaluator = create_evaluator()
