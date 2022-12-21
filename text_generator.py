@@ -243,13 +243,6 @@ class TextGenerator(Callable, ABC):
         # We are doing a softmax operator of group_size different vectors of size vocab_size
         # The complexity of the softmax for each vector is O(1) because the size of the vector is constant
         # the complexity of this line is O(group_size) because we are doing group_size softmax operations
-
-        if cuda.is_available():
-            prob_tensor = prob_tensor.cpu().detach()
-            # Coping a tensor so the complexity is O(group_size)
-            cuda.empty_cache()
-        else:
-            warn("CUDA is not available, using CPU")
         return prob_tensor
 
     def get_token_tensor(
