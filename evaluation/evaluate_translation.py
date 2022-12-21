@@ -114,7 +114,6 @@ def sub_experiment_half(
     manager.log_sub_experiment(scores, in_lang_code, out_lang_code, sub_set_half)
 
 
-@check_gpu_utilization
 def run_experiment(
         generator: TextGenerator,
         my_evaluator: TranslationEvaluator,
@@ -142,6 +141,7 @@ def main() -> None:
         print("WARING: debug mode is on, only a small subset of the data will be used")
     my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
     my_evaluator.PREDICTION_PREFIX = "generated"
+    my_evaluator.compute = check_gpu_utilization(my_evaluator.compute)
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
     if __debug__:
         sub_sut_names = sub_sut_names[:1]
