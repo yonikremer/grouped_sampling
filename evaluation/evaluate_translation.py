@@ -168,7 +168,7 @@ def main(debug: bool = __debug__) -> None:
         sub_sut_names = sub_sut_names[:1]
     curr_text_generator = create_text_generator()
     curr_evaluator = create_evaluator()
-    run_experiment(curr_text_generator, curr_evaluator, sub_sut_names)
+    run_experiment(curr_text_generator, curr_evaluator, sub_sut_names, debug)
 
 
 if __name__ == "__main__":
