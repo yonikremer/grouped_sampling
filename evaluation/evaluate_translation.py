@@ -81,7 +81,7 @@ def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, D
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
     # noinspection PyUnreachableCode
-    if __debug__:
+    if debug:
         sub_set = load_dataset(DATASET_NAME, sub_set_name, split="train[:2]")
     else:
         sub_set = load_dataset(DATASET_NAME, sub_set_name, split="train")
@@ -134,10 +134,10 @@ def run_experiment(
         subset_part2: Dataset
         language_code1: str
         language_code2: str
-        subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name)
-        sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, generator, manager, debug)
+        subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name, debug)
+        sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, generator, manager)
         if not debug:
-            sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager, debug)
+            sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager)
     manager.end_experiment()
 
 
