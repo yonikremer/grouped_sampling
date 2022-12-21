@@ -173,20 +173,20 @@ class TextGenerator(Callable, ABC):
         """
         if not isinstance(tokens, Tensor):
             tokens = LongTensor(tokens)  # O(n)
-        padded_tokens = cat((tokens, self.padding_tokens), dim=0)
+        padded_tokens: LongTensor = cat((tokens, self.padding_tokens), dim=0)
         # the length of padded_tokens is n + group_size - 1
         # so creating it is O(n + group_size)
         attention_len = len(padded_tokens)  # n + group_size - 1
         if attention_len > self.max_input_len:
             padded_tokens = padded_tokens[-self.max_input_len:]
             # O(self.max_input_len) which is constant so O(1)
-        attention_mask = ones([1, attention_len])
+        attention_mask: LongTensor = ones([1, attention_len], dtype=long)
         # O(attention_len) so O(n + group_size)
         if cuda.is_available():
             padded_tokens = padded_tokens.cuda()  # O(n + group_size)
             attention_mask = attention_mask.cuda()  # O(n + group_size)
         return {
-            "input_ids": padded_tokens,
+            "input_ids": padded_tokens.unsqueeze(0),
             "attention_mask": attention_mask,
         }
 
