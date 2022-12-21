@@ -66,7 +66,7 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, int
     while not stop_flag.is_set():
         # Get the GPU utilization using nvidia_smi
         utilization_sum = 0.0
-        for _ in range(interval):
+        for _ in range(interval * 10):
             utilization = nvmlDeviceGetUtilizationRates(handle)
             gpu_utilization = utilization.gpu
             utilization_sum += gpu_utilization
