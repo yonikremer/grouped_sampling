@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 import os
 from threading import Thread, Event
-from time import sleep, strftime, localtime
+from time import sleep
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Tuple, List, Callable
 from warnings import warn
@@ -27,6 +28,7 @@ disable_progress_bar()
 
 DATASET_NAME = "ted_talks_iwslt"
 METRIC_NAME = "bertscore"
+my_timezone = timezone("Asia/Jerusalem")
 
 
 def check_gpu_utilization(func: Callable) -> Callable:
@@ -63,9 +65,8 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event):
 
         # Print a warning if the GPU utilization is zero
         if gpu_utilization == 0:
-            current_time = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            warning_message = f"GPU utilization is zero at {current_time}"
-            warn(warning_message)
+            current_time = datetime.now(my_timezone).strftime("%H:%M:%S")
+            warn(f"GPU utilization is zero at {current_time}")
 
         # Sleep for 30 seconds before checking the utilization again
         sleep(30)
