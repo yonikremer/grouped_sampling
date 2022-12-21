@@ -202,7 +202,7 @@ class TextGenerator(Callable, ABC):
             # The time complexity of causal language model`s __call__ function
             # is O(n^2) where n is the length of the inputs
             outputs = self.model(
-                model_kwargs
+                **model_kwargs
             )
             # the length of all the inputs is n + group_size - 1
             # so the complexity of this line is O((n + group_size - 1)^2)
