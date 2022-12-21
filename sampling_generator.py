@@ -1,6 +1,5 @@
 import heapq
 from collections.abc import Iterator
-from multiprocessing import Pool, cpu_count
 from random import seed
 from typing import Callable, List, Dict, Optional, Any
 
@@ -196,9 +195,7 @@ class SamplingGenerator(TextGenerator):
         prob_mat.cpu()
         # coping a tensor of size (group_size, vocab_size)
         # so the complexity is O(group_size) (vocab_size is constant)
-        num_processes = min(self.group_size, cpu_count())
-        with Pool(processes=num_processes) as p:
-            new_group: List[int] = p.map(self.sampling_func, prob_mat)
+        new_group: List[int] = [self.sampling_func(prob_vec) for prob_vec in prob_mat]
         # the complexity of the loop is O(group_size)
         # because self.sampling_func gets a tensor of constant size (vocab_size,)
         # and therefore must be O(1) in complexity
