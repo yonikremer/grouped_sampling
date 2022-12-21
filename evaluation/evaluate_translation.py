@@ -77,7 +77,7 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, int
             warn(f"GPU utilization is zero at {current_time}")
 
 
-def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
+def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
     # noinspection PyUnreachableCode
@@ -135,9 +135,9 @@ def run_experiment(
         language_code1: str
         language_code2: str
         subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name)
-        sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, generator, manager)
+        sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, generator, manager, debug)
         if not debug:
-            sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager)
+            sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager, debug)
     manager.end_experiment()
 
 
