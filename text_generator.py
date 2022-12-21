@@ -7,7 +7,7 @@ from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
 from warnings import warn
 
-from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor, cat
+from torch import LongTensor, ones, cuda, tensor, no_grad, Tensor, cat, long
 from torch.nn import Softmax
 from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
@@ -131,7 +131,7 @@ class TextGenerator(Callable, ABC):
         pad_id = self.tokenizer.pad_token_id
         if pad_id is None:
             pad_id = 0
-        return ones(self.group_size, dtype=LongTensor) * pad_id
+        return ones(self.group_size, dtype=long) * pad_id
 
     def penalize_logits(self, logits: Tensor, tokens: TokenIDS, generation_start: int) -> Tensor:
         """applies repetition penalty,
