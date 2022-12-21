@@ -75,7 +75,7 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, int
                 current_time = datetime.now(my_timezone).strftime("%H:%M:%S")
                 warn(f"GPU utilization is zero at {current_time}")
 
-            sleep(1)
+            sleep(0.1)
 
 
 def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
