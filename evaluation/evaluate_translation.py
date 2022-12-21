@@ -31,7 +31,9 @@ METRIC_NAME = "bertscore"
 my_timezone = timezone("Asia/Jerusalem")
 
 
-def check_gpu_utilization(func: Callable) -> Callable:
+def check_gpu_utilization(func: Callable, interval: float | int = 30) -> Callable:
+    """A decorator that checks the GPU utilization during the execution of the wrapped function
+    And prints a warning if it is zero"""
     def wrapper(*args, **kwargs):
         # Initialize the NVML library
         nvmlInit()
@@ -42,7 +44,7 @@ def check_gpu_utilization(func: Callable) -> Callable:
 
         # Start the GPU utilization checking thread
         stop_flag = Event()
-        utilization_thread = Thread(target=_check_utilization, args=(handle, stop_flag))
+        utilization_thread = Thread(target=_check_utilization, args=(handle, stop_flag, interval))
         utilization_thread.start()
 
         # Run the original function
@@ -57,7 +59,9 @@ def check_gpu_utilization(func: Callable) -> Callable:
     return wrapper
 
 
-def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event):
+def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, interval: float | int) -> None:
+    """A thread that checks the GPU utilization every interval seconds
+     during the execution of the wrapped function"""
     while not stop_flag.is_set():
         # Get the GPU utilization using nvidia_smi
         utilization = nvmlDeviceGetUtilizationRates(handle)
@@ -68,8 +72,8 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event):
             current_time = datetime.now(my_timezone).strftime("%H:%M:%S")
             warn(f"GPU utilization is zero at {current_time}")
 
-        # Sleep for 30 seconds before checking the utilization again
-        sleep(30)
+        # Sleep for interval seconds before checking the utilization again
+        sleep(interval)
 
 
 def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
@@ -142,7 +146,7 @@ def main() -> None:
         print("WARING: debug mode is on, only a small subset of the data will be used")
     my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
     my_evaluator.PREDICTION_PREFIX = "generated"
-    my_evaluator.compute = check_gpu_utilization(my_evaluator.compute)
+    my_evaluator.compute = check_gpu_utilization(my_evaluator.compute, 30)
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
     if __debug__:
         sub_sut_names = sub_sut_names[:1]
