@@ -30,9 +30,9 @@ disable_progress_bar()
 DATASET_NAME = "ted_talks_iwslt"
 
 
-def check_gpu_utilization(func: Callable, interval: float | int = 30) -> Callable:
+def check_gpu_utilization(func: Callable, interval: int = 30) -> Callable:
     """A decorator that checks the GPU utilization during the execution of the wrapped function
-    And prints a warning if it is zero"""
+    And prints a warning if it is zero for interval consecutive seconds"""
     def wrapper(*args, **kwargs):
         # Initialize the NVML library
         nvmlInit()
@@ -58,22 +58,24 @@ def check_gpu_utilization(func: Callable, interval: float | int = 30) -> Callabl
     return wrapper
 
 
-def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, interval: float | int) -> None:
-    """A thread that checks the GPU utilization every interval seconds
-     during the execution of the wrapped function"""
+def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, interval: int) -> None:
+    """A thread that checks the GPU utilization every second
+     during the execution of the wrapped function
+     and sends a warning if the gpu utilization is zero for interval seconds"""
     my_timezone = timezone("Asia/Jerusalem")
     while not stop_flag.is_set():
         # Get the GPU utilization using nvidia_smi
-        utilization = nvmlDeviceGetUtilizationRates(handle)
-        gpu_utilization = utilization.gpu
+        utilization_sum = 0.0
+        for _ in range(interval):
+            utilization = nvmlDeviceGetUtilizationRates(handle)
+            gpu_utilization = utilization.gpu
+            utilization_sum += gpu_utilization
+            # Print a warning if the GPU utilization is zero
+            if utilization_sum == 0:
+                current_time = datetime.now(my_timezone).strftime("%H:%M:%S")
+                warn(f"GPU utilization is zero at {current_time}")
 
-        # Print a warning if the GPU utilization is zero
-        if gpu_utilization == 0:
-            current_time = datetime.now(my_timezone).strftime("%H:%M:%S")
-            warn(f"GPU utilization is zero at {current_time}")
-
-        # Sleep for interval seconds before checking the utilization again
-        sleep(interval)
+            sleep(1)
 
 
 def process_translation_data(sub_set_name: str) -> Tuple[Dataset, Dataset, str, str]:
