@@ -72,7 +72,7 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, int
             gpu_utilization = utilization.gpu
             utilization_sum += gpu_utilization
             if stop_flag.is_set():
-                return
+                break
             sleep(1 / checks_per_second)
         if utilization_sum == 0:
             # Print a warning if the GPU utilization is zero
@@ -150,6 +150,7 @@ def create_text_generator() -> TextGenerator:
     with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
     my_generator = SamplingGenerator.from_dict(evaluated_text_generator_dict)
+    my_generator.get_logits_matrix = check_gpu_utilization(my_generator.get_logits_matrix)
     return my_generator
 
 
@@ -158,7 +159,6 @@ def create_evaluator() -> TranslationEvaluator:
     METRIC_NAME = "bertscore"
     my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
     my_evaluator.PREDICTION_PREFIX = "generated"
-    my_evaluator.compute = check_gpu_utilization(my_evaluator.compute, 30)
     return my_evaluator
 
 
