@@ -27,8 +27,6 @@ from datasets.utils.logging import disable_progress_bar
 disable_progress_bar()
 
 DATASET_NAME = "ted_talks_iwslt"
-METRIC_NAME = "bertscore"
-my_timezone = timezone("Asia/Jerusalem")
 
 
 def check_gpu_utilization(func: Callable, interval: float | int = 30) -> Callable:
@@ -62,6 +60,7 @@ def check_gpu_utilization(func: Callable, interval: float | int = 30) -> Callabl
 def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event, interval: float | int) -> None:
     """A thread that checks the GPU utilization every interval seconds
      during the execution of the wrapped function"""
+    my_timezone = timezone("Asia/Jerusalem")
     while not stop_flag.is_set():
         # Get the GPU utilization using nvidia_smi
         utilization = nvmlDeviceGetUtilizationRates(handle)
@@ -151,6 +150,7 @@ def create_text_generator() -> TextGenerator:
 
 def create_evaluator() -> TranslationEvaluator:
     """Creates a translation evaluator"""
+    METRIC_NAME = "bertscore"
     my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
     my_evaluator.PREDICTION_PREFIX = "generated"
     my_evaluator.compute = check_gpu_utilization(my_evaluator.compute, 30)
