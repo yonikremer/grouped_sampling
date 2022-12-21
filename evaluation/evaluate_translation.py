@@ -4,7 +4,8 @@ import json
 import os
 from threading import Thread, Event
 from time import sleep
-from datetime import datetime, timezone
+from pytz import timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Tuple, List, Callable
 from warnings import warn
