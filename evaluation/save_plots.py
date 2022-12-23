@@ -12,16 +12,14 @@ stat_names = tuple(stat_name for stat_name, _ in STAT_NAME_TO_FUNC)
 metric_names = BERT_SCORES
 USERNAME: str = "yonikremer"
 X_LABEL = "group size"
-PLOTS_FOLDER = join(dirname(abspath(__file__)), "plots", "second_part")
+PLOTS_FOLDER = join(dirname(abspath(__file__)), "plots", "third_part")
 
 plt.autoscale(False)
 
 
 def experiment_filter(exp: APIExperiment) -> bool:
-    try:
-        return get_parameter(exp, "answer_length_multiplier") == "1.25"
-    except RuntimeError:
-        return False
+    # return true if the experiment have a tag that says "third part"
+    return "third part" in exp.get_tags()
 
 
 def get_relevant_experiments() -> List[APIExperiment]:
