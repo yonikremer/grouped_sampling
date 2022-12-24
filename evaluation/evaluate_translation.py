@@ -12,7 +12,7 @@ from datasets import load_dataset, Dataset, get_dataset_config_names
 from nvidia_smi import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtilizationRates
 
 from evaluation.experiment_manager import ExperimentManager
-from evaluation.helpers import lang_code_to_name
+from evaluation import lang_code_to_name
 from sampling_generator import SamplingGenerator
 from text_generator import TextGenerator
 

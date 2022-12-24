@@ -23,6 +23,7 @@ STAT_NAME_TO_FUNC: Tuple[Tuple[str, Callable[[Series], float]]] = (
         )
 
 BERT_SCORES = ("BERT_f1", "BERT_precision", "BERT_recall")
+WORKSPACE = USERNAME = "yonikremer"
 
 
 def lang_code_to_name(language_code: str) -> str:

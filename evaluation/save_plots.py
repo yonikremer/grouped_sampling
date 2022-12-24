@@ -5,12 +5,11 @@ from typing import List, Dict, Optional
 from comet_ml import API, APIExperiment
 from matplotlib import pyplot as plt
 
-from helpers import STAT_NAME_TO_FUNC, BERT_SCORES, get_project_name, get_comet_api_key
+from evaluation import STAT_NAME_TO_FUNC, BERT_SCORES, get_project_name, get_comet_api_key, WORKSPACE
 
 api = API(api_key=get_comet_api_key())
 stat_names = tuple(stat_name for stat_name, _ in STAT_NAME_TO_FUNC)
 metric_names = BERT_SCORES
-USERNAME: str = "yonikremer"
 X_LABEL = "group size"
 PLOTS_FOLDER = join(dirname(abspath(__file__)), "plots", "third_part")
 
@@ -24,7 +23,7 @@ def experiment_filter(exp: APIExperiment) -> bool:
 
 def get_relevant_experiments() -> List[APIExperiment]:
     all_experiments: List[APIExperiment] = api.get_experiments(
-        workspace=USERNAME,
+        workspace=WORKSPACE,
         project_name=get_project_name(debug=False),
         pattern=None
     )
