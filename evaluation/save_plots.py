@@ -27,7 +27,8 @@ def get_relevant_experiments() -> List[APIExperiment]:
         project_name=get_project_name(debug=False),
         pattern=None
     )
-    return [exp for exp in all_experiments if experiment_filter(exp)]
+    unsorted_relevant_experiments = (exp for exp in all_experiments if experiment_filter(exp))
+    return sorted(unsorted_relevant_experiments, key=lambda exp: get_duration(exp))
 
 
 def get_parameter(experiment: APIExperiment, parameter_name: str) -> Optional[str]:
@@ -71,6 +72,7 @@ def plot_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
             color=curr_color,
             label=curr_metric_name,
         )
+    plt.xscale("log")
     plt.legend()
     plt.ylim(0, 1)
     plt.xlabel(X_LABEL)
@@ -116,6 +118,7 @@ def plot_duration():
         group_size_to_duration.keys(),
         group_size_to_duration.values(),
     )
+    plt.xscale("log")
     plt.xlabel(X_LABEL)
     y_label = "experiment duration in hours"
     plt.ylabel(y_label)
