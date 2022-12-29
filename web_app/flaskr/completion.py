@@ -1,4 +1,5 @@
 """Contains the functions for the completion page and the completion blueprint"""
+from __future__ import annotations
 
 from dataclasses import dataclass
 from sqlite3 import Connection
@@ -124,12 +125,16 @@ def create():
                 top_k=new_request['top_k'],
                 temp=new_request['temperature']
         )
-        raw_answers: List[CompletionDict] = text_generator(
+        raw_answers: CompletionDict | List[CompletionDict] = text_generator(
             prompt_s=new_request['prompt'],
             max_new_tokens=new_request['num_tokens'],
             num_return_sequences=new_request['num_return_sequences'],
+            return_full_text=False,
         )
-        text_answers: List[str] = [raw_answer['generated_text'] for raw_answer in raw_answers]
+        if new_request['num_return_sequences'] == 1:
+            text_answers: List[str] = [raw_answers['generated_text']]
+        else:
+            text_answers: List[str] = [raw_answer['generated_text'] for raw_answer in raw_answers]
         completions: List[CompletionData]
         completions = [CompletionData(
             prompt=new_request['prompt'],
