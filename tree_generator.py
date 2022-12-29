@@ -6,7 +6,8 @@ from typing import List, Dict, Tuple, Sequence, Any, Optional
 
 from torch import Tensor
 
-from text_generator import TextGenerator, NoCompletionsFound, GenerationType, TokenIDS
+from __init__ import GenerationType, TokenIDS, NoCompletionsFound
+from text_generator import TextGenerator
 
 
 class TreeGenerator(TextGenerator):
@@ -18,30 +19,17 @@ class TreeGenerator(TextGenerator):
     unique_attrs = "top_k", "top_p"
 
     def __init__(self, top_k: Optional[int], top_p: Optional[float], *args, **kwargs):
+        self.top_p = top_p
+        self.top_k = top_k
         super().__init__(
             *args, **kwargs
         )
-        self.top_p = top_p
-        self.top_k = top_k
 
     @property
     def generation_type(self) -> GenerationType:
-        top_p, top_k = self.top_p, self.top_k
-        if top_k is None and top_p is None:
-            self.top_k = self.vocab_size
-            self.top_p = 1.0
-            return GenerationType.TREE
-        if top_k == 1 or top_p == 0.0:
+        if self.top_k == 1 or self.top_p == 0.0:
             return GenerationType.GREEDY
-        if top_k is not None:
-            if top_k < self.vocab_size:
-                return GenerationType.TOP_K
-            return GenerationType.TREE
-        if top_p is not None:
-            if top_p < 1.0:
-                return GenerationType.TOP_P
-            return GenerationType.TREE
-        raise RuntimeError("Uncovered case in generation_type property")
+        return GenerationType.TREE
 
     @property
     def actual_top_k(self) -> int:
@@ -198,7 +186,7 @@ class TreeGenerator(TextGenerator):
         if self.end_of_sentence_id in org_prompt:  # O(n)
             end_of_sentence_index = org_prompt.index(self.end_of_sentence_id)  # O(n)
             return {tuple(org_prompt[:end_of_sentence_index]): org_prompt_prob}  # O(n)
-        prob_mat: Tensor = self.get_prob_mat(org_prompt, prompt_length)  # O(n^2 + group_size^2)
+        prob_mat: Tensor = self.wrapped_model.get_prob_mat(org_prompt, prompt_length)  # O(n^2 + group_size^2)
         tokenized_ans_list: List[List[int]] = self.generate_group(prob_mat, org_prompt)  # O(group_size)
         # tokenized_ans_list maximum length is actual_top_k ** group_size
         prob_list: List[float]
