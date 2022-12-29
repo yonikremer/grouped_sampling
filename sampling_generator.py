@@ -89,9 +89,9 @@ class SamplingGenerator(TextGenerator):
 
     def __init__(self, top_k: Optional[int] = None,
                  top_p: Optional[float] = None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.top_p = top_p
         self.top_k = top_k
+        super().__init__(*args, **kwargs)
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -216,7 +216,7 @@ class SamplingGenerator(TextGenerator):
             for _ in range(num_new_tokens // self.group_size):
                 # and each iteration is O(n ^ 2 + l ^ 2 + group_size ^ 2 + group_size)
                 # so the complexity of the loop is O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
-                prob_mat: Tensor = self.get_prob_mat(curr_token_list, len(tokenized_prompt))
+                prob_mat: Tensor = self.wrapped_model.get_prob_mat(curr_token_list, len(tokenized_prompt))
                 # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
                 # len(curr_token_list) <= n + l
                 # so the complexity is O(group_size ^ 2 + (n + l) ^ 2) = O(n ^ 2 + nl + l ^ 2 + group_size ^ 2)
