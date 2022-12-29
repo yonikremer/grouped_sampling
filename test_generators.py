@@ -8,7 +8,8 @@ from torch import Tensor, equal
 
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
-from text_generator import TextGenerator, CompletionDict, GenerationType
+from __init__ import CompletionDict, GenerationType
+from text_generator import TextGenerator
 
 MODEL_NAME = "gpt2"
 GROUP_SIZES = 3, 1
