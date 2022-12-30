@@ -15,6 +15,7 @@ from transformers.tokenization_utils_base import TruncationStrategy
 
 from model_wrapper import ModelWrapper
 from globals import TokenIDS, GenerationType, CompletionDict
+from repetition_penalty import repetition_penalty_factory
 
 MAX_MODEL_INPUT_SIZE = 8192
 
@@ -22,6 +23,7 @@ MAX_MODEL_INPUT_SIZE = 8192
 def remove_nones(d: Dict[str, Any]) -> Dict[str, Any]:
     """Returns a copy of a dictionary with all the not None values"""
     return {key: d[key] for key in d.keys() if d[key] is not None}
+
 
 class TextGenerator(Callable, ABC):
     """An abstract base class for
@@ -87,7 +89,7 @@ class TextGenerator(Callable, ABC):
             "max_input_len": max_input_len,
             "end_of_sentence_id": end_of_sentence_id,
             "end_of_sentence_stop": end_of_sentence_stop,
-            "repetition_penalty_theta": repetition_penalty_theta,
+            "repetition_penalty_strategy": repetition_penalty_factory(repetition_penalty_theta),
             "padding_id": self.padding_id,
             "temp": temp,
             "use_softmax": self.generation_type.requires_softmax(),
