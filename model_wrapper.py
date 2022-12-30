@@ -10,6 +10,7 @@ from globals import TokenIDS
 
 
 class RepetitionPenaltyStrategy(ABC):
+    theta: float
 
     @staticmethod
     def get_already_generated_tokens(tokens: TokenIDS, generation_start: int) -> Set[int]:
@@ -21,8 +22,6 @@ class RepetitionPenaltyStrategy(ABC):
 
 
 class LogitScalingRepetitionPenalty(RepetitionPenaltyStrategy):
-    theta: float
-
     def __init__(self, theta: float):
         if theta <= 1:
             raise ValueError("Theta must be > 1")
@@ -57,12 +56,13 @@ class LogitScalingRepetitionPenalty(RepetitionPenaltyStrategy):
 
 
 class NoRepetitionPenalty(RepetitionPenaltyStrategy):
+    theta = 1.0
+
     def __call__(self, logits: Tensor, tokens: TokenIDS, generation_start: int) -> Tensor:
         return logits
 
 
 class ModelWrapper:
-    repetition_penalty_theta: float
     padding_id: int
     max_input_len: int
     model: PreTrainedModel
@@ -73,7 +73,6 @@ class ModelWrapper:
     temp: float
     logit_penalty_strategy: LogitScalingRepetitionPenalty
     descriptive_attrs = (
-        "repetition_penalty_theta",
         "group_size",
         "end_of_sentence_stop",
         "temp",
@@ -113,8 +112,6 @@ class ModelWrapper:
             self.logit_penalty_strategy = NoRepetitionPenalty()
         elif repetition_penalty_theta > 1:
             self.logit_penalty_strategy = LogitScalingRepetitionPenalty(repetition_penalty_theta)
-        else:
-            raise ValueError("Repetition penalty theta must be >= 1")
         self.group_size = group_size
         self.max_input_len = max_input_len
         self.padding_id = padding_id
@@ -124,6 +121,10 @@ class ModelWrapper:
         self.vocab_size = vocab_size
         if cuda.is_available():
             self.model = self.model.cuda()
+
+    @property
+    def repetition_penalty_theta(self):
+        return self.logit_penalty_strategy.theta
 
     @property
     def padding_tokens(self) -> LongTensor:

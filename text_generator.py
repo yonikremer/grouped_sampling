@@ -19,6 +19,10 @@ from globals import TokenIDS, GenerationType, CompletionDict
 MAX_MODEL_INPUT_SIZE = 8192
 
 
+def remove_nones(d: Dict[str, Any]) -> Dict[str, Any]:
+    """Returns a copy of a dictionary with all the not None values"""
+    return {key: d[key] for key in d.keys() if d[key] is not None}
+
 class TextGenerator(Callable, ABC):
     """An abstract base class for
     A callable object that given a func_prompt
@@ -77,18 +81,19 @@ class TextGenerator(Callable, ABC):
                 raise ValueError(
                     "The maximum length of the model is too big"
                 )
-        self.wrapped_model = ModelWrapper(
-            model_name=model_name,
-            group_size=group_size,
-            max_input_len=max_input_len,
-            end_of_sentence_id=end_of_sentence_id,
-            end_of_sentence_stop=end_of_sentence_stop,
-            repetition_penalty_theta=repetition_penalty_theta,
-            padding_id=self.padding_id,
-            temp=temp,
-            use_softmax=self.generation_type.requires_softmax(),
-            vocab_size=self.tokenizer.vocab_size,
-        )
+        wrapped_model_kwargs: Dict[str, Any] = {
+            "model_name": model_name,
+            "group_size": group_size,
+            "max_input_len": max_input_len,
+            "end_of_sentence_id": end_of_sentence_id,
+            "end_of_sentence_stop": end_of_sentence_stop,
+            "repetition_penalty_theta": repetition_penalty_theta,
+            "padding_id": self.padding_id,
+            "temp": temp,
+            "use_softmax": self.generation_type.requires_softmax(),
+            "vocab_size": self.tokenizer.vocab_size,
+        }
+        self.wrapped_model = ModelWrapper(**remove_nones(wrapped_model_kwargs))
         self.answer_length_multiplier = answer_length_multiplier
 
     @property
