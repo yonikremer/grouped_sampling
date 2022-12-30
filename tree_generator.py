@@ -153,7 +153,6 @@ class TreeGenerator(TextGenerator):
                 # we sample the most probable token
                 highest_prob_token_id = int(sorted_indexed_prob[0][1].item())  # O(1)
                 curr_indices.append(highest_prob_token_id)  # O(1)
-            assert all(isinstance(token_id, int) for token_id in curr_indices), ""
             possible_tokens.append(curr_indices)  # O(1)
         # possible_tokens maximum size is group_size * k
         new_sequences: List[List[int]]

@@ -53,7 +53,6 @@ class ModelWrapper:
             **kwargs: the arguments to be passed to the model
         Complexity: O(1)
         """
-        assert isinstance(padding_id, int)
         self.use_softmax = use_softmax
         self.end_of_sentence_id = end_of_sentence_id
         self.repetition_penalty_theta = repetition_penalty_theta if repetition_penalty_theta is not None else 1.2
