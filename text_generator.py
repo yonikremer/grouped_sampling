@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import timeit
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
@@ -13,7 +14,7 @@ from transformers import (AutoTokenizer,
 from transformers.tokenization_utils_base import TruncationStrategy
 
 from model_wrapper import ModelWrapper
-from __init__ import TokenIDS, GenerationType, CompletionDict
+from globals import TokenIDS, GenerationType, CompletionDict
 
 MAX_MODEL_INPUT_SIZE = 8192
 
@@ -30,17 +31,8 @@ class TextGenerator(Callable, ABC):
     model_name: str
     tokenizer: PreTrainedTokenizer
     wrapped_model: ModelWrapper
-    vocab_size: int
-    temp: float
-    group_size: int
-    padding_tokens: List[int]
-    generation_type: GenerationType
-    end_of_sentence_id: Optional[int]
-    end_of_sentence_stop: bool
-    max_input_len: int
     framework: str = "pt"
     answer_length_multiplier: float = 16
-    repetition_penalty_theta: float = 1.2
     descriptive_attrs = (
         "model_name",
         "generation_type",
@@ -48,12 +40,15 @@ class TextGenerator(Callable, ABC):
         "wrapped_model",
     )
 
-    def __init__(self, model_name: str, group_size: int,
-                 temp: float,
-                 end_of_sentence_stop: bool,
-                 repetition_penalty_theta: float,
-                 answer_length_multiplier: float = 16,
-                 ):
+    def __init__(
+            self,
+            model_name: str,
+            group_size: int,
+            temp: Optional[float] = None,
+            end_of_sentence_stop: Optional[bool] = None,
+            repetition_penalty_theta: Optional[float] = None,
+            answer_length_multiplier: float = 16,
+    ):
         """Model name: the name of the model
         used for loading from hugging face hub
         group size: int
@@ -89,11 +84,25 @@ class TextGenerator(Callable, ABC):
             end_of_sentence_id=end_of_sentence_id,
             end_of_sentence_stop=end_of_sentence_stop,
             repetition_penalty_theta=repetition_penalty_theta,
-            padding_id=self.tokenizer.pad_token_id,
+            padding_id=self.padding_id,
             temp=temp,
             use_softmax=self.generation_type.requires_softmax(),
+            vocab_size=self.tokenizer.vocab_size,
         )
         self.answer_length_multiplier = answer_length_multiplier
+
+    @property
+    def padding_id(self) -> int:
+        padding_id = self.tokenizer.pad_token_id
+        if not isinstance(padding_id, int):
+            padding_id = self.tokenizer.unk_token_id
+        if not isinstance(padding_id, int):
+            padding_id = self.tokenizer.mask_token_id
+        if not isinstance(padding_id, int):
+            padding_id = self.tokenizer.mask_token_id
+        if not isinstance(padding_id, int):
+            raise RuntimeError(f"padding_id is {padding_id} and its type is {type(padding_id)}")
+        return padding_id
 
     @property
     @abstractmethod
@@ -118,7 +127,7 @@ class TextGenerator(Callable, ABC):
             padding=False,
             add_special_tokens=False,
             truncation=truncation,
-            max_length=self.max_input_len,
+            max_length=self.wrapped_model.max_input_len,
         )
         if isinstance(tokenized_text, dict) or isinstance(tokenized_text, BatchEncoding):
             token_tensor: LongTensor = tokenized_text["input_ids"]
@@ -157,13 +166,13 @@ class TextGenerator(Callable, ABC):
             'b' is the number of characters in the prompt
             'c' is the number of characters in the postfix"""
 
-        prefix_tokens = self.get_token_tensor(prefix, truncation)
+        prefix_tokens: LongTensor = self.get_token_tensor(prefix, truncation)
         # O(A) where A is the number of characters in the prefix.
-        postfix_tokens = self.get_token_tensor(postfix, truncation)
+        postfix_tokens: LongTensor = self.get_token_tensor(postfix, truncation)
         # O(B) where B is the number of characters in the postfix.
-        prompt_tokens = self.get_token_tensor(prompt, truncation)
+        prompt_tokens: LongTensor = self.get_token_tensor(prompt, truncation)
         # O(C) where C is the number of characters in the prompt.
-        token_tensor = cat((prefix_tokens, prompt_tokens, postfix_tokens))
+        token_tensor: LongTensor = cat((prefix_tokens, prompt_tokens, postfix_tokens))
         # O( + b + c) where 'a' is the number of tokens in the prefix.
         # 'b' is the number of tokens in the prompt.
         # 'c' is the number of tokens in the postfix.
@@ -292,7 +301,7 @@ class TextGenerator(Callable, ABC):
               ids of the generated text.
             """
 
-        if max_new_tokens is None and not self.end_of_sentence_stop:
+        if max_new_tokens is None and not self.wrapped_model.end_of_sentence_stop:
             raise ValueError("max_new_tokens must be given if end_of_sentence_stop is False")
         if isinstance(prompt_s, list):
             return [self.__call__(
@@ -369,4 +378,51 @@ class TextGenerator(Callable, ABC):
         The dictionary should have the same format as the dictionary returned by the as_dict method"""
         if "generation_type" in my_dict.keys():
             my_dict.pop("generation_type")
+        wrapped_model: ModelWrapper = my_dict.pop("wrapped_model")
+        wrapped_model_dict = wrapped_model.as_dict()
+        my_dict.update(wrapped_model_dict)
         return cls(**my_dict)
+
+
+class NoCompletionsFound(Exception):
+    def __init__(
+            self,
+            curr_text_generator: TextGenerator,
+            additional_info: str = ""):
+        super(NoCompletionsFound, self).__init__(
+            f"text generator: {curr_text_generator} \n"
+            f"additional info: {additional_info}")
+
+
+def compare_generators(
+        non_grouped_generator: TextGenerator,
+        prompt: str,
+        num_tokens: int,
+        group_size: int):
+    """Compares grouped and non-grouped text generators"""
+    print(f"Your prompt:")
+    print(prompt)
+
+    start_non_grouped = timeit.default_timer()
+    non_grouped_ans: str = non_grouped_generator(
+        prompt_s=prompt,
+        max_new_tokens=num_tokens
+    )["generated_text"]
+    stop_non_grouped = timeit.default_timer()
+    non_grouped_time = stop_non_grouped - start_non_grouped
+    print(f"Text generated by Non grouped sampling"
+          f" in {non_grouped_time} seconds:")
+    print(non_grouped_ans)
+
+    non_grouped_generator.group_size = group_size
+    grouped_generator = non_grouped_generator
+    start_grouped_generation = timeit.default_timer()
+    grouped_ans: str = grouped_generator(
+        prompt_s=prompt,
+        max_new_tokens=num_tokens
+    )["generated_text"]
+    stop_grouped_generation = timeit.default_timer()
+    grouped_time = stop_grouped_generation - start_grouped_generation
+    print(f"Text generated by grouped sampling"
+          f" in {grouped_time} seconds:")
+    print(grouped_ans)

@@ -4,10 +4,10 @@ import sys
 from math import ceil
 from typing import List, Dict, Tuple, Sequence, Any, Optional
 
-from torch import Tensor
+from torch import Tensor, LongTensor
 
-from __init__ import GenerationType, TokenIDS, NoCompletionsFound
-from text_generator import TextGenerator
+from globals import GenerationType, TokenIDS
+from text_generator import TextGenerator, NoCompletionsFound
 
 
 class TreeGenerator(TextGenerator):
@@ -35,7 +35,7 @@ class TreeGenerator(TextGenerator):
     def actual_top_k(self) -> int:
         """The maximum number of tokens to consider for each position
         It is always smaller than or equal to the vocab size"""
-        return min(self.top_k, int(self.vocab_size * self.top_p))
+        return min(self.top_k, int(self.tokenizer.vocab_size * self.top_p))
 
     @staticmethod
     def no_duplicates(
@@ -84,7 +84,6 @@ class TreeGenerator(TextGenerator):
             self,
             completions: List[List[int]],
             probs: List[float],
-            prompt_length: int
     ) -> Dict[Tuple[int], float]:
         """Given a list of tokenized answers
          and the probability of each completion,
@@ -94,17 +93,14 @@ class TreeGenerator(TextGenerator):
         filtered_completions: Dict[Tuple[int], float]
         filtered_completions = dict()
         for curr_comp, curr_prob in zip(completions, probs):
-            if self.end_of_sentence_id in curr_comp:  # complexity: O(m) where m is the length of the sequence
-                end_of_sentence_index = curr_comp.index(self.end_of_sentence_id)
+            if self.wrapped_model.end_of_sentence_id in curr_comp:
+                # complexity: O(m) where m is the length of the sequence
+                end_of_sentence_index = curr_comp.index(self.wrapped_model.end_of_sentence_id)
                 # complexity: O(m)
-                completion_body = curr_comp[prompt_length:end_of_sentence_index]
+                curr_comp = curr_comp[:end_of_sentence_index + 1]
                 # complexity: O(m)
-            else:
-                completion_body = curr_comp[prompt_length:]
-                # complexity: O(prompt_length)
-            if len(completion_body) == len(set(completion_body)):  # complexity: O(m)
-                curr_comp_tuple = tuple(curr_comp)  # complexity: O(m)
-                filtered_completions[curr_comp_tuple] = curr_prob  # complexity: O(1)
+            curr_comp_tuple = tuple(curr_comp)  # complexity: O(m)
+            filtered_completions[curr_comp_tuple] = curr_prob  # complexity: O(1)
         if len(filtered_completions) == 0:  # complexity: O(1)
             raise NoCompletionsFound(self, f"all completions contained duplicates, "
                                            f"completions: {completions}")
@@ -132,31 +128,32 @@ class TreeGenerator(TextGenerator):
         possible_tokens: List[List[int]] = []  # complexity: O(1)
         for token_prob in prob_mat:  # group_size times
             token_prob: Tensor  # token_prob.shape is (vocab_size,)
-            indexed_prob = list(
-                zip(token_prob, range(self.vocab_size)))
-            # O(vocab_size) so O(1)
-            sorted_indexed_prob = sorted(indexed_prob, key=lambda x: x[0], reverse=True)
+            indexed_prob = enumerate(token_prob)
+            # creating an enumerator so the complexity is O(1)
+            sorted_indexed_prob: List[Tuple[int, Tensor]] = list(sorted(indexed_prob, key=lambda x: x[0], reverse=True))
             # O(vocab_size*log(vocab_size)) so O(1)
             curr_k = 0
             total_prob = 0
             curr_indices: List[int] = []
+            token: LongTensor
             for prob, token in sorted_indexed_prob:  # constant (vocab_size) iterations
                 # O(TOP_K)
+                token_id: int = int(token.item())
                 top_p_break: bool = total_prob + prob > self.top_p
                 top_k_break: bool = curr_k == self.top_k
                 if top_p_break or top_k_break:
                     break
                 curr_k += 1
                 total_prob += prob
-                curr_indices.append(token)  # O(1)
+                curr_indices.append(token_id)  # O(1)
             # the complexity of this loop is O(1)
             # curr_indices maximum length is max(top_k, vocab_size * top_p) and I will call it actual_top_k
             if len(curr_indices) == 0:
                 # If we didn't find any tokens to sample from,
                 # we sample the most probable token
-                highest_prob_token_id = sorted_indexed_prob[0][1]  # O(1)
+                highest_prob_token_id = int(sorted_indexed_prob[0][1].item())  # O(1)
                 curr_indices.append(highest_prob_token_id)  # O(1)
-
+            assert all(isinstance(token_id, int) for token_id in curr_indices), ""
             possible_tokens.append(curr_indices)  # O(1)
         # possible_tokens maximum size is group_size * k
         new_sequences: List[List[int]]
@@ -183,8 +180,8 @@ class TreeGenerator(TextGenerator):
          in a TREE like behavior"""
         # n is len(org_prompt)
         # m is num_tokens
-        if self.end_of_sentence_id in org_prompt:  # O(n)
-            end_of_sentence_index = org_prompt.index(self.end_of_sentence_id)  # O(n)
+        if self.wrapped_model.end_of_sentence_id in org_prompt:  # O(n)
+            end_of_sentence_index = org_prompt.index(self.wrapped_model.end_of_sentence_id)  # O(n)
             return {tuple(org_prompt[:end_of_sentence_index]): org_prompt_prob}  # O(n)
         prob_mat: Tensor = self.wrapped_model.get_prob_mat(org_prompt, prompt_length)  # O(n^2 + group_size^2)
         tokenized_ans_list: List[List[int]] = self.generate_group(prob_mat, org_prompt)  # O(group_size)
@@ -203,15 +200,15 @@ class TreeGenerator(TextGenerator):
         # so O(group_size * (actual_top_k ** group_size + n))
         # new_prompts shape is [(actual_top_k ** group_size + n), (group_size + n)]
         completion_probs: Dict[Tuple[int], float]
-        completion_probs = self.remove_duplicates(new_prompts, prob_list, len(org_prompt))
+        completion_probs = self.remove_duplicates(new_prompts, prob_list)
         # O(group_size * (actual_top_k ** group_size + n))
         # the maximum length of new_prompts is (actual_top_k ** group_size + n)
-        all_completions_ended: bool = all(self.end_of_sentence_id in tokenized_ans
+        all_completions_ended: bool = all(self.wrapped_model.end_of_sentence_id in tokenized_ans
                                           for tokenized_ans in completion_probs.keys())
         # O(group_size * len(completion_probs))
         num_groups: Optional[int] = None
         if num_tokens is not None:
-            num_groups = ceil(num_tokens / self.group_size)
+            num_groups = ceil(num_tokens / self.wrapped_model.group_size)
             #  num_groups is the maximum recursion depth of this function
         if num_groups == 1 or all_completions_ended:
             return completion_probs
@@ -220,7 +217,7 @@ class TreeGenerator(TextGenerator):
         if num_tokens is None:
             new_number_tokens = None
         else:
-            new_number_tokens = num_tokens - self.group_size
+            new_number_tokens = num_tokens - self.wrapped_model.group_size
         for curr_new_prompt, curr_new_prompt_prob in completion_probs.items():
             # at maximum there are group_size * (actual_top_k ** group_size) iterations
             curr_new_prompt: List[int]
@@ -248,7 +245,7 @@ class TreeGenerator(TextGenerator):
             raise ValueError("greedy generation with tree can't return more than one sequence")
 
         if num_new_tokens is not None:
-            num_groups = ceil(num_new_tokens / self.group_size)
+            num_groups = ceil(num_new_tokens / self.wrapped_model.group_size)
             if num_groups >= sys.getrecursionlimit():
                 sys.setrecursionlimit(num_groups + 100)
         seq_prob_dict: Dict[Tuple[int], float]

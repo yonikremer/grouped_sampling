@@ -1,11 +1,11 @@
 from typing import Dict
 from warnings import warn
 
-from torch import cuda, LongTensor, ones, long, Tensor, cat, no_grad
+from torch import cuda, LongTensor, ones, long, Tensor, cat, no_grad, Size
 from transformers import PreTrainedModel, AutoModelForCausalLM
 from torch.nn import Softmax
 
-from . import TokenIDS
+from globals import TokenIDS
 
 
 class ModelWrapper:
@@ -20,7 +20,6 @@ class ModelWrapper:
     temp: float
     descriptive_attrs = (
         "repetition_penalty_theta",
-        "max_input_len",
         "group_size",
         "end_of_sentence_stop",
         "temp",
@@ -32,9 +31,10 @@ class ModelWrapper:
             group_size: int,
             max_input_len: int,
             end_of_sentence_id: int,
+            padding_id: int,
+            vocab_size: int,
             end_of_sentence_stop: bool = True,
             repetition_penalty_theta: float = 1.2,
-            padding_id: int = 0,
             temp: float = 1.0,
             use_softmax: bool = True,
             **kwargs
@@ -46,22 +46,24 @@ class ModelWrapper:
             group_size: the number of next tokens to be generated
             max_input_len: the maximum length of the input to the model
             padding_id: the id of the padding token
+            vocab_size: the size of the vocabulary
             end_of_sentence_stop: whether to stop when the end of sentence token is generated
             end_of_sentence_id: the id of the end of sequence token
             use_softmax: true if the model should use softmax, false if it should return the logits
             **kwargs: the arguments to be passed to the model
         Complexity: O(1)
         """
+        assert isinstance(padding_id, int)
         self.use_softmax = use_softmax
         self.end_of_sentence_id = end_of_sentence_id
-        self.repetition_penalty_theta = repetition_penalty_theta
+        self.repetition_penalty_theta = repetition_penalty_theta if repetition_penalty_theta is not None else 1.2
         self.group_size = group_size
         self.max_input_len = max_input_len
         self.padding_id = padding_id
         self.end_of_sentence_stop = end_of_sentence_stop
         self.model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
-        self.vocab_size = self.model.config.vocab_size
         self.temp = temp
+        self.vocab_size = vocab_size
         if cuda.is_available():
             self.model = self.model.cuda()
 
@@ -82,13 +84,14 @@ class ModelWrapper:
         """
         if not isinstance(tokens, Tensor):
             tokens = LongTensor(tokens)  # O(n)
-        padded_tokens: LongTensor = cat((tokens, self.padding_tokens), dim=0)
+        padded_tokens: LongTensor = cat((tokens, self.padding_tokens), dim=0).unsqueeze(0)
         # the length of padded_tokens is n + group_size - 1
         # so creating it is O(n + group_size)
-        attention_len = len(padded_tokens)  # n + group_size - 1
+        attention_len = padded_tokens.shape[1]  # n + group_size - 1
         if attention_len > self.max_input_len:
-            padded_tokens = padded_tokens[-self.max_input_len:]
+            padded_tokens = padded_tokens[:, -self.max_input_len:]
             # O(self.max_input_len) which is constant so O(1)
+            attention_len = self.max_input_len
         attention_mask: LongTensor = ones([1, attention_len], dtype=long)
         # O(attention_len) so O(n + group_size)
         if cuda.is_available():
@@ -96,8 +99,12 @@ class ModelWrapper:
             attention_mask = attention_mask.cuda()  # O(n + group_size)
         else:
             warn("CUDA is not available, using CPU")
+        assert padded_tokens.shape == Size([1, attention_len]), f"padded_tokens shape is {padded_tokens.shape}" \
+                                                                f" while attention_len is {attention_len}"
+        assert attention_mask.shape == Size([1, attention_len]), f"attention_mask shape is {attention_mask.shape} " \
+                                                                 f"while attention_len is {attention_len}"
         return {
-            "input_ids": padded_tokens.unsqueeze(0),
+            "input_ids": padded_tokens,
             "attention_mask": attention_mask,
         }
 
@@ -187,8 +194,10 @@ class ModelWrapper:
         return penalized_logits
 
     def __str__(self):
-        descriptive_attrs_dict = {attr_name: getattr(self, attr_name) for attr_name in self.descriptive_attrs}
-        return f"ModelWrapper({descriptive_attrs_dict})"
+        return f"ModelWrapper({self.as_dict()})"
 
     def __repr__(self):
         return str(self)
+
+    def as_dict(self):
+        return {attr_name: getattr(self, attr_name) for attr_name in self.descriptive_attrs}

@@ -7,8 +7,6 @@ from torch import Tensor, zeros, argmax, multinomial, manual_seed
 
 from text_generator import TextGenerator, GenerationType
 
-ProbDict = Dict[int, Tensor]
-
 
 class ChangingSeed(Iterator):
     """Context manager for changing the seed of the random module.
@@ -108,7 +106,7 @@ class SamplingGenerator(TextGenerator):
         if top_k == 1 or top_p == 0.0:
             return GenerationType.GREEDY
         if top_k is not None:
-            if top_k < self.vocab_size:
+            if top_k < self.tokenizer.vocab_size:
                 return GenerationType.TOP_K
             return GenerationType.RANDOM
         if top_p is not None:
@@ -189,7 +187,7 @@ class SamplingGenerator(TextGenerator):
         # and the loop has group_size iterations.
         del prob_mat
         for i, token_id in enumerate(new_group):
-            if token_id == self.end_of_sentence_id:
+            if token_id == self.wrapped_model.end_of_sentence_id:
                 return new_group[:i + 1]  # return the group until the end of sentence token included
                 # the complexity of this line is O(group_size)
                 # because it is coping a list with maximum size of group_size
@@ -213,7 +211,7 @@ class SamplingGenerator(TextGenerator):
         for _ in ChangingSeed(
                 default_seed=self.default_seed,
                 max_num_calls=num_return_sequences):  # num_return_sequences iterations
-            for _ in range(num_new_tokens // self.group_size):
+            for _ in range(num_new_tokens // self.wrapped_model.group_size):
                 # and each iteration is O(n ^ 2 + l ^ 2 + group_size ^ 2 + group_size)
                 # so the complexity of the loop is O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
                 prob_mat: Tensor = self.wrapped_model.get_prob_mat(curr_token_list, len(tokenized_prompt))
@@ -226,8 +224,8 @@ class SamplingGenerator(TextGenerator):
                 # len(curr_token_list) <= n + l
                 # so the complexity is O(group_size * (n + l + group_size))
                 # len(new_tokens) = group_size
-                if self.end_of_sentence_id in new_tokens:  # the check is O(group_size)
-                    end_of_sentence_index = new_tokens.index(self.end_of_sentence_id)
+                if self.wrapped_model.end_of_sentence_id in new_tokens:  # the check is O(group_size)
+                    end_of_sentence_index = new_tokens.index(self.wrapped_model.end_of_sentence_id)
                     # O(group_size) because len(new_tokens) <= group_size
                     new_tokens = new_tokens[:end_of_sentence_index]
                     # O(group_size) because end_of_sentence_index < group_size

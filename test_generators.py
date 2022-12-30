@@ -8,8 +8,8 @@ from torch import Tensor, equal
 
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
-from __init__ import CompletionDict, GenerationType
 from text_generator import TextGenerator
+from globals import CompletionDict, GenerationType
 
 MODEL_NAME = "gpt2"
 GROUP_SIZES = 3, 1
@@ -52,7 +52,8 @@ def create_text_generators() -> Generator[TextGenerator, None, None]:
                                   top_k=TOP_KS[1],
                                   top_p=TOP_PS[1],
                                   temp=TEMPERATURES[1],
-                                  answer_length_multiplier=1.0,)
+                                  answer_length_multiplier=1.0,
+                                  repetition_penalty_theta=9999.0)
 
     for top_k in TOP_KS:
         curr_tree_gen.top_k = top_k
@@ -77,7 +78,7 @@ def test_str():
 def test_edge_cases(curr_text_generator: TextGenerator, edge_case_prompt: str):
     answer = curr_text_generator(
         prompt_s=edge_case_prompt,
-        max_new_tokens=curr_text_generator.group_size * 2,
+        max_new_tokens=curr_text_generator.wrapped_model.group_size * 2,
         return_full_text=True,
     )["generated_text"]
     assert isinstance(answer, str), f"{answer} is not a string. curr_generator: {str(curr_text_generator)}"
@@ -191,7 +192,7 @@ def test_num_return_sequences():
 
 def test_max_new_tokens_is_none():
     curr_text_generator = next(create_text_generators())
-    curr_text_generator.end_of_sentence_stop = True
+    curr_text_generator.wrapped_model.end_of_sentence_stop = True
     answer: CompletionDict = curr_text_generator(
         prompt_s=TEST_PROMPT, max_new_tokens=None, return_tensors=False, return_text=True,
         return_full_text=True
@@ -223,7 +224,7 @@ def test_call_many_prompts():
 def test_calling_generators(curr_text_generator):
     answer = curr_text_generator(
         prompt_s=PROMPT,
-        max_new_tokens=curr_text_generator.group_size * 2,
+        max_new_tokens=curr_text_generator.wrapped_model.group_size * 2,
     )["generated_text"]
     assert isinstance(answer, str), f"{answer} is not a string. curr_text_generator: {str(curr_text_generator)}"
     assert answer.startswith(PROMPT), f"{answer} doesn't start with {PROMPT}"
@@ -231,19 +232,18 @@ def test_calling_generators(curr_text_generator):
 
 
 @pytest.mark.parametrize("curr_text_generator", create_text_generators())
-def test_dict_conversions(curr_text_generator):
+def test_dict_conversions(curr_text_generator: TextGenerator):
     new_generator = type(curr_text_generator).from_dict(curr_text_generator.as_dict())
     assert type(curr_text_generator) == type(new_generator)
     assert curr_text_generator.model_name == new_generator.model_name
-    assert curr_text_generator.group_size == new_generator.group_size
-    assert curr_text_generator.temp == new_generator.temp
+    assert curr_text_generator.wrapped_model.group_size == new_generator.wrapped_model.group_size
+    assert curr_text_generator.wrapped_model.temp == new_generator.wrapped_model.temp
     assert curr_text_generator.generation_type == new_generator.generation_type
-    assert curr_text_generator.end_of_sentence_id == new_generator.end_of_sentence_id
-    assert curr_text_generator.end_of_sentence_stop == new_generator.end_of_sentence_stop
-    assert curr_text_generator.max_input_len == new_generator.max_input_len
-    assert curr_text_generator.framework == new_generator.framework
+    assert curr_text_generator.wrapped_model.end_of_sentence_id == new_generator.wrapped_model.end_of_sentence_id
+    assert curr_text_generator.wrapped_model.end_of_sentence_stop == new_generator.wrapped_model.end_of_sentence_stop
+    assert curr_text_generator.wrapped_model.max_input_len == new_generator.wrapped_model.max_input_len
     assert curr_text_generator.answer_length_multiplier == new_generator.answer_length_multiplier
-    assert curr_text_generator.vocab_size == new_generator.vocab_size
+    assert curr_text_generator.wrapped_model.vocab_size == new_generator.wrapped_model.vocab_size
     if hasattr(curr_text_generator, "top_k"):
         assert curr_text_generator.top_k == new_generator.top_k
     if hasattr(curr_text_generator, "top_p"):
