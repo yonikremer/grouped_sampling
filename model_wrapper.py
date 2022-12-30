@@ -98,10 +98,6 @@ class ModelWrapper:
             attention_mask = attention_mask.cuda()  # O(n + group_size)
         else:
             warn("CUDA is not available, using CPU")
-        assert padded_tokens.shape == Size([1, attention_len]), f"padded_tokens shape is {padded_tokens.shape}" \
-                                                                f" while attention_len is {attention_len}"
-        assert attention_mask.shape == Size([1, attention_len]), f"attention_mask shape is {attention_mask.shape} " \
-                                                                 f"while attention_len is {attention_len}"
         return {
             "input_ids": padded_tokens,
             "attention_mask": attention_mask,
