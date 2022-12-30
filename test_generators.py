@@ -6,6 +6,7 @@ from typing import Generator, List
 import pytest
 from torch import Tensor, equal
 
+from repetition_penalty import NoRepetitionPenalty
 from sampling_generator import SamplingGenerator
 from tree_generator import TreeGenerator
 from text_generator import TextGenerator
@@ -53,7 +54,8 @@ def create_text_generators() -> Generator[TextGenerator, None, None]:
                                   top_p=TOP_PS[1],
                                   temp=TEMPERATURES[1],
                                   answer_length_multiplier=1.0,
-                                  repetition_penalty_theta=9999.0)
+                                  repetition_penalty_strategy=NoRepetitionPenalty(),
+                                  )
 
     for top_k in TOP_KS:
         curr_tree_gen.top_k = top_k

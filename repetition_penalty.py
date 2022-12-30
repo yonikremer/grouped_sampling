@@ -17,6 +17,12 @@ class RepetitionPenaltyStrategy(ABC):
     def __call__(self, logits: Tensor, tokens: TokenIDS, generation_start: int) -> Tensor:
         raise NotImplementedError
 
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}(theta={self.theta})"
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class LogitScalingRepetitionPenalty(RepetitionPenaltyStrategy):
     def __init__(self, theta: float):
@@ -59,12 +65,12 @@ class NoRepetitionPenalty(RepetitionPenaltyStrategy):
         return logits
 
 
-DEFAULT_REPETITION_penalty = LogitScalingRepetitionPenalty(1.2)
+DEFAULT_REPETITION_PENALTY = LogitScalingRepetitionPenalty(1.2)
 
 
 def repetition_penalty_factory(theta: Optional[float]) -> RepetitionPenaltyStrategy:
     if theta is None:
-        return DEFAULT_REPETITION_penalty
+        return DEFAULT_REPETITION_PENALTY
     if theta == 1:
         return NoRepetitionPenalty()
     elif theta > 1:

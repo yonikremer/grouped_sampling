@@ -15,7 +15,7 @@ from transformers.tokenization_utils_base import TruncationStrategy
 
 from model_wrapper import ModelWrapper
 from globals import TokenIDS, GenerationType, CompletionDict
-from repetition_penalty import repetition_penalty_factory
+from repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PENALTY
 
 MAX_MODEL_INPUT_SIZE = 8192
 
@@ -52,7 +52,7 @@ class TextGenerator(Callable, ABC):
             group_size: int,
             temp: Optional[float] = None,
             end_of_sentence_stop: Optional[bool] = None,
-            repetition_penalty_theta: Optional[float] = None,
+            repetition_penalty_strategy: RepetitionPenaltyStrategy = DEFAULT_REPETITION_PENALTY,
             answer_length_multiplier: float = 16,
     ):
         """Model name: the name of the model
@@ -65,8 +65,8 @@ class TextGenerator(Callable, ABC):
             if the answer length is not given,
             the maximum answer length is set to:
             the length of the prompt * answer_length_multiplier
-        repetition_penalty_theta: float
-            the theta parameter for the repetition penalty computation.
+        repetition_penalty_strategy: RepetitionPenaltyStrategy
+            The strategy for the repetition penalty
         """
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -89,7 +89,7 @@ class TextGenerator(Callable, ABC):
             "max_input_len": max_input_len,
             "end_of_sentence_id": end_of_sentence_id,
             "end_of_sentence_stop": end_of_sentence_stop,
-            "repetition_penalty_strategy": repetition_penalty_factory(repetition_penalty_theta),
+            "repetition_penalty_strategy": repetition_penalty_strategy,
             "padding_id": self.padding_id,
             "temp": temp,
             "use_softmax": self.generation_type.requires_softmax(),
