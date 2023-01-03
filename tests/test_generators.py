@@ -6,7 +6,7 @@ from typing import Generator, List
 import pytest
 from torch import Tensor, equal
 
-from src.__init__ import (
+from grouped_sampling.__init__ import (
     CompletionDict,
     GenerationType,
     TextGenerator,

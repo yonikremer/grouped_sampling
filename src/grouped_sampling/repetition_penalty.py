@@ -3,7 +3,7 @@ from typing import Set, Optional
 
 from torch import Tensor
 
-from src.types import TokenIDS
+from grouped_sampling.types import TokenIDS
 
 
 class RepetitionPenaltyStrategy(ABC):

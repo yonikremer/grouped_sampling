@@ -9,9 +9,9 @@ from flask import Blueprint, g, render_template, request, redirect, url_for
 from werkzeug.datastructures import ImmutableMultiDict
 import pandas as pd
 
-from src.text_generator import TextGenerator, CompletionDict
-from src.sampling_generator import SamplingGenerator
-from src.tree_generator import TreeGenerator
+from grouped_sampling.text_generator import TextGenerator, CompletionDict
+from grouped_sampling.sampling_generator import SamplingGenerator
+from grouped_sampling.tree_generator import TreeGenerator
 from .auth import login_required
 from .database import get_db
 from .model import get_model_id

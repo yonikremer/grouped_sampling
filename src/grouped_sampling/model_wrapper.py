@@ -5,8 +5,8 @@ from torch import cuda, LongTensor, ones, long, Tensor, cat, no_grad
 from transformers import PreTrainedModel, AutoModelForCausalLM
 from torch.nn import Softmax
 
-from src.types import TokenIDS
-from src.repetition_penalty import RepetitionPenaltyStrategy
+from grouped_sampling.types import TokenIDS
+from grouped_sampling.repetition_penalty import RepetitionPenaltyStrategy
 
 
 class ModelWrapper:

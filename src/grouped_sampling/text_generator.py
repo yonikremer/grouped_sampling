@@ -13,10 +13,10 @@ from transformers import (AutoTokenizer,
                           )
 from transformers.tokenization_utils_base import TruncationStrategy
 
-from src.generation_type import GenerationType
-from src.model_wrapper import ModelWrapper
-from src.repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PENALTY
-from src.types import CompletionDict, TokenIDS
+from grouped_sampling.generation_type import GenerationType
+from grouped_sampling.model_wrapper import ModelWrapper
+from grouped_sampling.repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PENALTY
+from grouped_sampling.types import CompletionDict, TokenIDS
 
 MAX_MODEL_INPUT_SIZE = 8192
 

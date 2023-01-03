@@ -13,8 +13,8 @@ from nvidia_smi import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtiliz
 
 from evaluation.experiment_manager import ExperimentManager
 from evaluation import lang_code_to_name
-from src.sampling_generator import SamplingGenerator
-from src.text_generator import TextGenerator
+from grouped_sampling.sampling_generator import SamplingGenerator
+from grouped_sampling.text_generator import TextGenerator
 
 from transformers.utils.logging import disable_progress_bar
 

@@ -6,9 +6,9 @@ from typing import List, Dict, Tuple, Sequence, Any, Optional
 
 from torch import Tensor, LongTensor
 
-from src.types import TokenIDS
-from src.generation_type import GenerationType
-from src.text_generator import TextGenerator, NoCompletionsFound
+from grouped_sampling.types import TokenIDS
+from grouped_sampling.generation_type import GenerationType
+from grouped_sampling.text_generator import TextGenerator, NoCompletionsFound
 
 
 class TreeGenerator(TextGenerator):

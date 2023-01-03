@@ -5,8 +5,8 @@ from typing import Callable, List, Dict, Optional, Any
 
 from torch import Tensor, zeros, argmax, multinomial, manual_seed
 
-from src.generation_type import GenerationType
-from src.text_generator import TextGenerator
+from grouped_sampling.generation_type import GenerationType
+from grouped_sampling.text_generator import TextGenerator
 
 
 class ChangingSeed(Iterator):
