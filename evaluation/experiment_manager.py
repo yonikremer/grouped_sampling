@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from datasets import Dataset
 
 from evaluation import lang_code_to_name, get_comet_api_key, STAT_NAME_TO_FUNC, BERT_SCORES, get_project_name
-from text_generator import TextGenerator
+from src.text_generator import TextGenerator
 
 
 class ExperimentManager:

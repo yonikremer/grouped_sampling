@@ -13,9 +13,10 @@ from transformers import (AutoTokenizer,
                           )
 from transformers.tokenization_utils_base import TruncationStrategy
 
-from model_wrapper import ModelWrapper
-from globals import TokenIDS, GenerationType, CompletionDict
-from repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PENALTY
+from src.generation_type import GenerationType
+from src.model_wrapper import ModelWrapper
+from src.repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PENALTY
+from src.types import CompletionDict, TokenIDS
 
 MAX_MODEL_INPUT_SIZE = 8192
 
@@ -402,7 +403,7 @@ class TextGenerator(Callable, ABC):
 
     def __repr__(self):
         attrs_description = ", ".join(
-            f"{attr}={getattr(self, attr)}" for attr in self._repr_attrs
+            f"{attr}={getattr(self, attr)}" for attr in self.descriptive_attrs
         )
         return f"{self.__class__.__name__}: " + attrs_description
 

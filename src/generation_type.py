@@ -1,10 +1,4 @@
 from enum import Enum
-from typing import Union, List, Tuple, Dict
-
-from torch import LongTensor
-
-TokenIDS = Union[List[int], Tuple[int]]
-CompletionDict = Dict[str, Union[str, LongTensor]]
 
 
 class GenerationType(Enum):

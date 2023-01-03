@@ -6,11 +6,14 @@ from typing import Generator, List
 import pytest
 from torch import Tensor, equal
 
-from repetition_penalty import NoRepetitionPenalty
-from sampling_generator import SamplingGenerator
-from tree_generator import TreeGenerator
-from text_generator import TextGenerator
-from globals import CompletionDict, GenerationType
+from src.__init__ import (
+    CompletionDict,
+    GenerationType,
+    TextGenerator,
+    TreeGenerator,
+    SamplingGenerator,
+    NoRepetitionPenalty,
+)
 
 MODEL_NAME = "gpt2"
 GROUP_SIZES = 3, 1
