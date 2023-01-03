@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 dynamic = ["dependencies"]
 name = "grouped-sampling"
-version = "0.0.2"
+version = "1.0.0"
 description = "A faster algorithem for generating texts with cuasal language models"
 readme = "README.md"
 license = "MIT"
