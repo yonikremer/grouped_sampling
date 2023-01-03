@@ -1,0 +1,19 @@
+digraph "classes_final_project" {
+charset="utf-8"
+rankdir=BT
+"0" [label="{ChangingSeed|curr_num_calls : int\lcurr_num_calls : int\lcurr_seed\lcurr_seed : int\ldefault_seed : int\ldefault_seed : int\lmax_num_calls : int\lmax_num_calls : int\l|}", shape="record"];
+"1" [label="{LogitScalingRepetitionPenalty|theta : float\l|}", shape="record"];
+"2" [label="{ModelWrapper|descriptive_attrs : tuple\lend_of_sentence_id : int\lend_of_sentence_id : int\lend_of_sentence_stop : bool\lend_of_sentence_stop : bool\lgroup_size : int\lgroup_size : int\lmax_input_len : int\lmax_input_len : int\lmodel\lmodel : PreTrainedModel\lpadding_id : int\lpadding_id : int\lpadding_tokens\lrepetition_penalty_strategy : RepetitionPenaltyStrategy\lrepetition_penalty_strategy : RepetitionPenaltyStrategy\ltemp : float\ltemp : float\luse_softmax : bool\lvocab_size : int\lvocab_size : int\l|as_dict()\lget_logits_matrix(tokens: TokenIDS): Tensor\lget_prob_mat(tokens: TokenIDS, generation_start: int): Tensor\llogits_to_probs(penalized_logits: Tensor): Tensor\lprepare_model_kwargs(tokens: TokenIDS): Dict[str, LongTensor]\l}", shape="record"];
+"3" [fontcolor="red", label="{NoCompletionsFound|\l|}", shape="record"];
+"4" [label="{NoRepetitionPenalty|theta : float\l|}", shape="record"];
+"5" [label="{RepetitionPenaltyStrategy|theta : float\l|get_already_generated_tokens(tokens: int, generation_start): Set[int]\l}", shape="record"];
+"6" [label="{SamplingGenerator|default_seed : int\lgeneration_type\lsampling_func\ltop_k : Optional[int]\ltop_k : Optional[int]\ltop_p : Optional[float]\ltop_p : Optional[float]\lunique_attrs : tuple\l|as_dict(): Dict[str, Any]\lgenerate_group(prob_mat: Tensor): List[int]\lhighest_prob_token(prob_vec): int\ltop_k_sampling(prob_vec: Tensor): int\ltop_p_sampling(prob_vec: Tensor): int\lunfiltered_sampling(prob_vec): int\l}", shape="record"];
+"7" [label="{TextGenerator|answer_length_multiplier : float\lanswer_length_multiplier : float\ldescriptive_attrs : tuple\lframework : str\lgeneration_type\lmodel_name : str\lmodel_name : str\lpadding_id\ltokenizer : PreTrainedTokenizer\ltokenizer : PreTrainedTokenizerFast\lwrapped_model\lwrapped_model : ModelWrapper\l|as_dict(): Dict[str, Any]\lfrom_dict(cls: Dict[str, Any], my_dict)\lget_token_tensor(text: str, truncation: TruncationStrategy): LongTensor\lpostprocess(token_ids: TokenIDS, num_new_tokens: Optional[int], prompt_len: int, return_text: bool, return_tensors: bool, return_full_text: bool, clean_up_tokenization_spaces: bool, prefix_len: int, postfix_len: int)\lpreprocess(prompt: str, prefix: str, truncation: TruncationStrategy, postfix: str): Tuple[LongTensor, int, int, int]\l}", shape="record"];
+"8" [label="{TokenProb|prob : Tensor\lprob : Tensor\ltoken_id : int\ltoken_id : int\l|}", shape="record"];
+"9" [label="{TreeGenerator|actual_top_k\lgeneration_type\ltop_k : Optional[int]\ltop_k : int\ltop_p : Optional[float]\ltop_p : float\lunique_attrs : tuple\l|as_dict(): Dict[str, Any]\lcombinations(mat: int, prompt_length): List[List[Any]]\lgenerate_group(prob_mat: Tensor, org_prompt: TokenIDS): List[List[int]]\lno_duplicates(my_sequence: int, prompt_length): bool\lrec_gen(org_prompt: TokenIDS, num_tokens: Optional[int], org_prompt_prob: float, prompt_length: int): Dict[Tuple[int], float]\lremove_duplicates(completions: List[List[int]], probs: List[float]): Dict[Tuple[int], float]\lseq_prob(tokens, prob_mat, org_prompt_prob): float\l}", shape="record"];
+"1" -> "5" [arrowhead="empty", arrowtail="none"];
+"4" -> "5" [arrowhead="empty", arrowtail="none"];
+"6" -> "7" [arrowhead="empty", arrowtail="none"];
+"9" -> "7" [arrowhead="empty", arrowtail="none"];
+"2" -> "7" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="wrapped_model", style="solid"];
+}
