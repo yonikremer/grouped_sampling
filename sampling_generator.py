@@ -142,9 +142,12 @@ class SamplingGenerator(TextGenerator):
         computes a probability vector with the top p tokens
         such that their sum in the original vector is <= self.top_p.
         and samples from that vector.
-        If token with the highest probability have a probability higher than top_p, it will be sampled"""
+        If token with the highest probability
+        have a probability higher than top_p, it will be sampled"""
         prob_sum: float = 0.0
-        converted_probs = [TokenProb(i, prob) for i, prob in enumerate(prob_vec)]
+        converted_probs = [
+            TokenProb(i, prob) for i, prob in enumerate(prob_vec)
+        ]
         heapq.heapify(converted_probs)
         new_probs = zeros(prob_vec.shape, dtype=float)
         while prob_sum < self.top_p and len(converted_probs) > 0:
@@ -153,8 +156,11 @@ class SamplingGenerator(TextGenerator):
             if curr_token_prob.prob <= 0.0:
                 break
             if curr_token_prob.prob > 1:
-                raise ValueError(f"Probability of token {token_id}  in the vector {prob_vec} is {curr_token_prob.prob}"
-                                 f" which is higher than 1")
+                raise ValueError(
+                    f"Probability of token {token_id} "
+                    f"in the vector {prob_vec} "
+                    f"is {curr_token_prob.prob}"
+                    f" which is higher than 1")
             prob_sum += curr_token_prob.prob
             new_probs[token_id] = curr_token_prob.prob
         if prob_sum == 0.0:
@@ -166,7 +172,11 @@ class SamplingGenerator(TextGenerator):
         returns the TOP_K tokens
         with the highest probability.
         this is the bottleneck of the sampling generator."""
-        top_k_keys: List[int] = heapq.nlargest(self.top_k, range(prob_vec.shape[0]), key=lambda x: prob_vec[x])
+        top_k_keys: List[int] = heapq.nlargest(
+            self.top_k,
+            range(prob_vec.shape[0]),
+            key=lambda x: prob_vec[x]
+        )
         prob_sum = sum(prob_vec[token_id] for token_id in top_k_keys)
         new_probs = zeros(prob_vec.shape, dtype=float)
         for token_id in top_k_keys:
@@ -179,16 +189,22 @@ class SamplingGenerator(TextGenerator):
          Complexity: O(group_size)"""
         prob_mat.cpu()
         # coping a tensor of size (group_size, vocab_size)
-        # so the complexity is O(group_size) (vocab_size is constant)
-        new_group: List[int] = [self.sampling_func(prob_vec) for prob_vec in prob_mat]
+        # so the complexity is O(group_size)
+        # (vocab_size is constant)
+        new_group: List[int] = [
+            self.sampling_func(prob_vec)
+            for prob_vec in prob_mat
+        ]
         # the complexity of the loop is O(group_size)
-        # because self.sampling_func gets a tensor of constant size (vocab_size,)
+        # because self.sampling_func gets a tensor
+        # of constant size (vocab_size,)
         # and therefore must be O(1) in complexity
         # and the loop has group_size iterations.
         del prob_mat
         for i, token_id in enumerate(new_group):
             if token_id == self.wrapped_model.end_of_sentence_id:
-                return new_group[:i + 1]  # return the group until the end of sentence token included
+                return new_group[:i + 1]
+                # return the group until the end of sentence token included
                 # the complexity of this line is O(group_size)
                 # because it is coping a list with maximum size of group_size
         return new_group
@@ -199,7 +215,13 @@ class SamplingGenerator(TextGenerator):
             num_new_tokens: Optional[int] = None,
             num_return_sequences: int = 1,
     ) -> List[List[int]]:
-        """Complexity: O(num_return_sequences * ((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n))
+        """Complexity:
+            O(num_return_sequences * (
+                ((n ^ 3) / group_size) +
+                ((n * l ^ 2) / group_size) +
+                group_size +
+                n)
+            )
         where l is the number of tokens in the prompt
         and n is the number of new tokens to generate"""
         # let's define l = len(tokenized_prompt), n = num_new_tokens
@@ -210,22 +232,32 @@ class SamplingGenerator(TextGenerator):
             raise RuntimeError("num_new_tokens is None")
         for _ in ChangingSeed(
                 default_seed=self.default_seed,
-                max_num_calls=num_return_sequences):  # num_return_sequences iterations
+                max_num_calls=num_return_sequences):
+            # num_return_sequences iterations
             for _ in range(num_new_tokens // self.wrapped_model.group_size):
-                # and each iteration is O(n ^ 2 + l ^ 2 + group_size ^ 2 + group_size)
-                # so the complexity of the loop is O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
-                prob_mat: Tensor = self.wrapped_model.get_prob_mat(curr_token_list, len(tokenized_prompt))
+                # and each iteration is
+                # O(n ^ 2 + l ^ 2 + group_size ^ 2 + group_size)
+                # so the complexity of the loop is
+                # O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
+                prob_mat: Tensor = self.wrapped_model.get_prob_mat(
+                    curr_token_list, len(tokenized_prompt)
+                )
                 # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
                 # len(curr_token_list) <= n + l
-                # so the complexity is O(group_size ^ 2 + (n + l) ^ 2) = O(n ^ 2 + nl + l ^ 2 + group_size ^ 2)
-                # but nl <= max(n^2, l^2) so the complexity is O(n ^ 2 + l ^ 2 + group_size ^ 2)
+                # so the complexity is
+                # O(group_size ^ 2 + (n + l) ^ 2) is equals to
+                # O(n ^ 2 + nl + l ^ 2 + group_size ^ 2)
+                # but nl <= max(n^2, l^2) so the complexity
+                # is O(n ^ 2 + l ^ 2 + group_size ^ 2)
                 new_tokens = self.generate_group(prob_mat)
                 # complexity: O(group_size)
                 # len(curr_token_list) <= n + l
                 # so the complexity is O(group_size * (n + l + group_size))
                 # len(new_tokens) = group_size
-                if self.wrapped_model.end_of_sentence_id in new_tokens:  # the check is O(group_size)
-                    end_of_sentence_index = new_tokens.index(self.wrapped_model.end_of_sentence_id)
+                if self.wrapped_model.end_of_sentence_id in new_tokens:
+                    # the check is O(group_size)
+                    end_of_sentence_index = new_tokens.index(
+                        self.wrapped_model.end_of_sentence_id)
                     # O(group_size) because len(new_tokens) <= group_size
                     new_tokens = new_tokens[:end_of_sentence_index]
                     # O(group_size) because end_of_sentence_index < group_size
@@ -237,11 +269,15 @@ class SamplingGenerator(TextGenerator):
 
     def __repr__(self):
         super_representation = super().__repr__()
-        unique_representation = '/n'.join(f"{unique_attr_name}={getattr(self, unique_attr_name)}"
-                                          for unique_attr_name in self.unique_attrs)
+        unique_representation = '/n'.join(
+            f"{unique_attr_name}={getattr(self, unique_attr_name)}"
+            for unique_attr_name in self.unique_attrs)
         return super_representation + unique_representation
 
     def as_dict(self) -> Dict[str, Any]:
         super_dict = super(SamplingGenerator, self).as_dict()
-        super_dict.update({unique_attr: self.__getattribute__(unique_attr) for unique_attr in self.unique_attrs})
+        super_dict.update(
+            {unique_attr: self.__getattribute__(unique_attr)
+             for unique_attr in self.unique_attrs}
+        )
         return super_dict

@@ -136,20 +136,24 @@ class TextGenerator(Callable, ABC):
             truncation=truncation,
             max_length=self.wrapped_model.max_input_len,
         )
-        if isinstance(tokenized_text, dict) or isinstance(tokenized_text, BatchEncoding):
+        if isinstance(tokenized_text, dict) \
+                or isinstance(tokenized_text, BatchEncoding):
             token_tensor: LongTensor = tokenized_text["input_ids"]
-            # O(1) because we are accessing a single element in a dictionary and saving the reference to it.
+            # O(1) because we are accessing a single element
+            # in a dictionary and saving the reference to it.
         elif isinstance(tokenized_text, LongTensor):
             token_tensor: LongTensor = tokenized_text
             # O(1) because we are saving the reference to the tensor
         else:
-            raise TypeError("The tokenizer output is not one of:"
-                            "dict, BatchEncoding, LongTensor")
-
+            raise TypeError(
+                "The tokenizer output is not one of:"
+                "dict, BatchEncoding, LongTensor"
+            )
         token_tensor = token_tensor.squeeze()
         # O(n) where n is the number of tokens in the text
         # because we are copying n elements from one tensor to the other
-        # the number of tokens in the text is always less than the number of characters in the text
+        # the number of tokens in the text
+        # is always less than the number of characters in the text
 
         return token_tensor
 
@@ -196,7 +200,8 @@ class TextGenerator(Callable, ABC):
         """A helper method for __call__ that generates the new tokens
         Has a unique implementation for each subclass
         Args:
-            tokenized_prompt: List[int] - the tokenized prompt from the preprocess method
+            tokenized_prompt: List[int]
+                the tokenized prompt from the preprocess method
             num_new_tokens: int - the number of new tokens to generate
                 from the __call__ method
         Returns:
@@ -225,26 +230,33 @@ class TextGenerator(Callable, ABC):
         Complexity: O(n) where n is the number of tokens in token_ids
         """
         # define n as the length of the token_ids
+        full_prompt_len = prefix_len + prompt_len + postfix_len
         if num_new_tokens is None:
             shorten_token_list = token_ids
             # O(1)
         else:
-            final_num_tokens = prefix_len + prompt_len + postfix_len + num_new_tokens
+            final_num_tokens = full_prompt_len + num_new_tokens
             # O(1)
             if len(token_ids) > final_num_tokens:
                 shorten_token_list = token_ids[:final_num_tokens]
-                # O(final_num_tokens) because we are copying final_num_tokens elements from one list to the other
+                # O(final_num_tokens)
+                # because we are copying final_num_tokens
+                # elements from one list to the other
             else:
                 shorten_token_list = token_ids
                 # O(1)
 
-        generated_tokens = shorten_token_list[prefix_len + prompt_len + postfix_len:]
-        # O(num_new_tokens) because we are copying num_new_tokens elements from one list to the other
+        generated_tokens = shorten_token_list[full_prompt_len:]
+        # O(num_new_tokens) because we are copying
+        # num_new_tokens elements from one list to the other
         if return_full_text:
-            prompt_tokens = shorten_token_list[prefix_len:prefix_len + prompt_len]  # Without prefix and postfix
-            # O(prompt_len) because we are copying prompt_len elements from one list to the other
+            prompt_tokens = shorten_token_list[prefix_len:prefix_len + prompt_len]
+            # Without prefix and postfix
+            # O(prompt_len) because we are copying prompt_len
+            # elements from one list to the other
             final_token_list = prompt_tokens + generated_tokens
-            # O(prompt_len + num_new_tokens) because we are copying elements from one list to the other
+            # O(prompt_len + num_new_tokens)
+            # because we are copying elements from one list to the other
         else:
             final_token_list = generated_tokens
             # O(1) because we are saving the reference to the list
@@ -252,15 +264,18 @@ class TextGenerator(Callable, ABC):
         if return_tensors:
             final_ans["generated_token_ids"] = tensor(final_token_list)
             # O(prompt_len + num_new_tokens)
-            # because we are copying at maximum prompt_len + num_new_tokens elements from a list to a tensor
+            # because we are copying at maximum
+            # prompt_len + num_new_tokens elements from a list to a tensor
         if return_text:
             final_ans["generated_text"] = self.tokenizer.decode(
                 final_token_list,
                 skip_special_tokens=True,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces
             )
-            # decoding is O(m) where m is the number of tokens in the text
-            # so the complexity of this line is O(n) because final_token_list could be at most n tokens long
+            # decoding is O(m)
+            # where m is the number of tokens in the text
+            # so the complexity of this line is O(n)
+            # because final_token_list could be at most n tokens long
         return final_ans
 
     def __call__(
@@ -284,32 +299,46 @@ class TextGenerator(Callable, ABC):
                 the function process each one independently and returns them as a list.
                 (the same as calling [__call__(prompt, *args, **kwargs)
                  for prompt in prompts])])
-            max_new_tokens: Optional[int] > 0 - the number of tokens to generate
-                if None, the function will generate tokens until one of them is the end of sentence token
+            max_new_tokens: Optional[int] > 0
+             - the number of tokens to generate
+                if None, the function will generate tokens
+                 until one of them is the end of sentence token
             return_tensors: bool - whether to return the generated token ids
             return_text: bool - whether to return the generated string
             return_full_text: bool - whether to return the full text
                 (prompt + generated text)
                 (if false, it will return only the generated text)
-            clean_up_tokenization_spaces: bool - whether to clean up tokenization spaces
+            clean_up_tokenization_spaces: bool
+             - whether to clean up tokenization spaces
                 This parameter is forwarded to the decode function of the AutoTokenizer class
             prefix (`str`, defaults to an empty string):
                 Prefix added to prompt.
             num_return_sequences (`int`, defaults to 1):
                 The number of independently generated answers to return for each prompt.
-                For SamplingGenerator: each answer will be generated with different seed.
-                For TreeGenerator: the num_return_sequences with the highest scores will be returned.
-            truncation: TruncationStrategy - whether to truncate the prompt
-            postfix: str - a postfix to add to the prompt
+                For SamplingGenerator:
+                    each answer will be generated with different seed.
+                For TreeGenerator:
+                    the num_return_sequences with the highest scores will be returned.
+            truncation: TruncationStrategy
+             - whether to truncate the prompt
+            postfix: str
+             - a postfix to add to the prompt
         Returns:
             Each result comes as a dictionary with the following keys:
-            - "generated_text" (`str`, present when `return_text=True`) -- The generated text.
-            - "generated_token_ids" (`torch.tensor`, present when `return_tensors=True`) -- The token
+            - "generated_text"
+            (`str`, present when `return_text=True`)
+             -- The generated text.
+            - "generated_token_ids" (
+            `torch.tensor`, present when `return_tensors=True`)
+             -- The token
               ids of the generated text.
             """
 
-        if max_new_tokens is None and not self.wrapped_model.end_of_sentence_stop:
-            raise ValueError("max_new_tokens must be given if end_of_sentence_stop is False")
+        if max_new_tokens is None and\
+                not self.wrapped_model.end_of_sentence_stop:
+            raise ValueError(
+                "max_new_tokens must be given if end_of_sentence_stop is False"
+            )
         if isinstance(prompt_s, list):
             return [self.__call__(
                 prompt_s=prompt,
@@ -327,7 +356,11 @@ class TextGenerator(Callable, ABC):
         prompt_len: int
 
         tokens, prefix_len, prompt_len, postfix_len = self.preprocess(
-            prompt=prompt_s, prefix=prefix, truncation=truncation, postfix=postfix)
+            prompt=prompt_s,
+            prefix=prefix,
+            truncation=truncation,
+            postfix=postfix
+        )
         # O(len(prompt) + len(prefix) + len(postfix))
 
         if max_new_tokens is None:
@@ -368,21 +401,29 @@ class TextGenerator(Callable, ABC):
             )
 
     def __repr__(self):
-        return f"{self.__class__.__name__}" \
-               f"{'/n'.join(f'{attr}={getattr(self, attr)}' for attr in self.descriptive_attrs)}"
+        attrs_description = ", ".join(
+            f"{attr}={getattr(self, attr)}" for attr in self._repr_attrs
+        )
+        return f"{self.__class__.__name__}: " + attrs_description
 
     def __str__(self):
         return repr(self)
 
     def as_dict(self) -> Dict[str, Any]:
-        """Returns a dictionary representation of the generator
-        such that it can be saved and loaded using the from_dict method"""
-        return {key: getattr(self, key) for key in self.descriptive_attrs}
+        """Returns a dictionary representation
+         of the generator
+        such that it can be saved and loaded
+         using the from_dict method"""
+        return {
+            key: getattr(self, key)
+            for key in self.descriptive_attrs
+        }
 
     @classmethod
     def from_dict(cls, my_dict: Dict[str, Any]):
         """Creates an TextGenerator from a dictionary
-        The dictionary should have the same format as the dictionary returned by the as_dict method"""
+        The dictionary should have the same format
+         as the dictionary returned by the as_dict method"""
         if "generation_type" in my_dict.keys():
             my_dict.pop("generation_type")
         wrapped_model: ModelWrapper = my_dict.pop("wrapped_model")
