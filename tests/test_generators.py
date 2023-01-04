@@ -6,13 +6,13 @@ from typing import Generator, List
 import pytest
 from torch import Tensor, equal
 
-from grouped_sampling.__init__ import (
-    CompletionDict,
-    GenerationType,
+from src.grouped_sampling import (
     TextGenerator,
-    TreeGenerator,
     SamplingGenerator,
+    TreeGenerator,
+    CompletionDict,
     NoRepetitionPenalty,
+    GenerationType,
 )
 
 MODEL_NAME = "gpt2"

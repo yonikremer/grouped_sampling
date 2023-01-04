@@ -12,7 +12,7 @@ My high school research project.
 # Project OverView:
 
 ## The project paper:
-Is written in Hebrew in [documents\העבודה עצמה.docx](documents\העבודה עצמה.docx)
+Is written in Hebrew in [documents\העבודה עצמה.docx](documents\העבודה%20עצמה.docx)
 
 ## The code:
 

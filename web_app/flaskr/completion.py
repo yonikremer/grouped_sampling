@@ -9,9 +9,12 @@ from flask import Blueprint, g, render_template, request, redirect, url_for
 from werkzeug.datastructures import ImmutableMultiDict
 import pandas as pd
 
-from grouped_sampling.text_generator import TextGenerator, CompletionDict
-from grouped_sampling.sampling_generator import SamplingGenerator
-from grouped_sampling.tree_generator import TreeGenerator
+from src.grouped_sampling import (
+    TextGenerator,
+    SamplingGenerator,
+    TreeGenerator, CompletionDict,
+
+)
 from .auth import login_required
 from .database import get_db
 from .model import get_model_id
@@ -62,16 +65,18 @@ def add_comp_to_db(comp_data: CompletionData):
     else:
         top_p = None
     #     user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature
-    arguments = (g.user['id'],
-                 comp_data.prompt,
-                 comp_data.answer,
-                 comp_data.num_tokens,
-                 model_id,
-                 generator.group_size,
-                 generator.generation_type.value,
-                 top_p,
-                 top_k,
-                 generator.temp)
+    arguments = (
+        g.user['id'],
+        comp_data.prompt,
+        comp_data.answer,
+        comp_data.num_tokens,
+        model_id,
+        generator.wrapped_model.group_size,
+        generator.generation_type.value,
+        top_p,
+        top_k,
+        generator.wrapped_model.temp
+    )
     connection.execute(QUERY_STRUCTURE, arguments)
     connection.commit()
 
@@ -119,11 +124,11 @@ def create():
     if request.method == "POST":
         new_request = preprocess_create_form(request.form)
         text_generator: TextGenerator = new_request['generation_type_class'](
-                model_name=new_request['model_name'],
-                group_size=new_request['group_size'],
-                top_p=new_request['top_p'],
-                top_k=new_request['top_k'],
-                temp=new_request['temperature']
+            model_name=new_request['model_name'],
+            group_size=new_request['group_size'],
+            top_p=new_request['top_p'],
+            top_k=new_request['top_k'],
+            temp=new_request['temperature']
         )
         raw_answers: CompletionDict | List[CompletionDict] = text_generator(
             prompt_s=new_request['prompt'],

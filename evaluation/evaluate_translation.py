@@ -9,12 +9,13 @@ from warnings import warn
 
 from evaluate import TranslationEvaluator
 from datasets import load_dataset, Dataset, get_dataset_config_names
+# noinspection PyUnresolvedReferences
 from nvidia_smi import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtilizationRates
 
 from evaluation.experiment_manager import ExperimentManager
 from evaluation import lang_code_to_name
-from grouped_sampling.sampling_generator import SamplingGenerator
-from grouped_sampling.text_generator import TextGenerator
+from src.grouped_sampling import SamplingGenerator
+from src.grouped_sampling import TextGenerator
 
 from transformers.utils.logging import disable_progress_bar
 
