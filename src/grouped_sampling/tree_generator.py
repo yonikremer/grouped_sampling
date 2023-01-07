@@ -7,8 +7,18 @@ from typing import List, Dict, Tuple, Sequence, Any, Optional
 from torch import Tensor, LongTensor
 
 from .generation_type import GenerationType
-from .text_generator import TextGenerator, NoCompletionsFound
+from .text_generator import TextGenerator
 from .token_ids import TokenIDS
+
+
+class NoCompletionsFound(Exception):
+    def __init__(
+            self,
+            curr_text_generator: TextGenerator,
+            additional_info: str = ""):
+        super(NoCompletionsFound, self).__init__(
+            f"text generator: {curr_text_generator} \n"
+            f"additional info: {additional_info}")
 
 
 class TreeGenerator(TextGenerator):
@@ -266,7 +276,6 @@ class TreeGenerator(TextGenerator):
             seq_prob_dict.items(), key=lambda x: x[1], reverse=True
         )  # O(n log n) where n is len(seq_prob_dict)
         highest_prob_answers = sorted_seq_prob_dict[:num_return_sequences]  # O(num_return_sequences)
-        assert len(highest_prob_answers) == num_return_sequences
         return [tokens for tokens, prob
                 in highest_prob_answers]
 
