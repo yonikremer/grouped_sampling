@@ -3,19 +3,20 @@
 ## My high school research project in computer science.
 
 # The research question:
-> Can we use generate n tokens using less than n calls to a Causal Language model with decoder only transformer architecture?
-> If yes, How? How the text generated in this way different from the text generated using n calls?
+> Can we use generate n tokens using less than n calls to a Causal Language model?
+> If yes, How? 
+> How the text generated in this way differs from the text generated using n calls?
 > If no, Why?
-> I show that such an algorithm is possible,
-> and the text generated using this algorithm is different from the text generated using n calls.
-> I will also so significant improvement in the runtime of my algorithm.
 
 
 # The Answer:
 
 You CAN generate n tokens with less than n calls to A Causal Language Model.
+
 In fact, You can generate long texts with a single call to A Causal Language Model.
-The grouped sampling algorithm is more efficient than all existing algorithms
+
+The grouped sampling algorithm is more efficient than all existing algorithms.
+
 The algorithm succeeded more than the existing alternative in the experiments.
 
 # Using Grouped Sampling:
@@ -29,8 +30,8 @@ The algorithm succeeded more than the existing alternative in the experiments.
 The recommended group size is the upper limit for the length of the generated texts.
 A higher group size will cause unnecessary computations.
 A lower group size will cause lower performance both in runtime and text quality.
-7. `gen = SamplingGenerator(model_name=MODEL_NAME, group_size)`
-8. `answer = gen(your_text)["generated_text"]`
+7. `gen = SamplingGenerator(model_name=YOUR_MODEL_NAME, group_size=YOUR_GROUP_SIZE)`
+8. `answer = gen(YOUR_TEXT)["generated_text"]`
 
 
 # Project OverView:
