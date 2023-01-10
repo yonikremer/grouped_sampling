@@ -10,9 +10,9 @@ from werkzeug.datastructures import ImmutableMultiDict
 import pandas as pd
 
 from src.grouped_sampling import (
-    TextGenerator,
-    SamplingGenerator,
-    TreeGenerator, CompletionDict,
+    GroupedGenerationPipeLine,
+    GroupedSamplingPipeLine,
+    GroupedTreePipeLine, CompletionDict,
 
 )
 from .auth import login_required
@@ -28,7 +28,7 @@ class CompletionData:
     prompt: str
     answer: str
     num_tokens: int
-    generator: TextGenerator
+    generator: GroupedGenerationPipeLine
 
 
 @bp.route('/')
@@ -53,7 +53,7 @@ def add_comp_to_db(comp_data: CompletionData):
     columns = "user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature"
     QUERY_STRUCTURE: str = f"""INSERT INTO completion ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
     connection = get_db()
-    generator: TextGenerator = comp_data.generator
+    generator: GroupedGenerationPipeLine = comp_data.generator
     model_id: int = get_model_id(generator.model_name)
 
     if hasattr(generator, "top_k"):
@@ -103,7 +103,7 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
         else:
             new_request[input_name] = wanted_type(old_request[input_name])
 
-    generation_type_names_to_classes = {"sampling": SamplingGenerator, "tree": TreeGenerator}
+    generation_type_names_to_classes = {"sampling": GroupedSamplingPipeLine, "tree": GroupedTreePipeLine}
 
     if new_request['generation_type'] in generation_type_names_to_classes:
         new_request['generation_type_class'] = generation_type_names_to_classes[new_request['generation_type']]
@@ -123,7 +123,7 @@ def create():
     else, recursively redirect to this page (completion/create) until a successful completion"""
     if request.method == "POST":
         new_request = preprocess_create_form(request.form)
-        text_generator: TextGenerator = new_request['generation_type_class'](
+        text_generator: GroupedGenerationPipeLine = new_request['generation_type_class'](
             model_name=new_request['model_name'],
             group_size=new_request['group_size'],
             top_p=new_request['top_p'],

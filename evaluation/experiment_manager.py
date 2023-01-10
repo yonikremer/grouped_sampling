@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from datasets import Dataset
 
 from evaluation import lang_code_to_name, get_comet_api_key, STAT_NAME_TO_FUNC, BERT_SCORES, get_project_name
-from src.grouped_sampling import TextGenerator
+from src.grouped_sampling import GroupedGenerationPipeLine
 
 
 class ExperimentManager:
@@ -18,7 +18,7 @@ class ExperimentManager:
     df: DataFrame
     language_pairs: Set[Tuple[str, str]] = set()
 
-    def __init__(self, generator: TextGenerator, debug: bool):
+    def __init__(self, generator: GroupedGenerationPipeLine, debug: bool):
         self.experiment = Experiment(
             api_key=get_comet_api_key(),
             project_name=get_project_name(debug=debug),

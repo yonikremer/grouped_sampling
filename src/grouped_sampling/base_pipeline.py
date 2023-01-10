@@ -5,15 +5,16 @@ from collections.abc import Callable
 from typing import Optional, List, Union, Dict, Tuple, Any
 
 from torch import LongTensor, tensor, cat
-from transformers import (AutoTokenizer,
-                          AutoConfig,
-                          BatchEncoding,
-                          PreTrainedTokenizer,
-                          )
+from transformers import (
+    AutoTokenizer,
+    AutoConfig,
+    BatchEncoding,
+    PreTrainedTokenizer,
+)
 from transformers.tokenization_utils_base import TruncationStrategy
 
 from .generation_type import GenerationType
-from .model_wrapper import ModelWrapper
+from .model_wrapper import GroupedGenerationUtils
 from .repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PENALTY
 from .completion_dict import CompletionDict
 from .token_ids import TokenIDS
@@ -26,7 +27,7 @@ def remove_nones(d: Dict[str, Any]) -> Dict[str, Any]:
     return {key: d[key] for key in d.keys() if d[key] is not None}
 
 
-class TextGenerator(Callable, ABC):
+class GroupedGenerationPipeLine(Callable, ABC):
     """An abstract base class for
     A callable object that given a func_prompt
      and length of wanted answer,
@@ -37,7 +38,7 @@ class TextGenerator(Callable, ABC):
 
     model_name: str
     tokenizer: PreTrainedTokenizer
-    wrapped_model: ModelWrapper
+    wrapped_model: GroupedGenerationUtils
     framework: str = "pt"
     answer_length_multiplier: float = 16
     descriptive_attrs = (
@@ -96,7 +97,7 @@ class TextGenerator(Callable, ABC):
             "use_softmax": self.generation_type.requires_softmax(),
             "vocab_size": self.tokenizer.vocab_size,
         }
-        self.wrapped_model = ModelWrapper(**remove_nones(wrapped_model_kwargs))
+        self.wrapped_model = GroupedGenerationUtils(**remove_nones(wrapped_model_kwargs))
         self.answer_length_multiplier = answer_length_multiplier
 
     @property
@@ -316,9 +317,9 @@ class TextGenerator(Callable, ABC):
                 Prefix added to prompt.
             num_return_sequences (`int`, defaults to 1):
                 The number of independently generated answers to return for each prompt.
-                For SamplingGenerator:
+                For GroupedSamplingPipeLine:
                     each answer will be generated with different seed.
-                For TreeGenerator:
+                For GroupedTreePipeLine:
                     the num_return_sequences with the highest scores will be returned.
             truncation: TruncationStrategy
              - whether to truncate the prompt
@@ -335,7 +336,7 @@ class TextGenerator(Callable, ABC):
               ids of the generated text.
             """
 
-        if max_new_tokens is None and\
+        if max_new_tokens is None and \
                 not self.wrapped_model.end_of_sentence_stop:
             raise ValueError(
                 "max_new_tokens must be given if end_of_sentence_stop is False"
@@ -422,12 +423,12 @@ class TextGenerator(Callable, ABC):
 
     @classmethod
     def from_dict(cls, my_dict: Dict[str, Any]):
-        """Creates an TextGenerator from a dictionary
+        """Creates an GroupedGenerationPipeLine from a dictionary
         The dictionary should have the same format
          as the dictionary returned by the as_dict method"""
         if "generation_type" in my_dict.keys():
             my_dict.pop("generation_type")
-        wrapped_model: ModelWrapper = my_dict.pop("wrapped_model")
+        wrapped_model: GroupedGenerationUtils = my_dict.pop("wrapped_model")
         wrapped_model_dict = wrapped_model.as_dict()
         my_dict.update(wrapped_model_dict)
         return cls(**my_dict)

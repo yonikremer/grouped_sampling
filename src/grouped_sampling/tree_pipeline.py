@@ -7,22 +7,22 @@ from typing import List, Dict, Tuple, Sequence, Any, Optional
 from torch import Tensor, LongTensor
 
 from .generation_type import GenerationType
-from .text_generator import TextGenerator
+from .base_pipeline import GroupedGenerationPipeLine
 from .token_ids import TokenIDS
 
 
 class NoCompletionsFound(Exception):
     def __init__(
             self,
-            curr_text_generator: TextGenerator,
+            curr_text_generator: GroupedGenerationPipeLine,
             additional_info: str = ""):
         super(NoCompletionsFound, self).__init__(
             f"text generator: {curr_text_generator} \n"
             f"additional info: {additional_info}")
 
 
-class TreeGenerator(TextGenerator):
-    """A TextGenerator that generates text
+class GroupedTreePipeLine(GroupedGenerationPipeLine):
+    """A GroupedGenerationPipeLine that generates text
      in a TREE like fashion,
      without random sampling."""
     top_p: float
@@ -69,10 +69,10 @@ class TreeGenerator(TextGenerator):
             return [[item] for item in mat_at_zero]  # complexity: O(len(mat_at_zero))
         res: List[List[Any]] = []
         for item in mat_at_zero:  # complexity: O(len(mat_at_zero))
-            for j in TreeGenerator.combinations(mat[1:], prompt_length):
+            for j in GroupedTreePipeLine.combinations(mat[1:], prompt_length):
                 res.append([item] + j)
         filtered_res: List[List[Any]]
-        filtered_res = list(filter(lambda x: TreeGenerator.no_duplicates(x, prompt_length), res))
+        filtered_res = list(filter(lambda x: GroupedTreePipeLine.no_duplicates(x, prompt_length), res))
         return filtered_res
 
     @staticmethod
@@ -167,7 +167,7 @@ class TreeGenerator(TextGenerator):
             possible_tokens.append(curr_indices)  # O(1)
         # possible_tokens maximum size is group_size * k
         new_sequences: List[List[int]]
-        new_sequences = TreeGenerator.combinations(possible_tokens, len(org_prompt))
+        new_sequences = GroupedTreePipeLine.combinations(possible_tokens, len(org_prompt))
         # complexity: O(prod([len(mat[i]) for i in range(len(mat))]))
         # so it's O(prod(k for i in range(group_size))) which is O(k^group_size)
         # The maximum length for new_sequences is actual_top_k ** group_size
@@ -197,7 +197,7 @@ class TreeGenerator(TextGenerator):
         tokenized_ans_list: List[List[int]] = self.generate_group(prob_mat, org_prompt)  # O(group_size)
         # tokenized_ans_list maximum length is actual_top_k ** group_size
         prob_list: List[float]
-        prob_list = [TreeGenerator.seq_prob(
+        prob_list = [GroupedTreePipeLine.seq_prob(
             seq,
             prob_mat,
             org_prompt_prob
@@ -286,6 +286,6 @@ class TreeGenerator(TextGenerator):
         return super_representation + unique_representation
 
     def as_dict(self) -> Dict[str, Any]:
-        super_dict = super(TreeGenerator, self).as_dict()
+        super_dict = super(GroupedTreePipeLine, self).as_dict()
         super_dict.update({unique_attr: self.__getattribute__(unique_attr) for unique_attr in self.unique_attrs})
         return super_dict

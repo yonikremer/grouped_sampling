@@ -7,9 +7,9 @@ import pytest
 from torch import Tensor, equal
 
 from src.grouped_sampling import (
-    TextGenerator,
-    SamplingGenerator,
-    TreeGenerator,
+    GroupedGenerationPipeLine,
+    GroupedSamplingPipeLine,
+    GroupedTreePipeLine,
     CompletionDict,
     NoRepetitionPenalty,
     GenerationType,
@@ -27,38 +27,38 @@ EDGE_CASE_PROMPTS = [long_prompt, repeating_prompt]
 TEST_PROMPT = "This is a test prompt."
 
 
-def create_text_generators() -> Generator[TextGenerator, None, None]:
-    top_k_sampling_gen = SamplingGenerator(model_name=MODEL_NAME,
-                                           group_size=GROUP_SIZES[0],
-                                           top_k=TOP_KS[0],
-                                           top_p=None,
-                                           temp=TEMPERATURES[0],
-                                           answer_length_multiplier=1.0,)
+def create_text_generators() -> Generator[GroupedGenerationPipeLine, None, None]:
+    top_k_sampling_gen = GroupedSamplingPipeLine(model_name=MODEL_NAME,
+                                                 group_size=GROUP_SIZES[0],
+                                                 top_k=TOP_KS[0],
+                                                 top_p=None,
+                                                 temp=TEMPERATURES[0],
+                                                 answer_length_multiplier=1.0, )
     for top_k in TOP_KS:
         top_k_sampling_gen.top_k = top_k
         yield top_k_sampling_gen
     del top_k_sampling_gen
 
-    top_p_sampling_gen = SamplingGenerator(model_name=MODEL_NAME,
-                                           group_size=GROUP_SIZES[1],
-                                           top_k=None,
-                                           top_p=TOP_PS[1],
-                                           temp=TEMPERATURES[0],
-                                           answer_length_multiplier=1.0,
-                                           )
+    top_p_sampling_gen = GroupedSamplingPipeLine(model_name=MODEL_NAME,
+                                                 group_size=GROUP_SIZES[1],
+                                                 top_k=None,
+                                                 top_p=TOP_PS[1],
+                                                 temp=TEMPERATURES[0],
+                                                 answer_length_multiplier=1.0,
+                                                 )
     for top_p in TOP_PS:
         top_p_sampling_gen.top_p = top_p
         yield top_p_sampling_gen
     del top_p_sampling_gen
 
-    curr_tree_gen = TreeGenerator(model_name=MODEL_NAME,
-                                  group_size=GROUP_SIZES[0],
-                                  top_k=TOP_KS[1],
-                                  top_p=TOP_PS[1],
-                                  temp=TEMPERATURES[1],
-                                  answer_length_multiplier=1.0,
-                                  repetition_penalty_strategy=NoRepetitionPenalty(),
-                                  )
+    curr_tree_gen = GroupedTreePipeLine(model_name=MODEL_NAME,
+                                        group_size=GROUP_SIZES[0],
+                                        top_k=TOP_KS[1],
+                                        top_p=TOP_PS[1],
+                                        temp=TEMPERATURES[1],
+                                        answer_length_multiplier=1.0,
+                                        repetition_penalty_strategy=NoRepetitionPenalty(),
+                                        )
 
     for top_k in TOP_KS:
         curr_tree_gen.top_k = top_k
@@ -80,7 +80,7 @@ def test_str():
 
 @pytest.mark.parametrize("curr_text_generator, edge_case_prompt",
                          product(islice(create_text_generators(), 3, 5), EDGE_CASE_PROMPTS))
-def test_edge_cases(curr_text_generator: TextGenerator, edge_case_prompt: str):
+def test_edge_cases(curr_text_generator: GroupedGenerationPipeLine, edge_case_prompt: str):
     answer = curr_text_generator(
         prompt_s=edge_case_prompt,
         max_new_tokens=curr_text_generator.wrapped_model.group_size * 2,
@@ -93,7 +93,7 @@ def test_edge_cases(curr_text_generator: TextGenerator, edge_case_prompt: str):
 
 def test_pre_and_post_process():
     """Tests the different returning options"""
-    generator: TextGenerator = next(create_text_generators())
+    generator: GroupedGenerationPipeLine = next(create_text_generators())
     prompt: str = "This is a test prompt"
     returned_val: CompletionDict = generator(
         prompt_s=prompt,
@@ -138,7 +138,7 @@ def test_pre_and_post_process():
 
 def test_prefix():
     """Tests that the prefix option of the methods __call__ and preprocess works"""
-    generator: TextGenerator = next(create_text_generators())
+    generator: GroupedGenerationPipeLine = next(create_text_generators())
     prompt: str = "test prompt"
     prefix = "This is a "
     answer: CompletionDict = generator(
@@ -156,7 +156,7 @@ def test_prefix():
 
 def test_postfix():
     """Tests that the postfix option of the methods __call__ and preprocess works"""
-    generator: TextGenerator = next(create_text_generators())
+    generator: GroupedGenerationPipeLine = next(create_text_generators())
     prompt: str = "This is a"
     postfix = " Test postfix"
     answer: str = generator(
@@ -175,7 +175,7 @@ def test_postfix():
 
 def test_num_return_sequences():
     for curr_generator in create_text_generators():
-        if isinstance(curr_generator, TreeGenerator) and curr_generator.generation_type == GenerationType.GREEDY:
+        if isinstance(curr_generator, GroupedTreePipeLine) and curr_generator.generation_type == GenerationType.GREEDY:
             continue
         else:
             selected_generator = curr_generator
@@ -237,7 +237,7 @@ def test_calling_generators(curr_text_generator):
 
 
 @pytest.mark.parametrize("curr_text_generator", create_text_generators())
-def test_dict_conversions(curr_text_generator: TextGenerator):
+def test_dict_conversions(curr_text_generator: GroupedGenerationPipeLine):
     new_generator = type(curr_text_generator).from_dict(curr_text_generator.as_dict())
     assert type(curr_text_generator) == type(new_generator)
     assert curr_text_generator.model_name == new_generator.model_name

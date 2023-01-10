@@ -6,7 +6,7 @@ from typing import Callable, List, Dict, Optional, Any
 from torch import Tensor, zeros, argmax, multinomial, manual_seed
 
 from .generation_type import GenerationType
-from .text_generator import TextGenerator
+from .base_pipeline import GroupedGenerationPipeLine
 
 
 class ChangingSeed(Iterator):
@@ -75,8 +75,8 @@ class TokenProb:
         return self.prob < other.prob
 
 
-class SamplingGenerator(TextGenerator):
-    """A TextGenerator that generates text
+class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
+    """A GroupedGenerationPipeLine that generates text
     using random sampling
     with top-k or top-p filtering."""
     top_k: Optional[int] = None
@@ -121,8 +121,8 @@ class SamplingGenerator(TextGenerator):
         gen_type_to_filter_method: Dict[GenerationType, Callable[[Tensor, ], int]] = {
             GenerationType.TOP_K: self.top_k_sampling,
             GenerationType.TOP_P: self.top_p_sampling,
-            GenerationType.GREEDY: SamplingGenerator.highest_prob_token,
-            GenerationType.RANDOM: SamplingGenerator.unfiltered_sampling,
+            GenerationType.GREEDY: GroupedSamplingPipeLine.highest_prob_token,
+            GenerationType.RANDOM: GroupedSamplingPipeLine.unfiltered_sampling,
         }
         return gen_type_to_filter_method[self.generation_type]
 
@@ -166,7 +166,7 @@ class SamplingGenerator(TextGenerator):
             new_probs[token_id] = curr_token_prob.prob
         if prob_sum == 0.0:
             return converted_probs[0].token_id
-        return SamplingGenerator.unfiltered_sampling(new_probs)
+        return GroupedSamplingPipeLine.unfiltered_sampling(new_probs)
 
     def top_k_sampling(self, prob_vec: Tensor) -> int:
         """Gets a token id: probability mapping
@@ -182,7 +182,7 @@ class SamplingGenerator(TextGenerator):
         new_probs = zeros(prob_vec.shape, dtype=float)
         for token_id in top_k_keys:
             new_probs[token_id] = prob_vec[token_id] / prob_sum
-        return SamplingGenerator.unfiltered_sampling(new_probs)
+        return GroupedSamplingPipeLine.unfiltered_sampling(new_probs)
 
     def generate_group(self, prob_mat: Tensor) -> List[int]:
         """Generates a group of tokens
@@ -276,7 +276,7 @@ class SamplingGenerator(TextGenerator):
         return super_representation + unique_representation
 
     def as_dict(self) -> Dict[str, Any]:
-        super_dict = super(SamplingGenerator, self).as_dict()
+        super_dict = super(GroupedSamplingPipeLine, self).as_dict()
         super_dict.update(
             {unique_attr: self.__getattribute__(unique_attr)
              for unique_attr in self.unique_attrs}

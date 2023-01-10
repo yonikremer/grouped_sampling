@@ -9,7 +9,7 @@ from .token_ids import TokenIDS
 from .repetition_penalty import RepetitionPenaltyStrategy
 
 
-class ModelWrapper:
+class GroupedGenerationUtils:
     padding_id: int
     max_input_len: int
     model: PreTrainedModel
@@ -189,7 +189,7 @@ class ModelWrapper:
         return penalized_logits
 
     def __str__(self):
-        return f"ModelWrapper({self.as_dict()})"
+        return f"GroupedGenerationUtils({self.as_dict()})"
 
     def __repr__(self):
         return str(self)

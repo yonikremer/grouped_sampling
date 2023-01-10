@@ -14,8 +14,8 @@ from nvidia_smi import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtiliz
 
 from evaluation.experiment_manager import ExperimentManager
 from evaluation import lang_code_to_name
-from src.grouped_sampling import SamplingGenerator
-from src.grouped_sampling import TextGenerator
+from src.grouped_sampling import GroupedSamplingPipeLine
+from src.grouped_sampling import GroupedGenerationPipeLine
 
 from transformers.utils.logging import disable_progress_bar
 
@@ -96,7 +96,7 @@ def sub_experiment_half(
         my_evaluator: TranslationEvaluator,
         sub_set_half: Dataset,
         in_lang_code: str, out_lang_code: str,
-        generator: TextGenerator,
+        generator: GroupedGenerationPipeLine,
         manager: ExperimentManager) -> None:
     input_lang_name, output_lang_name = lang_code_to_name(in_lang_code), lang_code_to_name(out_lang_code)
     prefix = f"Translate {input_lang_name} to {output_lang_name}: \n {input_lang_name}: "
@@ -114,7 +114,7 @@ def sub_experiment_half(
 
 
 def run_experiment(
-        generator: TextGenerator,
+        generator: GroupedGenerationPipeLine,
         my_evaluator: TranslationEvaluator,
         sub_sut_names: List[str],
         debug: bool,
@@ -134,12 +134,12 @@ def run_experiment(
     manager.end_experiment()
 
 
-def create_text_generator() -> TextGenerator:
+def create_text_generator() -> GroupedGenerationPipeLine:
     """Creates a text generator from the evaluated_text_generator_dict.json file"""
     parent_folder = Path(__file__).parent
     with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
-    my_generator = SamplingGenerator.from_dict(evaluated_text_generator_dict)
+    my_generator = GroupedSamplingPipeLine.from_dict(evaluated_text_generator_dict)
     my_generator.get_logits_matrix = check_gpu_utilization(my_generator.get_logits_matrix)
     return my_generator
 
