@@ -13,8 +13,8 @@ class PreProcessor:
             tokenizer: PreTrainedTokenizer,
             max_input_len: int,
     ):
-        self.tokenizer = tokenizer
-        self.max_input_len = max_input_len
+        self.tokenizer: PreTrainedTokenizer = tokenizer
+        self.max_input_len: int = max_input_len
 
     def get_token_tensor(
             self,

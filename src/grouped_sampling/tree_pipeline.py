@@ -15,7 +15,8 @@ class NoCompletionsFound(Exception):
     def __init__(
             self,
             curr_text_generator: GroupedGenerationPipeLine,
-            additional_info: str = ""):
+            additional_info: str = ""
+    ):
         super(NoCompletionsFound, self).__init__(
             f"text generator: {curr_text_generator} \n"
             f"additional info: {additional_info}")
@@ -28,8 +29,8 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
     unique_attrs = "top_k", "top_p"
 
     def __init__(self, top_k: Optional[int], top_p: Optional[float], *args, **kwargs):
-        self.top_p = top_p
-        self.top_k = top_k
+        self.top_p: Optional[float] = top_p
+        self.top_k: Optional[int] = top_k
         super().__init__(
             *args, **kwargs
         )
@@ -44,7 +45,7 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
     def actual_top_k(self) -> int:
         """The maximum number of tokens to consider for each position
         It is always smaller than or equal to the vocab size"""
-        return min(self.top_k, int(self.tokenizer.vocab_size * self.top_p))
+        return min(self.top_k, int(self.wrapped_model.vocab_size * self.top_p))
 
     @staticmethod
     def no_duplicates(

@@ -16,10 +16,10 @@ class ChangingSeed(Iterator):
         for _ in changing_seed:
             # do something with random module"""
     def __init__(self, default_seed: int, max_num_calls: int):
-        self.default_seed = default_seed
-        self.curr_seed = self.default_seed
-        self.max_num_calls = max_num_calls
-        self.curr_num_calls = 0
+        self.default_seed: int = default_seed
+        self.curr_seed: int = self.default_seed
+        self.max_num_calls: int = max_num_calls
+        self.curr_num_calls: int = 0
 
     def __enter__(self):
         self.curr_num_calls = 0
@@ -54,8 +54,8 @@ class TokenProb:
     __slots__ = ['token_id', 'prob']
 
     def __init__(self, token_id: int, prob: Tensor):
-        self.token_id = token_id
-        self.prob = prob
+        self.token_id: int = token_id
+        self.prob: Tensor = prob
 
     def __lt__(self, other: "TokenProb"):
         """Overrides the < operator
@@ -79,8 +79,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
 
     def __init__(self, top_k: Optional[int] = None,
                  top_p: Optional[float] = None, *args, **kwargs):
-        self.top_p = top_p
-        self.top_k = top_k
+        self.top_p: Optional[float] = top_p
+        self.top_k: Optional[int] = top_k
         super().__init__(*args, **kwargs)
 
     def __setattr__(self, key, value):
@@ -91,16 +91,14 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
 
     @property
     def generation_type(self) -> GenerationType:
-        top_p = self.top_p
-        top_k = self.top_k
-        if top_k is None and top_p is None:
+        if self.top_k is None and self.top_p is None:
             return GenerationType.RANDOM
-        if top_k == 1 or top_p == 0.0:
+        if self.top_k == 1 or self.top_p == 0.0:
             return GenerationType.GREEDY
-        if top_k is not None:
+        if self.top_k is not None:
             return GenerationType.TOP_K
-        if top_p is not None:
-            if top_p < 1.0:
+        if self.top_p is not None:
+            if self.top_p < 1.0:
                 return GenerationType.TOP_P
             return GenerationType.RANDOM
         raise RuntimeError("Uncovered case in generation_type property")

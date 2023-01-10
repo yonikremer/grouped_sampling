@@ -2,7 +2,7 @@ from typing import Dict
 from warnings import warn
 
 from torch import cuda, LongTensor, ones, long, Tensor, cat, no_grad
-from transformers import PreTrainedModel, AutoModelForCausalLM
+from transformers import AutoModelForCausalLM
 from torch.nn import Softmax
 
 from .token_ids import TokenIDS
@@ -50,20 +50,20 @@ class GroupedGenerationUtils:
             **kwargs: the arguments to be passed to the model
         Complexity: O(1)
         """
-        self.use_softmax = use_softmax
-        self.end_of_sentence_id = end_of_sentence_id
-        self.repetition_penalty_strategy = repetition_penalty_strategy
-        self.group_size = group_size
-        self.max_input_len = max_input_len
-        self.padding_id = padding_id
-        self.end_of_sentence_stop = end_of_sentence_stop
-        self.model = AutoModelForCausalLM.from_pretrained(
+        self.use_softmax: bool = use_softmax
+        self.end_of_sentence_id: int = end_of_sentence_id
+        self.repetition_penalty_strategy: RepetitionPenaltyStrategy = repetition_penalty_strategy
+        self.group_size: int = group_size
+        self.max_input_len: int = max_input_len
+        self.padding_id: int = padding_id
+        self.end_of_sentence_stop: bool = end_of_sentence_stop
+        self.model: AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(
             model_name, **kwargs
         )
-        self.temp = temp
-        self.vocab_size = vocab_size
+        self.temp: float = temp
+        self.vocab_size: int = vocab_size
         if cuda.is_available():
-            self.model = self.model.cuda()
+            self.model: AutoModelForCausalLM = self.model.cuda()
 
     @property
     def padding_tokens(self) -> LongTensor:

@@ -11,7 +11,7 @@ class PostProcessor:
             self,
             tokenizer: PreTrainedTokenizer,
     ):
-        self.tokenizer = tokenizer
+        self.tokenizer: PreTrainedTokenizer = tokenizer
 
     def __call__(
             self,

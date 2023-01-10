@@ -78,7 +78,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         repetition_penalty_strategy: RepetitionPenaltyStrategy
             The strategy for the repetition penalty
         """
-        self.model_name = model_name
+        self.model_name: str = model_name
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         end_of_sentence_id = tokenizer.eos_token_id
         end_of_sentence_stop = end_of_sentence_stop and end_of_sentence_id is not None
@@ -92,11 +92,11 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 raise ValueError(
                     "The maximum length of the model is too big"
                 )
-        self.pre_processing_strategy = PreProcessor(
+        self.pre_processing_strategy: PreProcessor = PreProcessor(
             tokenizer=tokenizer,
             max_input_len=max_input_len,
         )
-        self.post_processing_strategy = PostProcessor(
+        self.post_processing_strategy: PostProcessor = PostProcessor(
             tokenizer=tokenizer,
         )
         wrapped_model_kwargs: Dict[str, Any] = {
@@ -111,7 +111,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             "use_softmax": self.generation_type.requires_softmax(),
             "vocab_size": tokenizer.vocab_size,
         }
-        self.wrapped_model = GroupedGenerationUtils(**remove_nones(wrapped_model_kwargs))
+        self.wrapped_model: GroupedGenerationUtils = GroupedGenerationUtils(**remove_nones(wrapped_model_kwargs))
         self.answer_length_multiplier: float = answer_length_multiplier
 
     @property
