@@ -18,7 +18,7 @@ from .repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PE
 from .completion_dict import CompletionDict
 from .token_ids import TokenIDS
 
-MAX_MODEL_INPUT_SIZE = 8192
+MAX_MODEL_INPUT_SIZE = 32768
 
 
 def remove_nones(d: Dict[str, Any]) -> Dict[str, Any]:
