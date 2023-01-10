@@ -8,6 +8,7 @@ from torch import LongTensor
 from transformers import (
     AutoTokenizer,
     AutoConfig,
+    PreTrainedTokenizer,
 )
 from transformers.tokenization_utils_base import TruncationStrategy
 
@@ -25,6 +26,17 @@ MAX_MODEL_INPUT_SIZE = 32768
 def remove_nones(d: Dict[str, Any]) -> Dict[str, Any]:
     """Returns a copy of a dictionary with all the not None values"""
     return {key: d[key] for key in d.keys() if d[key] is not None}
+
+
+def get_padding_id(tokenizer: PreTrainedTokenizer):
+    padding_id = tokenizer.pad_token_id
+    if not isinstance(padding_id, int):
+        padding_id = tokenizer.unk_token_id
+    if not isinstance(padding_id, int):
+        padding_id = tokenizer.mask_token_id
+    if not isinstance(padding_id, int):
+        raise RuntimeError(f"padding_id is {padding_id} and its type is {type(padding_id)}")
+    return padding_id
 
 
 class GroupedGenerationPipeLine(Callable, ABC):
@@ -67,10 +79,10 @@ class GroupedGenerationPipeLine(Callable, ABC):
             The strategy for the repetition penalty
         """
         self.model_name = model_name
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        end_of_sentence_id = self.tokenizer.eos_token_id
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        end_of_sentence_id = tokenizer.eos_token_id
         end_of_sentence_stop = end_of_sentence_stop and end_of_sentence_id is not None
-        max_input_len = self.tokenizer.model_max_length
+        max_input_len = tokenizer.model_max_length
         max_len_is_huge = max_input_len > MAX_MODEL_INPUT_SIZE
         if max_len_is_huge or max_input_len is None:
             config = AutoConfig.from_pretrained(model_name)
@@ -81,11 +93,11 @@ class GroupedGenerationPipeLine(Callable, ABC):
                     "The maximum length of the model is too big"
                 )
         self.preprocessor = PreProcessor(
-            tokenizer=self.tokenizer,
+            tokenizer=tokenizer,
             max_input_len=max_input_len,
         )
         self.postprocessor = PostProcessor(
-            tokenizer=self.tokenizer,
+            tokenizer=tokenizer,
         )
         wrapped_model_kwargs: Dict[str, Any] = {
             "model_name": model_name,
@@ -94,26 +106,13 @@ class GroupedGenerationPipeLine(Callable, ABC):
             "end_of_sentence_id": end_of_sentence_id,
             "end_of_sentence_stop": end_of_sentence_stop,
             "repetition_penalty_strategy": repetition_penalty_strategy,
-            "padding_id": self.padding_id,
+            "padding_id": get_padding_id(tokenizer),
             "temp": temp,
             "use_softmax": self.generation_type.requires_softmax(),
-            "vocab_size": self.tokenizer.vocab_size,
+            "vocab_size": tokenizer.vocab_size,
         }
         self.wrapped_model = GroupedGenerationUtils(**remove_nones(wrapped_model_kwargs))
         self.answer_length_multiplier: float = answer_length_multiplier
-
-    @property
-    def padding_id(self) -> int:
-        padding_id = self.tokenizer.pad_token_id
-        if not isinstance(padding_id, int):
-            padding_id = self.tokenizer.unk_token_id
-        if not isinstance(padding_id, int):
-            padding_id = self.tokenizer.mask_token_id
-        if not isinstance(padding_id, int):
-            padding_id = self.tokenizer.mask_token_id
-        if not isinstance(padding_id, int):
-            raise RuntimeError(f"padding_id is {padding_id} and its type is {type(padding_id)}")
-        return padding_id
 
     @property
     @abstractmethod
