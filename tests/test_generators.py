@@ -113,12 +113,12 @@ def test_pre_and_post_process():
     assert returned_text.startswith(
         prompt), f"{returned_text} doesn't start with {prompt}"
     prompt_tokens: Tensor
-    prompt_tokens, _, _, _ = generator.preprocessor(prompt)
+    prompt_tokens, _, _, _ = generator.pre_processing_strategy(prompt)
     assert equal(generated_token_ids[:len(prompt_tokens)], prompt_tokens), \
         f"{returned_val['generated_token_ids'].tolist()} is not equal to {prompt_tokens}"
     assert isinstance(generated_token_ids[:len(prompt_tokens)], Tensor), \
         f"{returned_val['generated_token_ids']} is not a tensor"
-    post_processed_text: str = generator.postprocessor(
+    post_processed_text: str = generator.post_processing_strategy(
         token_ids=generated_token_ids.tolist(), num_new_tokens=10, prompt_len=len(prompt_tokens),
         return_tensors=True, return_text=True, return_full_text=True,
         clean_up_tokenization_spaces=True)['generated_text']
@@ -131,7 +131,7 @@ def test_pre_and_post_process():
     returned_text = returned_val["generated_text"]
     assert not returned_text.startswith(
         prompt), f"{returned_text} doesn't start with {prompt}"
-    prompt_tokens, _, _, _ = generator.preprocessor(prompt)
+    prompt_tokens, _, _, _ = generator.pre_processing_strategy(prompt)
     assert not equal(returned_val["generated_token_ids"][:len(prompt_tokens)], prompt_tokens), \
         f"{returned_val['generated_token_ids'][:len(prompt_tokens)]} is equal to {prompt_tokens}"
 

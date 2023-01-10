@@ -92,11 +92,11 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 raise ValueError(
                     "The maximum length of the model is too big"
                 )
-        self.preprocessor = PreProcessor(
+        self.pre_processing_strategy = PreProcessor(
             tokenizer=tokenizer,
             max_input_len=max_input_len,
         )
-        self.postprocessor = PostProcessor(
+        self.post_processing_strategy = PostProcessor(
             tokenizer=tokenizer,
         )
         wrapped_model_kwargs: Dict[str, Any] = {
@@ -217,7 +217,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         postfix_len: int
         prompt_len: int
 
-        tokens, prefix_len, prompt_len, postfix_len = self.preprocessor(
+        tokens, prefix_len, prompt_len, postfix_len = self.pre_processing_strategy(
             prompt=prompt_s,
             prefix=prefix,
             truncation=truncation,
@@ -237,7 +237,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
 
         if num_return_sequences > 1:
             # O(sum(len(tokenized_answer) for tokenized_answer in tokenized_answers))
-            return [self.postprocessor(
+            return [self.post_processing_strategy(
                 token_ids=tokenized_answer,
                 num_new_tokens=max_new_tokens,
                 prompt_len=prompt_len,
@@ -250,7 +250,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             ) for tokenized_answer in tokenized_answers]
         else:
             # O(len(tokenized_answers[0]))
-            return self.postprocessor(
+            return self.post_processing_strategy(
                 token_ids=tokenized_answers[0],
                 num_new_tokens=max_new_tokens,
                 prompt_len=prompt_len,
