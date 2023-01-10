@@ -98,9 +98,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         if top_k == 1 or top_p == 0.0:
             return GenerationType.GREEDY
         if top_k is not None:
-            if top_k < self.wrapped_model.vocab_size:
-                return GenerationType.TOP_K
-            return GenerationType.RANDOM
+            return GenerationType.TOP_K
         if top_p is not None:
             if top_p < 1.0:
                 return GenerationType.TOP_P
