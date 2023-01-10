@@ -25,8 +25,6 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
     """A GroupedGenerationPipeLine that generates text
      in a TREE like fashion,
      without random sampling."""
-    top_p: float
-    top_k: int
     unique_attrs = "top_k", "top_p"
 
     def __init__(self, top_k: Optional[int], top_p: Optional[float], *args, **kwargs):

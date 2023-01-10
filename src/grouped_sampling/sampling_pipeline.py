@@ -15,11 +15,6 @@ class ChangingSeed(Iterator):
     with ChangingSeed(first_seed, number_of_different_seeds) as changing_seed:
         for _ in changing_seed:
             # do something with random module"""
-    default_seed: int
-    curr_seed: int
-    max_num_calls: int
-    curr_num_calls: int
-
     def __init__(self, default_seed: int, max_num_calls: int):
         self.default_seed = default_seed
         self.curr_seed = self.default_seed
@@ -57,8 +52,6 @@ class TokenProb:
     The < and > are the opposite of each other because the heapq module is only supporting minimum heaps
     and I need a maximum heap"""
     __slots__ = ['token_id', 'prob']
-    token_id: int
-    prob: Tensor  # of shape (1,) and dtype float
 
     def __init__(self, token_id: int, prob: Tensor):
         self.token_id = token_id
@@ -79,8 +72,6 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
     """A GroupedGenerationPipeLine that generates text
     using random sampling
     with top-k or top-p filtering."""
-    top_k: Optional[int] = None
-    top_p: Optional[float] = None
     default_seed: int = 0
     seed(default_seed)
     manual_seed(default_seed)
