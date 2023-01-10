@@ -14,8 +14,8 @@ from transformers.tokenization_utils_base import TruncationStrategy
 
 from .generation_type import GenerationType
 from .generation_utils import GroupedGenerationUtils
-from .postproccesor import PostProcessor
-from .preproccesor import PreProcessor
+from .postprocessor import PostProcessor
+from .preprocessor import PreProcessor
 from .repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PENALTY
 from .completion_dict import CompletionDict
 from .token_ids import TokenIDS
