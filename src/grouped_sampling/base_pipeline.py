@@ -9,12 +9,11 @@ from transformers import (
     AutoTokenizer,
     AutoConfig,
     BatchEncoding,
-    PreTrainedTokenizer,
 )
 from transformers.tokenization_utils_base import TruncationStrategy
 
 from .generation_type import GenerationType
-from .model_wrapper import GroupedGenerationUtils
+from .generation_utils import GroupedGenerationUtils
 from .repetition_penalty import RepetitionPenaltyStrategy, DEFAULT_REPETITION_PENALTY
 from .completion_dict import CompletionDict
 from .token_ids import TokenIDS
@@ -36,11 +35,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
     and some parameters
     (Defined in the subclasses)"""
 
-    model_name: str
-    tokenizer: PreTrainedTokenizer
-    wrapped_model: GroupedGenerationUtils
     framework: str = "pt"
-    answer_length_multiplier: float = 16
     descriptive_attrs = (
         "model_name",
         "generation_type",
@@ -71,8 +66,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             The strategy for the repetition penalty
         """
         self.model_name = model_name
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         end_of_sentence_id = self.tokenizer.eos_token_id
         end_of_sentence_stop = end_of_sentence_stop and end_of_sentence_id is not None
         max_input_len = self.tokenizer.model_max_length
@@ -98,7 +92,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             "vocab_size": self.tokenizer.vocab_size,
         }
         self.wrapped_model = GroupedGenerationUtils(**remove_nones(wrapped_model_kwargs))
-        self.answer_length_multiplier = answer_length_multiplier
+        self.answer_length_multiplier: float = answer_length_multiplier
 
     @property
     def padding_id(self) -> int:
