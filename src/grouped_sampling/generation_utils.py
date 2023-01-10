@@ -10,15 +10,6 @@ from .repetition_penalty import RepetitionPenaltyStrategy
 
 
 class GroupedGenerationUtils:
-    padding_id: int
-    max_input_len: int
-    model: PreTrainedModel
-    group_size: int
-    vocab_size: int
-    end_of_sentence_id: int
-    end_of_sentence_stop: bool
-    temp: float
-    repetition_penalty_strategy: RepetitionPenaltyStrategy
     descriptive_attrs = (
         "group_size",
         "end_of_sentence_stop",

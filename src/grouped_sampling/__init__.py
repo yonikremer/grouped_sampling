@@ -1,7 +1,7 @@
 from .completion_dict import CompletionDict
 from .token_ids import TokenIDS
 from .generation_type import GenerationType
-from .model_wrapper import GroupedGenerationUtils
+from .generation_utils import GroupedGenerationUtils
 from .repetition_penalty import (
     RepetitionPenaltyStrategy,
     LogitScalingRepetitionPenalty,
