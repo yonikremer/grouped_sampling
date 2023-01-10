@@ -1,0 +1,140 @@
+@startuml classes_grouped_sampling
+set namespaceSeparator none
+class "ChangingSeed" as grouped_sampling.sampling_pipeline.ChangingSeed #aliceblue {
+  curr_num_calls : int
+  curr_seed : int
+  default_seed : int
+  max_num_calls : int
+  __enter__()
+  __exit__()
+  __init__(default_seed: int, max_num_calls: int)
+  __iter__()
+  __next__()
+}
+class "GenerationType" as grouped_sampling.generation_type.GenerationType #aliceblue {
+  name
+  requires_softmax() -> bool
+}
+class "GroupedGenerationPipeLine" as grouped_sampling.base_pipeline.GroupedGenerationPipeLine #aliceblue {
+  answer_length_multiplier : float
+  descriptive_attrs : tuple
+  framework : str
+  generation_type
+  model_name : str
+  post_processing_strategy
+  pre_processing_strategy
+  wrapped_model
+  __call__(prompt_s: Union[str, List[str]], max_new_tokens: Optional[int], return_tensors: bool, return_text: bool, return_full_text: bool, clean_up_tokenization_spaces: bool, prefix: str, num_return_sequences: int, truncation: TruncationStrategy, postfix: str) -> CompletionDict | List[CompletionDict] | List[List[CompletionDict]]
+  __init__(model_name: str, group_size: int, temp: Optional[float], end_of_sentence_stop: Optional[bool], repetition_penalty_strategy: RepetitionPenaltyStrategy, answer_length_multiplier: float)
+  __repr__()
+  __str__()
+  _forward(tokenized_prompt: LongTensor, num_new_tokens: Optional[int], num_return_sequences: int) -> List[TokenIDS]
+  as_dict() -> Dict[str, Any]
+  from_dict(my_dict: Dict[str, Any])
+}
+class "GroupedGenerationUtils" as grouped_sampling.generation_utils.GroupedGenerationUtils #aliceblue {
+  descriptive_attrs : tuple
+  end_of_sentence_id : int
+  end_of_sentence_stop : bool
+  group_size : int
+  max_input_len : int
+  model : AutoModelForCausalLM
+  padding_id : int
+  padding_tokens
+  repetition_penalty_strategy
+  temp : float
+  use_softmax : bool
+  vocab_size : int
+  __init__(model_name: str, group_size: int, max_input_len: int, end_of_sentence_id: int, padding_id: int, vocab_size: int, repetition_penalty_strategy: RepetitionPenaltyStrategy, end_of_sentence_stop: bool, temp: float, use_softmax: bool)
+  __repr__()
+  __str__()
+  as_dict()
+  get_logits_matrix(tokens: TokenIDS) -> Tensor
+  get_prob_mat(tokens: TokenIDS, generation_start: int) -> Tensor
+  logits_to_probs(penalized_logits: Tensor) -> Tensor
+  prepare_model_kwargs(tokens: TokenIDS) -> Dict[str, LongTensor]
+}
+class "GroupedSamplingPipeLine" as grouped_sampling.sampling_pipeline.GroupedSamplingPipeLine #aliceblue {
+  default_seed : int
+  generation_type
+  sampling_func
+  top_k : Optional[int]
+  top_p : Optional[float]
+  unique_attrs : tuple
+  __init__(top_k: Optional[int], top_p: Optional[float])
+  __repr__()
+  __setattr__(key, value)
+  _forward(tokenized_prompt: Tensor, num_new_tokens: Optional[int], num_return_sequences: int) -> List[List[int]]
+  as_dict() -> Dict[str, Any]
+  generate_group(prob_mat: Tensor) -> List[int]
+  highest_prob_token(prob_vec: Tensor) -> int
+  top_k_sampling(prob_vec: Tensor) -> int
+  top_p_sampling(prob_vec: Tensor) -> int
+  unfiltered_sampling(prob_vec: Tensor) -> int
+}
+class "GroupedTreePipeLine" as grouped_sampling.tree_pipeline.GroupedTreePipeLine #aliceblue {
+  actual_top_k
+  generation_type
+  top_k : Optional[int]
+  top_p : Optional[float]
+  unique_attrs : tuple
+  __init__(top_k: Optional[int], top_p: Optional[float])
+  __repr__()
+  _forward(tokenized_prompt: Tensor, num_new_tokens: Optional[int], num_return_sequences: int) -> List[List[int]]
+  as_dict() -> Dict[str, Any]
+  combinations(mat: Sequence[Sequence[Any]], prompt_length: int) -> List[List[Any]]
+  generate_group(prob_mat: Tensor, org_prompt: TokenIDS) -> List[List[int]]
+  no_duplicates(my_sequence: List[Any], prompt_length: int) -> bool
+  rec_gen(org_prompt: TokenIDS, num_tokens: Optional[int], org_prompt_prob: float, prompt_length: int) -> Dict[Tuple[int], float]
+  remove_duplicates(completions: List[List[int]], probs: List[float]) -> Dict[Tuple[int], float]
+  seq_prob(tokens, prob_mat, org_prompt_prob) -> float
+}
+class "LogitScalingRepetitionPenalty" as grouped_sampling.repetition_penalty.LogitScalingRepetitionPenalty #aliceblue {
+  theta : float
+  __call__(logits: Tensor, tokens: TokenIDS, generation_start: int) -> Tensor
+  __init__(theta: float)
+}
+class "<color:red>NoCompletionsFound</color>" as grouped_sampling.tree_pipeline.NoCompletionsFound #aliceblue {
+  __init__(curr_text_generator: GroupedGenerationPipeLine, additional_info: str)
+}
+class "NoRepetitionPenalty" as grouped_sampling.repetition_penalty.NoRepetitionPenalty #aliceblue {
+  theta : float
+  __call__(logits: Tensor, tokens: TokenIDS, generation_start: int) -> Tensor
+}
+class "PostProcessor" as grouped_sampling.postprocessor.PostProcessor #aliceblue {
+  tokenizer : PreTrainedTokenizer
+  __call__(token_ids: TokenIDS, num_new_tokens: Optional[int], prompt_len: int, return_text: bool, return_tensors: bool, return_full_text: bool, clean_up_tokenization_spaces: bool, prefix_len: int, postfix_len: int)
+  __init__(tokenizer: PreTrainedTokenizer)
+}
+class "PreProcessor" as grouped_sampling.preprocessor.PreProcessor #aliceblue {
+  framework : str
+  max_input_len : int
+  tokenizer : PreTrainedTokenizer
+  __call__(prompt: str, prefix: str, truncation: TruncationStrategy, postfix: str) -> Tuple[LongTensor, int, int, int]
+  __init__(tokenizer: PreTrainedTokenizer, max_input_len: int)
+  get_token_tensor(text: str, truncation: TruncationStrategy) -> LongTensor
+}
+class "RepetitionPenaltyStrategy" as grouped_sampling.repetition_penalty.RepetitionPenaltyStrategy #aliceblue {
+  theta : float
+  __call__(logits: Tensor, tokens: TokenIDS, generation_start: int) -> Tensor
+  __repr__() -> str
+  __str__() -> str
+  get_already_generated_tokens(tokens: TokenIDS, generation_start: int) -> Set[int]
+}
+class "TokenProb" as grouped_sampling.sampling_pipeline.TokenProb #aliceblue {
+  __slots__ : list
+  prob : Tensor
+  token_id : int
+  __gt__(other: 'TokenProb')
+  __init__(token_id: int, prob: Tensor)
+  __lt__(other: 'TokenProb')
+}
+grouped_sampling.repetition_penalty.LogitScalingRepetitionPenalty --|> grouped_sampling.repetition_penalty.RepetitionPenaltyStrategy
+grouped_sampling.repetition_penalty.NoRepetitionPenalty --|> grouped_sampling.repetition_penalty.RepetitionPenaltyStrategy
+grouped_sampling.sampling_pipeline.GroupedSamplingPipeLine --|> grouped_sampling.base_pipeline.GroupedGenerationPipeLine
+grouped_sampling.tree_pipeline.GroupedTreePipeLine --|> grouped_sampling.base_pipeline.GroupedGenerationPipeLine
+grouped_sampling.generation_utils.GroupedGenerationUtils --* grouped_sampling.base_pipeline.GroupedGenerationPipeLine : wrapped_model
+grouped_sampling.postprocessor.PostProcessor --* grouped_sampling.base_pipeline.GroupedGenerationPipeLine : post_processing_strategy
+grouped_sampling.preprocessor.PreProcessor --* grouped_sampling.base_pipeline.GroupedGenerationPipeLine : pre_processing_strategy
+grouped_sampling.repetition_penalty.RepetitionPenaltyStrategy --* grouped_sampling.generation_utils.GroupedGenerationUtils : repetition_penalty_strategy
+@enduml
