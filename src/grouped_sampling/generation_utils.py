@@ -57,13 +57,13 @@ class GroupedGenerationUtils:
         self.max_input_len: int = max_input_len
         self.padding_id: int = padding_id
         self.end_of_sentence_stop: bool = end_of_sentence_stop
-        self.model: AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(
+        self.model = AutoModelForCausalLM.from_pretrained(
             model_name, **kwargs
         )
         self.temp: float = temp
         self.vocab_size: int = vocab_size
         if cuda.is_available():
-            self.model: AutoModelForCausalLM = self.model.cuda()
+            self.model = self.model.cuda()
 
     @property
     def padding_tokens(self) -> LongTensor:
