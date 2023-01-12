@@ -4,6 +4,7 @@ from typing import List, Dict, Optional
 
 from comet_ml import API, APIExperiment
 from matplotlib import pyplot as plt
+from pandas import DataFrame
 
 from evaluation import STAT_NAME_TO_FUNC, BERT_SCORES, get_project_name, get_comet_api_key, WORKSPACE
 
@@ -12,6 +13,7 @@ stat_names = tuple(stat_name for stat_name, _ in STAT_NAME_TO_FUNC)
 metric_names = BERT_SCORES
 X_LABEL = "group size"
 PLOTS_FOLDER = join(dirname(abspath(__file__)), "plots", "third_part")
+TABLES_FOLDER = join(dirname(abspath(__file__)), "tables", "third_part")
 
 plt.autoscale(False)
 
@@ -130,9 +132,28 @@ def plot_duration():
     plt.clf()
 
 
+def generate_table(stat_name: str) -> None:
+    group_size_to_score_stats: Dict[int, Dict[str, float]] = {}
+    for exp in get_relevant_experiments():
+        group_size: int = get_group_size(exp)
+        curr_exp_stats: Dict[str, float] = get_score_stat(exp, stat_name)
+        if len(curr_exp_stats) > 0:
+            group_size_to_score_stats[group_size] = curr_exp_stats
+    if len(group_size_to_score_stats) <= 0:
+        raise RuntimeError(f"Could not find any experiments with the stat {stat_name}.")
+    df = DataFrame()
+    for curr_metric_name in metric_names:
+        for curr_group_size in group_size_to_score_stats.keys():
+            df.loc[curr_group_size, curr_metric_name] = group_size_to_score_stats[curr_group_size][curr_metric_name]
+    df = df.sort_index()
+    df = df.round(3)
+    df.to_csv(join(TABLES_FOLDER, f"{stat_name}.csv"))
+
+
 if __name__ == "__main__":
     print("started")
     for curr_stat_name in stat_names:
         generate_plot(curr_stat_name)
+        generate_table(curr_stat_name)
     plot_duration()
     print("Done")
