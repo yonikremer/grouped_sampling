@@ -52,7 +52,7 @@ All are available in the documents folder
 ## The code:
 
 ### The Algorithm Itself:
-You can install it using `python -m pip install -q grouped sampling`
+You can install it using `python -m pip install -q grouped-sampling`
 All of the code is under the src/grouped_sampling
 
 ### The Demo
