@@ -1,4 +1,4 @@
-,BERT_f1,BERT_precision,BERT_recall
+group_size,BERT_f1,BERT_precision,BERT_recall
 1,0.912,0.87,0.982
 2,0.881,0.838,0.983
 3,0.888,0.824,0.981
