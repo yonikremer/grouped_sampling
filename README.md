@@ -23,7 +23,7 @@ The algorithm succeeded more than the existing alternative in the experiments.
 
 1. Make sure You have python 3 (3.9+ is recommended).
 2. Make sure You have a fast internet connection
-3. Run: `python -m pip install -q grouped sampling`
+3. Run: `python -m pip install -q grouped-sampling`
 4. `from grouped_sampling.sampling_generator import GroupedSamplingPipeLine`
 5. Choose a Causal Language Model from huggingface hub
 6. Choose a group size, 
