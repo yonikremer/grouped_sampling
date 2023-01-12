@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 dynamic = ["dependencies"]
 name = "grouped_sampling"
 version = "1.0.2"
-description = "A faster algorithem for generating texts with cuasal language models"
+description = "A faster algorithm for generating texts with cuasal language models"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.6"
