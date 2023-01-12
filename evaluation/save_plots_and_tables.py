@@ -12,8 +12,9 @@ api = API(api_key=get_comet_api_key())
 stat_names = tuple(stat_name for stat_name, _ in STAT_NAME_TO_FUNC)
 metric_names = BERT_SCORES
 X_LABEL = "group size"
-PLOTS_FOLDER = join(dirname(abspath(__file__)), "plots", "third_part")
-TABLES_FOLDER = join(dirname(abspath(__file__)), "tables", "third_part")
+curr_dir = dirname(abspath(__file__))
+PLOTS_FOLDER = join(curr_dir, "plots", "third_part")
+TABLES_FOLDER = join(curr_dir, "tables", "third_part")
 
 plt.autoscale(False)
 
@@ -56,7 +57,7 @@ def get_score_stat(experiment: APIExperiment, stat: str) -> Dict[str, float]:
     return score_stat
 
 
-def plot_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
+def save_plot_from_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
     """Adds a scatter plot to the panel.
     makes sure that:
     the y scale is from 0 to 1
@@ -92,7 +93,7 @@ def plot_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
     plt.clf()
 
 
-def generate_plot(stat_name: str) -> None:
+def save_stat_plot(stat_name: str) -> None:
     group_size_to_score_stats: Dict[int, Dict[str, float]] = {}
     for exp in get_relevant_experiments():
         group_size: int = get_group_size(exp)
@@ -100,7 +101,7 @@ def generate_plot(stat_name: str) -> None:
         if len(curr_exp_stats) > 0:
             group_size_to_score_stats[group_size] = curr_exp_stats
     if len(group_size_to_score_stats) > 0:
-        plot_data(group_size_to_score_stats, stat_name)
+        save_plot_from_data(group_size_to_score_stats, stat_name)
     else:
         raise RuntimeError(f"Could not find any experiments with the stat {stat_name}.")
 
@@ -111,7 +112,7 @@ def get_duration(exp: APIExperiment) -> float:
     return duration_milliseconds / (1000 * 60 * 60)
 
 
-def plot_duration():
+def save_duration_plot():
     group_size_to_duration = {get_group_size(exp): get_duration(exp) for exp in get_relevant_experiments()}
     plt.autoscale(True)
     curr_figure = plt.gcf()
@@ -132,7 +133,7 @@ def plot_duration():
     plt.clf()
 
 
-def generate_table(stat_name: str) -> None:
+def save_stat_table(stat_name: str) -> None:
     group_size_to_score_stats: Dict[int, Dict[str, float]] = {}
     for exp in get_relevant_experiments():
         group_size: int = get_group_size(exp)
@@ -153,7 +154,7 @@ def generate_table(stat_name: str) -> None:
 if __name__ == "__main__":
     print("started")
     for curr_stat_name in stat_names:
-        generate_plot(curr_stat_name)
-        generate_table(curr_stat_name)
-    plot_duration()
+        save_stat_plot(curr_stat_name)
+        save_stat_table(curr_stat_name)
+    save_duration_plot()
     print("Done")
