@@ -30,8 +30,8 @@ The algorithm succeeded more than the existing alternative in the experiments.
 The recommended group size is the upper limit for the length of the generated texts.
 A higher group size will cause unnecessary computations.
 A lower group size will cause lower performance both in runtime and text quality.
-7. `gen = GroupedSamplingPipeLine(model_name=YOUR_MODEL_NAME, group_size=YOUR_GROUP_SIZE)`
-8. `answer = gen(YOUR_TEXT)["generated_text"]`
+7. `pipe = GroupedSamplingPipeLine(model_name=YOUR_MODEL_NAME, group_size=YOUR_GROUP_SIZE)`
+8. `answer = pipe(YOUR_TEXT)["generated_text"]`
 
 
 # Project OverView:
