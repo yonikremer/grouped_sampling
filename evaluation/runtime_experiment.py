@@ -5,6 +5,7 @@ from typing import List, Iterable, Dict
 
 from datasets import get_dataset_config_names, Dataset
 import matplotlib.pyplot as plt
+from pandas import DataFrame
 
 from evaluation import process_translation_data, DATASET_NAME, lang_code_to_name, create_pipeline
 
@@ -35,22 +36,27 @@ def get_prompts(debug: bool) -> List[str]:
     return prompts
 
 
-def create_and_save_graph(group_size_to_duration: Dict[int, float]):
-    curr_figure = plt.gcf()
-    curr_figure.clear()
-    plt.scatter(
-        group_size_to_duration.keys(),
-        group_size_to_duration.values(),
-    )
-    plt.xlabel("Group Size")
-    plt.ylabel("Duration (Hours)")
+def save_plot(df: DataFrame):
+    plots_folder = join(curr_dir, "plots")
+    plot_path = join(plots_folder, "group_size_to_duration.png")
     plt.xscale("log")
-    title = "Duration as a function of (log scaled) Group Size"
-    plt.title(title)
-    PLOTS_FOLDER = join(curr_dir, "plots")
-    fig_path = join(PLOTS_FOLDER, join(PLOTS_FOLDER, f"{title}.png"))
-    print(f"Saving figure to {fig_path}")
-    plt.savefig(fig_path, bbox_inches='tight', pad_inches=0)
+    df.plot(x="group size", y="duration", kind="scatter", logx=True,
+            title="Duration as a function of (log scaled) Group Size",
+            xlabel="Group Size (Log Scaled)", ylabel="Duration (Hours)")
+    plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
+
+
+def save_csv(df: DataFrame):
+    tables_folder = join(curr_dir, "tables")
+    table_path = join(tables_folder, "group_size_to_duration.csv")
+    df.to_csv(table_path, index=False)
+
+
+def create_df(group_size_to_duration: Dict[int, float]):
+    df = DataFrame(columns=["group size", "duration"])
+    df["group size"] = group_size_to_duration.keys()
+    df["duration"] = group_size_to_duration.values()
+    return df
 
 
 def change_group_size(new_group_size: int):
@@ -81,8 +87,10 @@ def main(debug: bool = False):
         end_time = time.time()
         duration_seconds = end_time - start_time
         group_size_to_duration[group_size] = duration_seconds / 3600
-    create_and_save_graph(group_size_to_duration)
+    df = create_df(group_size_to_duration)
+    save_plot(df)
+    save_csv(df)
 
 
 if __name__ == "__main__":
-    main(False)
+    main(True)
