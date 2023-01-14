@@ -84,6 +84,8 @@ class GroupedGenerationUtils:
         """
         if not isinstance(tokens, Tensor):
             tokens = LongTensor(tokens)  # O(n)
+        if cuda.is_available():
+            tokens = tokens.cuda()
         padded_tokens: LongTensor = cat(
             (tokens, self.padding_tokens), dim=0
         ).unsqueeze(0)
