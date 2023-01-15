@@ -1,5 +1,4 @@
 """This is a script that plots the results of the experiments and saves the figures to the plots folder"""
-import json
 from os.path import join, dirname, abspath
 from typing import List, Dict, Optional
 
