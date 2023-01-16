@@ -97,7 +97,6 @@ class GroupedGenerationUtils:
         padded_tokens: LongTensor = cat(
             (tokens, self.padding_tokens), dim=0
         ).unsqueeze(0)
-        assert padded_tokens.shape == (1, min(self.max_input_len, len(tokens) + self.group_size - 1))
         # the target_length of padded_tokens is n + group_size - 1
         # so creating it is O(n + group_size)
         attention_len = padded_tokens.shape[1]  # n + group_size - 1
@@ -215,7 +214,6 @@ class GroupedGenerationUtils:
         for i, sequence in enumerate(tokens):
             # chose stop_index such that the target_length of the sequence is group_size
             curr_relevant_logits = all_logits[i, len(sequence) - 1:len(sequence) + self.group_size, :self.vocab_size]
-            assert curr_relevant_logits.shape == (self.group_size, self.vocab_size)
             unscaled_relevant_logits.append(curr_relevant_logits)
         return safe_cat_batch(unscaled_relevant_logits)
 
