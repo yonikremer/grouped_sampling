@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Set, Optional
+from typing import Set, Optional, Iterable
 
 from torch import Tensor
 
@@ -25,6 +25,10 @@ class RepetitionPenaltyStrategy(ABC):
     ) -> Tensor:
         raise NotImplementedError
 
+    @abstractmethod
+    def call_batch(self, logits: Tensor, tokens: Iterable[TokenIDS], generation_start: Iterable[int]) -> Tensor:
+        raise NotImplementedError
+
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(theta={self.theta})"
 
@@ -35,6 +39,13 @@ class RepetitionPenaltyStrategy(ABC):
 class LogitScalingRepetitionPenalty(
     RepetitionPenaltyStrategy
 ):
+    def call_batch(self, logits: Tensor, tokens: Iterable[TokenIDS], generation_start: Iterable[int]) -> Tensor:
+        assert len(logits.shape) == 3
+        logit_matrices_generator = (logits[i, :, :] for i in range(logits.shape[0]))
+        for i, (logit, token, start) in enumerate(zip(logit_matrices_generator, tokens, generation_start)):
+            logits[i, :, :] = self(logit, token, start)
+        return logits
+
     def __init__(self, theta: float):
         if theta <= 1:
             raise ValueError("Theta must be > 1")
@@ -73,6 +84,7 @@ class LogitScalingRepetitionPenalty(
             tokens,
             generation_start
         )
+        assert len(logits.shape) == 2
         for token_id in generated_tokens:
             # len(generated_tokens) < max(n, vocab_size)
             logits[:, token_id] /= self.theta
@@ -91,6 +103,9 @@ class NoRepetitionPenalty(
             tokens: TokenIDS,
             generation_start: int
     ) -> Tensor:
+        return logits
+
+    def call_batch(self, logits: Tensor, tokens: [TokenIDS], generation_start: int) -> Tensor:
         return logits
 
 
