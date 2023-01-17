@@ -12,7 +12,6 @@ from src.grouped_sampling import (
     GroupedTreePipeLine,
     CompletionDict,
     NoRepetitionPenalty,
-    GenerationType,
 )
 
 MODEL_NAME = "gpt2"

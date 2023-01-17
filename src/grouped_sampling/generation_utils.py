@@ -170,7 +170,7 @@ class GroupedGenerationUtils:
         Complexity: O(target_length * batch_size)
         """
         padded_batch: List[LongTensor] = [
-            self.pad_sequence(sequence=sequence, target_length=length)
+            self.pad_sequence(sequence=sequence, target_length=length).unsqueeze(0)
             for sequence in batch
         ]
         return safe_cat_batch(padded_batch)
@@ -214,7 +214,7 @@ class GroupedGenerationUtils:
         for i, sequence in enumerate(tokens):
             # chose stop_index such that the target_length of the sequence is group_size
             curr_relevant_logits = all_logits[i, len(sequence) - 1:len(sequence) + self.group_size, :self.vocab_size]
-            unscaled_relevant_logits.append(curr_relevant_logits)
+            unscaled_relevant_logits.append(curr_relevant_logits.unsqueeze(0))
         return safe_cat_batch(unscaled_relevant_logits)
 
     def get_prob_mat_batch(self, tokens: List[TokenIDS], generation_start_indexes: Iterable[int]) -> Tensor:

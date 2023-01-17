@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import heapq
 from collections.abc import Iterator
+from multiprocessing import Pool
 from random import seed
 from typing import Callable, List, Dict, Optional, Any
 
@@ -15,6 +18,7 @@ class ChangingSeed(Iterator):
     with ChangingSeed(first_seed, number_of_different_seeds) as changing_seed:
         for _ in changing_seed:
             # do something with random module"""
+
     def __init__(self, default_seed: int, max_num_calls: int):
         self.default_seed: int = default_seed
         self.curr_seed: int = self.default_seed
@@ -172,7 +176,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         return GroupedSamplingPipeLine.unfiltered_sampling(new_probs)
 
     def generate_group(self, prob_mat: Tensor) -> List[int]:
-        """Generates a group of tokens
+        """
+        Gets a probability matrix of shape (group_size, vocab_size)
+        Generates a group of tokens
          using the choice_function.
          Complexity: O(group_size)"""
         prob_mat.cpu()
@@ -197,63 +203,82 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
                 # because it is coping a list with maximum size of group_size
         return new_group
 
+    def generate_group_batch(self, prob_tensor: Tensor) -> List[List[int]]:
+        """prob_tensor: tensor of shape (batch_size, group_size, vocab_size)"""
+        pool = Pool()
+        # create a list of arguments for each process
+        args = [prob_mat for prob_mat in prob_tensor]
+        new_tokens = pool.map(self.generate_group, args)
+        # close the pool
+        pool.close()
+        # wait for the processes to finish
+        pool.join()
+        return list(new_tokens)
+
     def _forward(
             self,
             tokenized_prompt: Tensor,
-            num_new_tokens: Optional[int] = None,
-            num_return_sequences: int = 1,
+            num_new_tokens: int,
     ) -> List[List[int]]:
         """Complexity:
-            O(num_return_sequences * (
+            O(
                 ((n ^ 3) / group_size) +
                 ((n * l ^ 2) / group_size) +
                 group_size +
-                n)
+                n
             )
         where l is the number of tokens in the prompt
         and n is the number of new tokens to generate"""
         # let's define l = len(tokenized_prompt), n = num_new_tokens
-        answers: List[List[int]] = []
-        curr_token_list: List[int] = tokenized_prompt.tolist()
         # coping a tensor of size lso O(l)
-        if num_new_tokens is None:
-            raise RuntimeError("num_new_tokens is None")
-        for _ in ChangingSeed(
-                default_seed=self.default_seed,
-                max_num_calls=num_return_sequences):
-            # num_return_sequences iterations
-            for _ in range(num_new_tokens // self.wrapped_model.group_size):
-                # and each iteration is
-                # O(n ^ 2 + l ^ 2 + group_size ^ 2 + group_size)
-                # so the complexity of the loop is
-                # O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
-                prob_mat: Tensor = self.wrapped_model.get_prob_mat(
-                    curr_token_list, len(tokenized_prompt)
-                )
-                # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
-                # len(curr_token_list) <= n + l
-                # so the complexity is
-                # O(group_size ^ 2 + (n + l) ^ 2) is equals to
-                # O(n ^ 2 + nl + l ^ 2 + group_size ^ 2)
-                # but nl <= max(n^2, l^2) so the complexity
-                # is O(n ^ 2 + l ^ 2 + group_size ^ 2)
-                new_tokens = self.generate_group(prob_mat)
-                # complexity: O(group_size)
-                # len(curr_token_list) <= n + l
-                # so the complexity is O(group_size * (n + l + group_size))
-                # len(new_tokens) = group_size
-                if self.wrapped_model.end_of_sentence_id in new_tokens:
-                    # the check is O(group_size)
-                    end_of_sentence_index = new_tokens.index(
-                        self.wrapped_model.end_of_sentence_id)
-                    # O(group_size) because len(new_tokens) <= group_size
-                    new_tokens = new_tokens[:end_of_sentence_index]
-                    # O(group_size) because end_of_sentence_index < group_size
-                curr_token_list.extend(new_tokens)
+        curr_token_list: List[int] = tokenized_prompt.tolist()
+        for _ in range(num_new_tokens // self.wrapped_model.group_size):
+            # and each iteration is
+            # O(n ^ 2 + l ^ 2 + group_size ^ 2 + group_size)
+            # so the complexity of the loop is
+            # O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
+            prob_mat: Tensor = self.wrapped_model.get_prob_mat(
+                curr_token_list, len(tokenized_prompt)
+            )
+            # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
+            # len(curr_token_list) <= n + l
+            # so the complexity is
+            # O(group_size ^ 2 + (n + l) ^ 2) is equals to
+            # O(n ^ 2 + nl + l ^ 2 + group_size ^ 2)
+            # but nl <= max(n^2, l^2) so the complexity
+            # is O(n ^ 2 + l ^ 2 + group_size ^ 2)
+            new_tokens = self.generate_group(prob_mat)
+            # complexity: O(group_size)
+            # len(curr_token_list) <= n + l
+            # so the complexity is O(group_size * (n + l + group_size))
+            # len(new_tokens) = group_size
+            if self.wrapped_model.end_of_sentence_id in new_tokens:
+                # the check is O(group_size)
+                end_of_sentence_index = new_tokens.index(
+                    self.wrapped_model.end_of_sentence_id)
                 # O(group_size) because len(new_tokens) <= group_size
-            answers.append(curr_token_list)
-            # O(1)
-        return answers
+                new_tokens = new_tokens[:end_of_sentence_index]
+                # O(group_size) because end_of_sentence_index < group_size
+            curr_token_list.extend(new_tokens)
+            # O(group_size) because len(new_tokens) <= group_size
+        return curr_token_list
+
+    def forward_batch(
+            self,
+            tokenized_prompts: List[Tensor],
+            num_new_tokens: List[int],
+    ) -> List[List[int]]:
+        generation_start_indexes = [len(prompt) for prompt in tokenized_prompts]
+        curr_sequences: List[List[int]] = [tokenized_prompt.tolist() for tokenized_prompt in tokenized_prompts]
+        for _ in range(num_new_tokens // self.wrapped_model.group_size):
+            prob_tensor = self.wrapped_model.get_prob_mat_batch(
+                tokens=tokenized_prompts,
+                generation_start_indexes=generation_start_indexes,
+            )  # tensor of shape (batch_size, group_size, vocab_size)
+            new_tokens: List[List[int]] = self.generate_group_batch(prob_tensor)
+            for i, new_token in enumerate(new_tokens):
+                curr_sequences[i].extend(new_token)
+        return curr_sequences
 
     def __repr__(self):
         super_representation = super().__repr__()

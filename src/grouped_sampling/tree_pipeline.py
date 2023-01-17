@@ -248,10 +248,7 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
             self,
             tokenized_prompt: Tensor,
             num_new_tokens: Optional[int] = None,
-            num_return_sequences: int = 1,
-    ) -> List[List[int]]:
-        if num_return_sequences > 1 and self.generation_type == GenerationType.GREEDY:
-            raise ValueError("greedy generation with tree can't return more than one sequence")
+    ) -> List[int]:
 
         if num_new_tokens is not None:
             num_groups = ceil(num_new_tokens / self.wrapped_model.group_size)
@@ -264,19 +261,8 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
             org_prompt_prob=1.0,
             prompt_length=len(tokenized_prompt)
         )
-        if len(seq_prob_dict) < num_return_sequences:
-            raise NoCompletionsFound(
-                self,
-                f"Not enough completions found,"
-                f" {len(seq_prob_dict)} found"
-                f" but {num_return_sequences} requested"
-            )
-        sorted_seq_prob_dict = sorted(
-            seq_prob_dict.items(), key=lambda x: x[1], reverse=True
-        )  # O(n log n) where n is len(seq_prob_dict)
-        highest_prob_answers = sorted_seq_prob_dict[:num_return_sequences]  # O(num_return_sequences)
-        return [tokens for tokens, prob
-                in highest_prob_answers]
+
+        return max(seq_prob_dict.keys(), key=seq_prob_dict.get)
 
     def __repr__(self):
         super_representation = super().__repr__()

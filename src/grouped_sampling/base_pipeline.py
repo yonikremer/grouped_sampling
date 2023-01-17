@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Optional, List, Union, Dict, Any
+from typing import Optional, List, Union, Dict, Any, Tuple
 
-from torch import LongTensor
+from torch import LongTensor, Tensor
 from transformers import (
     AutoTokenizer,
     AutoConfig,
@@ -126,9 +126,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
     def _forward(
             self,
             tokenized_prompt: LongTensor,
-            num_new_tokens: Optional[int] = None,
-            num_return_sequences: int = 1,
-    ) -> List[TokenIDS]:
+            num_new_tokens: int,
+    ) -> TokenIDS:
         """A helper method for __call__ that generates the new tokens
         Has a unique implementation for each subclass
         Args:
@@ -149,7 +148,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
             return_full_text: bool = True,
             clean_up_tokenization_spaces: bool = False,
             prefix: str = "",
-            num_return_sequences: int = 1,
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
             postfix: str = "",
     ) -> CompletionDict | List[CompletionDict] | List[List[CompletionDict]]:
@@ -175,12 +173,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 This parameter is forwarded to the decode function of the AutoTokenizer class
             prefix (`str`, defaults to an empty string):
                 Prefix added to prompt.
-            num_return_sequences (`int`, defaults to 1):
-                The number of independently generated answers to return for each prompt.
-                For GroupedSamplingPipeLine:
-                    each answer will be generated with different seed.
-                For GroupedTreePipeLine:
-                    the num_return_sequences with the highest scores will be returned.
             truncation: TruncationStrategy
              - whether to truncate the prompt
             postfix: str
@@ -202,16 +194,17 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 "max_new_tokens must be given if end_of_sentence_stop is False"
             )
         if isinstance(prompt_s, list):
-            return [self.__call__(
-                prompt_s=prompt,
+            return self.call_batch(
+                prompts=prompt_s,
                 max_new_tokens=max_new_tokens,
-                return_text=return_text,
                 return_tensors=return_tensors,
+                return_text=return_text,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                prefix=prefix,
                 truncation=truncation,
                 postfix=postfix,
-            ) for prompt in prompt_s]
+            )
         tokens: LongTensor
         prefix_len: int
         postfix_len: int
@@ -232,35 +225,71 @@ class GroupedGenerationPipeLine(Callable, ABC):
         tokenized_answers = self._forward(
             tokens,
             max_new_tokens,
-            num_return_sequences
+        )
+        # O(len(tokenized_answers[0]))
+        return self.post_processing_strategy(
+            token_ids=tokenized_answers,
+            num_new_tokens=max_new_tokens,
+            prompt_len=prompt_len,
+            return_text=return_text,
+            return_tensors=return_tensors,
+            return_full_text=return_full_text,
+            clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+            prefix_len=prefix_len,
+            postfix_len=postfix_len,
         )
 
-        if num_return_sequences > 1:
-            # O(sum(len(tokenized_answer) for tokenized_answer in tokenized_answers))
-            return [self.post_processing_strategy(
-                token_ids=tokenized_answer,
+    def call_batch(
+            self,
+            prompts: List[str],
+            max_new_tokens: Optional[int] = None,
+            return_tensors: bool = False,
+            return_text: bool = True,
+            return_full_text: bool = True,
+            clean_up_tokenization_spaces: bool = False,
+            prefix: str = "",
+            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
+            postfix: str = "",
+    ) -> List[CompletionDict]:
+        # check the parameters
+        if not return_tensors and not return_text:
+            raise ValueError("You must return at least one of the return_tensors and return_text parameters")
+        # tokenize the prompts
+        tokenized_prompts_lengths: List[Tuple[Tensor, int, int, int]] = [
+            self.pre_processing_strategy(
+                prompt, truncation=truncation, prefix=prefix, postfix=postfix
+            ) for prompt in prompts
+        ]
+        tokenized_prompts: List[Tensor] = [tokenized_prompt for tokenized_prompt, _, _, _ in tokenized_prompts_lengths]
+
+        prefix_lengths: List[int] = [prefix_length for _, prefix_length, _, _ in tokenized_prompts_lengths]
+        prompts_lengths: List[int] = [prompt_length for _, _, prompt_length, _ in tokenized_prompts_lengths]
+        postfix_lengths: List[int] = [postfix_length for _, _, _, postfix_length in tokenized_prompts_lengths]
+        # generate the sequences
+        generated_sequences: List[List[List[int]]] = self.forward_batch(
+            tokenized_prompts,
+            num_new_tokens=max_new_tokens,
+        )
+        # post process the sequences
+        return [
+            self.post_processing_strategy(
+                token_ids=generated_sequence,
                 num_new_tokens=max_new_tokens,
-                prompt_len=prompt_len,
-                return_text=return_text,
+                prefix_len=prefix_length,
+                prompt_len=prompt_length,
+                postfix_len=postfix_length,
                 return_tensors=return_tensors,
+                return_text=return_text,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                prefix_len=prefix_len,
-                postfix_len=postfix_len,
-            ) for tokenized_answer in tokenized_answers]
-        else:
-            # O(len(tokenized_answers[0]))
-            return self.post_processing_strategy(
-                token_ids=tokenized_answers[0],
-                num_new_tokens=max_new_tokens,
-                prompt_len=prompt_len,
-                return_text=return_text,
-                return_tensors=return_tensors,
-                return_full_text=return_full_text,
-                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                prefix_len=prefix_len,
-                postfix_len=postfix_len,
             )
+            for generated_sequence, prefix_length, prompt_length, postfix_length in zip(
+                generated_sequences,
+                prefix_lengths,
+                prompts_lengths,
+                postfix_lengths,
+            )
+        ]
 
     def __repr__(self):
         attrs_description = ", ".join(
@@ -292,3 +321,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
         wrapped_model_dict = wrapped_model.as_dict()
         my_dict.update(wrapped_model_dict)
         return cls(**my_dict)
+
+    def forward_batch(self, tokenized_prompts: List[LongTensor], num_new_tokens: int) -> List[TokenIDS]:
+        """Generates a batch of sequences"""
+        return [self._forward(tokenized_prompt, num_new_tokens) for tokenized_prompt in tokenized_prompts]
+
