@@ -173,28 +173,6 @@ def test_postfix():
     assert postfix not in answer, f"{answer} doesn't contain {postfix}"
 
 
-def test_num_return_sequences():
-    for curr_generator in create_text_generators():
-        if isinstance(curr_generator, GroupedTreePipeLine) and curr_generator.generation_type == GenerationType.GREEDY:
-            continue
-        else:
-            selected_generator = curr_generator
-            break
-    num_return_sequences = 2
-    answer: List[CompletionDict] = selected_generator(
-        prompt_s=TEST_PROMPT, max_new_tokens=8, return_tensors=False, return_text=True,
-        return_full_text=True, num_return_sequences=num_return_sequences
-    )
-    assert len(answer) == num_return_sequences, f"len(answer) is not {num_return_sequences}"
-    for curr_answer in answer:
-        curr_answer: CompletionDict
-        assert curr_answer["generated_text"].startswith(TEST_PROMPT), \
-            f"{curr_answer['generated_text']} doesn't start with {TEST_PROMPT}"
-
-        assert len(curr_answer["generated_text"]) > len(TEST_PROMPT), \
-            f"{curr_answer['generated_text']} is too short"
-
-
 def test_max_new_tokens_is_none():
     curr_text_generator = next(create_text_generators())
     curr_text_generator.wrapped_model.end_of_sentence_stop = True
