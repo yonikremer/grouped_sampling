@@ -4,7 +4,7 @@ import heapq
 from collections.abc import Iterator
 from multiprocessing import Pool
 from random import seed
-from typing import Callable, List, Dict, Optional, Any
+from typing import Callable, List, Dict, Optional, Any, Iterable
 
 from torch import Tensor, zeros, argmax, multinomial, manual_seed
 
@@ -203,7 +203,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
                 # because it is coping a list with maximum size of group_size
         return new_group
 
-    def generate_group_batch(self, prob_tensor: Tensor) -> List[List[int]]:
+    def generate_group_batch(self, prob_tensor: Tensor) -> Iterable[List[int]]:
         """prob_tensor: tensor of shape (batch_size, group_size, vocab_size)"""
         pool = Pool()
         # create a list of arguments for each process
@@ -213,7 +213,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         pool.close()
         # wait for the processes to finish
         pool.join()
-        return list(new_tokens)
+        return new_tokens
 
     def _forward(
             self,
