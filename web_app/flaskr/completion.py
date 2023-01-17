@@ -77,7 +77,6 @@ def add_comp_to_db(comp_data: CompletionData):
         top_k,
         generator.wrapped_model.temp
     )
-    print([(column, argument, type(argument)) for column, argument in zip(columns.split(", "), arguments)])
     connection.execute(QUERY_STRUCTURE, arguments)
     connection.commit()
 
