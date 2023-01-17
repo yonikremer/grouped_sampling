@@ -40,7 +40,6 @@ class LogitScalingRepetitionPenalty(
     RepetitionPenaltyStrategy
 ):
     def call_batch(self, logits: Tensor, tokens: Iterable[TokenIDS], generation_start: Iterable[int]) -> Tensor:
-        assert len(logits.shape) == 3
         logit_matrices_generator = (logits[i, :, :] for i in range(logits.shape[0]))
         for i, (logit, token, start) in enumerate(zip(logit_matrices_generator, tokens, generation_start)):
             logits[i, :, :] = self(logit, token, start)
@@ -84,7 +83,6 @@ class LogitScalingRepetitionPenalty(
             tokens,
             generation_start
         )
-        assert len(logits.shape) == 2
         for token_id in generated_tokens:
             # len(generated_tokens) < max(n, vocab_size)
             logits[:, token_id] /= self.theta
