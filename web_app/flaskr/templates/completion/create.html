@@ -17,9 +17,6 @@
         <label for="num_tokens">Enter the number of tokens of the completion, positive integer</label>
         <input id="num_tokens" name="num_tokens" placeholder=4 type="number" value="{{ request.form['num_tokens']}}" min="1" step="1">
 
-        <label for="num_return_sequences">Enter the nuber of different answers you want, positive integer</label>
-        <input id="num_return_sequences" name="num_return_sequences" placeholder=1 type="number" value="{{ request.form['num_return_sequences']}}" min="1" step="1">
-
         <label for="top_k">Enter top k, positive integer</label>
         <input id="top_k" name="top_k" type="number" value="{{ request.form['top_k']}}" min="1" step="1">
 

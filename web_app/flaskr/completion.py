@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from sqlite3 import Connection
-from typing import Any, Tuple, Dict, List
+from typing import Any, Tuple, Dict
 
 from flask import Blueprint, g, render_template, request, redirect, url_for
 from werkzeug.datastructures import ImmutableMultiDict
@@ -77,6 +77,7 @@ def add_comp_to_db(comp_data: CompletionData):
         top_k,
         generator.wrapped_model.temp
     )
+    print([(column, argument, type(argument)) for column, argument in zip(columns.split(", "), arguments)])
     connection.execute(QUERY_STRUCTURE, arguments)
     connection.commit()
 
@@ -92,7 +93,6 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
         "model_name": ("facebook/opt-125m", str),
         "group_size": (2, int),
         "generation_type": ("tree", str),
-        "num_return_sequences": (1, int),
     }
 
     new_request: dict = {}
@@ -130,25 +130,20 @@ def create():
             top_k=new_request['top_k'],
             temp=new_request['temperature']
         )
-        raw_answers: CompletionDict | List[CompletionDict] = text_generator(
+        raw_answer: CompletionDict = text_generator(
             prompt_s=new_request['prompt'],
             max_new_tokens=new_request['num_tokens'],
-            num_return_sequences=new_request['num_return_sequences'],
+            return_text=True,
+            return_tensors=False,
             return_full_text=False,
         )
-        if new_request['num_return_sequences'] == 1:
-            text_answers: List[str] = [raw_answers['generated_text']]
-        else:
-            text_answers: List[str] = [raw_answer['generated_text'] for raw_answer in raw_answers]
-        completions: List[CompletionData]
-        completions = [CompletionData(
+        answer: str = raw_answer['generated_text']
+        completion = CompletionData(
             prompt=new_request['prompt'],
             answer=answer,
             num_tokens=new_request['num_tokens'],
             generator=text_generator
         )
-            for answer in text_answers]
-        for completion in completions:
-            add_comp_to_db(completion)
+        add_comp_to_db(completion)
         return redirect(url_for('completion.index'))
     return render_template("completion/create.html")
