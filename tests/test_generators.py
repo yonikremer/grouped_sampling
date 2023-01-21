@@ -151,12 +151,6 @@ def test_prefix():
                             )['generated_text']
     assert prompt not in answer, f"{answer} contain {prompt}"
     assert prefix not in answer, f"{answer} contain {prefix}"
-    generator.max_batch_size = 2
-    prompts = [prompt, prompt, prompt]
-    answer: CompletionDict = generator(
-        prompt_s=prompts, max_new_tokens=10,
-        return_tensors=True, return_text=True, return_full_text=True, prefix=prefix
-    )
 
 
 def test_postfix():
@@ -202,6 +196,20 @@ def test_call_many_prompts():
     )
     assert isinstance(answers, list), f"{answers} is not a list"
     for prompt, answer in zip(PROMPTS, answers):
+        assert isinstance(answer, dict), f"{answer} is not a dict"
+        assert "generated_text" in answer.keys(), f"{answer} doesn't contain the key 'generated_text'"
+        assert isinstance(answer["generated_text"], str), f"{answer['generated_text']} is not a string"
+        assert answer["generated_text"].startswith(prompt), f"{answer['generated_text']} doesn't start with {prompt}"
+
+    generator.max_batch_size = 2
+    prompts = PROMPTS * 2 + [PROMPTS[0]]
+    answers: List[CompletionDict] = generator(
+        prompt_s=prompts, max_new_tokens=10,
+        return_tensors=True, return_text=True, return_full_text=True
+    )
+    assert isinstance(answers, list), f"{answers} is not a list"
+    assert len(answers) == len(prompts), f"{answers} doesn't have the same length as {prompts}"
+    for prompt, answer in zip(prompts, answers):
         assert isinstance(answer, dict), f"{answer} is not a dict"
         assert "generated_text" in answer.keys(), f"{answer} doesn't contain the key 'generated_text'"
         assert isinstance(answer["generated_text"], str), f"{answer['generated_text']} is not a string"
