@@ -1,4 +1,7 @@
-torch
+torch>1.12.1
 transformers
 pip
 pytest
+build
+twine
+hatchling

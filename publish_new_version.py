@@ -1,48 +1,94 @@
 """A script that publish a new version of the library to PyPI."""
 
 import os
+import subprocess
 
 import toml
 import build
-import twine
 
 
-def increase_version(version: str) -> str:
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+
+def version_file_name(version: str) -> str:
+    """Return the name of the file that contains the version number."""
+    return f"grouped_sampling-{version}.tar.gz"
+
+
+def version_file_path(version: str) -> str:
+    """Return the path of the file that contains the version number."""
+    return os.path.join(script_dir, "dist", version_file_name(version))
+
+
+def increase_version():
     """Increase the version number by one."""
-    major, minor, patch = version.split(".")
-    patch = int(patch) + 1
-    return f"{major}.{minor}.{patch}"
-
-
-def main():
-    # Get the current version from the pyproject.toml file.
     pyproject = toml.load("pyproject.toml")
     old_version = pyproject["project"]["version"]
-    print(f"Current version: {old_version}")
-    new_version = increase_version(old_version)
-    print(f"New version: {new_version}")
+    major, minor, patch = old_version.split(".")
+    patch = int(patch) + 1
+    new_version = f"{major}.{minor}.{patch}"
     pyproject["project"]["version"] = new_version
     with open("pyproject.toml", "w") as f:
         toml.dump(pyproject, f)
+    return new_version
 
-    # cd into the src/grouped_sampling directory.
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    os.chdir(os.path.join(script_dir, "src", "grouped_sampling"))
 
-    # run build
-    build.ProjectBuilder().build()
+def decrease_version():
+    """Decrease the version number by one."""
+    pyproject = toml.load("pyproject.toml")
+    old_version = pyproject["project"]["version"]
+    major, minor, patch = old_version.split(".")
+    patch = int(patch) - 1
+    new_version = f"{major}.{minor}.{patch}"
+    return new_version
 
-    # cd back to the root directory.
-    os.chdir(script_dir)
 
-    # Publish the new version to PyPI.
-    files_to_publish = f"dist/grouped_sampling-{new_version}.tar.gz, " \
-                       f"dist/grouped_sampling-{new_version}-py3-none-any.whl"
+def version_already_exists(new_version: str) -> bool:
+    """Check if the new version already exists."""
+    return os.path.exists(version_file_path(new_version))
+
+
+def build_version(new_version: str) -> None:
+    if version_already_exists(new_version):
+        return
+    """Build the new version."""
+    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist", distribution="sdist")
+    # return only when the build is finished
+    while not version_already_exists(new_version):
+        pass
+
+
+def publish_version(new_version: str):
+    """Publish the new version to PyPI."""
     username = "__token__"
+    pypi_api_token = get_pypi_api_token()
+    try:
+        # define an expression for all the files is the dist folder that have the same version number as the new version
+        subprocess.call(
+            ["twine", "upload", "--username", username, "--password", pypi_api_token, "--verbose",
+             version_file_path(new_version)]
+        )
+    except Exception as e:
+        print("Publishing failed. Decreasing version number back to the original version.")
+        decrease_version()
+        raise e
+
+
+def get_pypi_api_token() -> str:
     pypi_api_token_path = os.path.join(script_dir, "pypi_api_token.txt")
+    if not os.path.exists(pypi_api_token_path):
+        return input("Please enter your PyPI API token: ")
     with open(pypi_api_token_path, "r") as f:
         pypi_api_token = f.read().strip()
-    subprocess.call(["twine", "upload", "--username", username, "--password", pypi_api_token, files_to_publish])
+    return pypi_api_token
+
+
+def main():
+    # run build
+    new_version: str = increase_version()
+    build_version(new_version=new_version)
+    # Publish the new version to PyPI.
+    publish_version(new_version=new_version)
 
 
 if __name__ == "__main__":
