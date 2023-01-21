@@ -2,6 +2,7 @@ torch>1.12.1
 transformers
 pip
 pytest
+coverage
 build
 twine
 hatchling

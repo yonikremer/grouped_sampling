@@ -18,3 +18,9 @@ email = "yoni.kremer@gmail.com"
 
 [tool.setuptools.dynamic.dependencies]
 file = [ "requirements.txt",]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore:CUDA is not available, using CPU:UserWarning"
+]

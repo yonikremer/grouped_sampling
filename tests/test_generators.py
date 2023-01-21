@@ -6,13 +6,22 @@ from typing import Generator, List
 import pytest
 from torch import Tensor, equal
 
-from src.grouped_sampling import (
-    GroupedGenerationPipeLine,
-    GroupedSamplingPipeLine,
-    GroupedTreePipeLine,
-    CompletionDict,
-    NoRepetitionPenalty,
-)
+try:
+    from src.grouped_sampling import (
+        GroupedGenerationPipeLine,
+        GroupedSamplingPipeLine,
+        GroupedTreePipeLine,
+        CompletionDict,
+        NoRepetitionPenalty,
+    )
+except ImportError:
+    from grouped_sampling.src.grouped_sampling import (
+        GroupedGenerationPipeLine,
+        GroupedSamplingPipeLine,
+        GroupedTreePipeLine,
+        CompletionDict,
+        NoRepetitionPenalty,
+    )
 
 MODEL_NAME = "gpt2"
 GROUP_SIZES = 3, 1
