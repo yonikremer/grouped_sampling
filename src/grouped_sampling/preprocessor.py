@@ -12,14 +12,15 @@ class PreProcessor:
             self,
             tokenizer: PreTrainedTokenizer,
             max_input_len: int,
+            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
     ):
         self.tokenizer: PreTrainedTokenizer = tokenizer
         self.max_input_len: int = max_input_len
+        self.truncation: TruncationStrategy = truncation
 
     def get_token_tensor(
             self,
             text: str,
-            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
     ) -> LongTensor:
         """Complexity: O(n) where n is the number of characters in the text"""
         if len(text) == 0:
@@ -30,7 +31,7 @@ class PreProcessor:
             return_tensors=self.framework,
             padding=False,
             add_special_tokens=False,
-            truncation=truncation,
+            truncation=self.truncation,
             max_length=self.max_input_len,
         )
         if isinstance(tokenized_text, dict) or isinstance(tokenized_text, BatchEncoding):
@@ -57,7 +58,6 @@ class PreProcessor:
             self,
             prompt: str,
             prefix: str = "",
-            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
             postfix: str = "",
     ) -> Tuple[LongTensor, int, int, int]:
         """A helper method for __call__ that tokenize the prompt
@@ -73,14 +73,14 @@ class PreProcessor:
             'b' is the number of characters in the prompt
             'c' is the number of characters in the postfix"""
 
-        prefix_tokens: LongTensor = self.get_token_tensor(prefix, truncation)
+        prefix_tokens: LongTensor = self.get_token_tensor(prefix)
         # O(A) where A is the number of characters in the prefix.
-        postfix_tokens: LongTensor = self.get_token_tensor(postfix, truncation)
+        postfix_tokens: LongTensor = self.get_token_tensor(postfix)
         # O(B) where B is the number of characters in the postfix.
-        prompt_tokens: LongTensor = self.get_token_tensor(prompt, truncation)
+        prompt_tokens: LongTensor = self.get_token_tensor(prompt)
         # O(C) where C is the number of characters in the prompt.
         token_tensor: LongTensor = cat((prefix_tokens, prompt_tokens, postfix_tokens))
-        # O( + b + c) where 'a' is the number of tokens in the prefix.
+        # O(a + b + c) where 'a' is the number of tokens in the prefix.
         # 'b' is the number of tokens in the prompt.
         # 'c' is the number of tokens in the postfix.
         # we know that the number of tokens is less than the number of characters
