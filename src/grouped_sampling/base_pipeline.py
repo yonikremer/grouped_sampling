@@ -64,6 +64,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             end_of_sentence_stop: Optional[bool] = None,
             repetition_penalty_strategy: RepetitionPenaltyStrategy = DEFAULT_REPETITION_PENALTY,
             answer_length_multiplier: float = 16,
+            max_batch_size: int = 32,
     ):
         """Model name: the name of the model
         used for loading from hugging face hub
@@ -77,7 +78,10 @@ class GroupedGenerationPipeLine(Callable, ABC):
             the length of the prompt * answer_length_multiplier
         repetition_penalty_strategy: RepetitionPenaltyStrategy
             The strategy for the repetition penalty
+        max_batch_size: int
+            The maximum batch size to be used
         """
+        self.max_batch_size = max_batch_size
         self.model_name: str = model_name
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         end_of_sentence_id = tokenizer.eos_token_id
@@ -194,6 +198,42 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 "max_new_tokens must be given if end_of_sentence_stop is False"
             )
         if isinstance(prompt_s, list):
+            if len(prompt_s) > self.max_batch_size:
+                # split the prompts into batches
+                prompts_batches = [
+                    prompt_s[i:i + self.max_batch_size]
+                    for i in range(0, len(prompt_s), self.max_batch_size)
+                ]
+                answers: List[CompletionDict] = []
+                # generate the batches
+                for prompts_batch in prompts_batches:
+                    if len(prompts_batch) == 1:
+                        answers.append(self(
+                            prompts_batch[0],
+                            max_new_tokens=max_new_tokens,
+                            return_tensors=return_tensors,
+                            return_text=return_text,
+                            return_full_text=return_full_text,
+                            clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                            prefix=prefix,
+                            truncation=truncation,
+                            postfix=postfix,
+                        ))
+                    else:
+                        answers.extend(
+                            self.call_batch(
+                                prompts_batch,
+                                max_new_tokens=max_new_tokens,
+                                return_tensors=return_tensors,
+                                return_text=return_text,
+                                return_full_text=return_full_text,
+                                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                                prefix=prefix,
+                                truncation=truncation,
+                                postfix=postfix,
+                            )
+                        )
+
             return self.call_batch(
                 prompts=prompt_s,
                 max_new_tokens=max_new_tokens,
@@ -251,9 +291,40 @@ class GroupedGenerationPipeLine(Callable, ABC):
             truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
             postfix: str = "",
     ) -> List[CompletionDict]:
+        """A helper for __call__ that handles the case when many prompts are given
+        Args:
+            prompts: List of strings - the prompts to start the generation from (the text given by the user)
+            should satisfy: self.max_batch_size >= len(prompts) >= 0
+            max_new_tokens: Optional[int] > 0 - the number of tokens to generate
+             if None, the function will generate tokens until one of them is the end of sentence token
+            return_tensors: bool - whether to return the generated token ids
+            return_text: bool - whether to return the generated string
+            return_full_text: bool - whether to return the full text
+                (prompt + generated text)
+                (if false, it will return only the generated text)
+            clean_up_tokenization_spaces: bool - whether to clean up tokenization spaces
+                This parameter is forwarded to the decode function of the AutoTokenizer class"""
         # check the parameters
         if not return_tensors and not return_text:
             raise ValueError("You must return at least one of the return_tensors and return_text parameters")
+        if not isinstance(prompts, list):
+            raise TypeError
+        if len(prompts) > self.max_batch_size:
+            raise ValueError("The maximum batch size is " + str(self.max_batch_size))
+        if len(prompts) == 1:
+            return [self(
+                prompts[0],
+                max_new_tokens=max_new_tokens,
+                return_tensors=return_tensors,
+                return_text=return_text,
+                return_full_text=return_full_text,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                prefix=prefix,
+                truncation=truncation,
+                postfix=postfix,
+            )]
+        if len(prompts) == 0:
+            return []
         # tokenize the prompts
         tokenized_prompts_lengths: List[Tuple[Tensor, int, int, int]] = [
             self.pre_processing_strategy(

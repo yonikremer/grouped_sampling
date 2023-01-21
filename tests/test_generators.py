@@ -151,6 +151,12 @@ def test_prefix():
                             )['generated_text']
     assert prompt not in answer, f"{answer} contain {prompt}"
     assert prefix not in answer, f"{answer} contain {prefix}"
+    generator.max_batch_size = 2
+    prompts = [prompt, prompt, prompt]
+    answer: CompletionDict = generator(
+        prompt_s=prompts, max_new_tokens=10,
+        return_tensors=True, return_text=True, return_full_text=True, prefix=prefix
+    )
 
 
 def test_postfix():
