@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Optional, List, Union, Dict, Any, Tuple
+from typing import Optional, List, Union, Dict, Any, Tuple, Iterable, Generator
 
 from torch import LongTensor, Tensor
 from transformers import (
@@ -10,7 +10,6 @@ from transformers import (
     AutoConfig,
     PreTrainedTokenizer,
 )
-from transformers.tokenization_utils_base import TruncationStrategy
 
 from .generation_type import GenerationType
 from .generation_utils import GroupedGenerationUtils
@@ -145,14 +144,13 @@ class GroupedGenerationPipeLine(Callable, ABC):
 
     def __call__(
             self,
-            prompt_s: Union[str, List[str]],
+            prompt_s: Union[str, Iterable[str]],
             max_new_tokens: Optional[int] = None,
             return_tensors: bool = False,
             return_text: bool = True,
             return_full_text: bool = True,
             clean_up_tokenization_spaces: bool = False,
             prefix: str = "",
-            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
             postfix: str = "",
     ) -> CompletionDict | List[CompletionDict] | List[List[CompletionDict]]:
         """The function that outside code should call to generate text
@@ -177,8 +175,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 This parameter is forwarded to the decode function of the AutoTokenizer class
             prefix (`str`, defaults to an empty string):
                 Prefix added to prompt.
-            truncation: TruncationStrategy
-             - whether to truncate the prompt
             postfix: str
              - a postfix to add to the prompt
         Returns:
@@ -197,67 +193,73 @@ class GroupedGenerationPipeLine(Callable, ABC):
             raise ValueError(
                 "max_new_tokens must be given if end_of_sentence_stop is False"
             )
-        if isinstance(prompt_s, list):
-            if len(prompt_s) > self.max_batch_size:
-                # split the prompts into batches
-                prompts_batches = [
-                    prompt_s[i:i + self.max_batch_size]
-                    for i in range(0, len(prompt_s), self.max_batch_size)
-                ]
-                answers: List[CompletionDict] = []
-                # generate the batches
-                for prompts_batch in prompts_batches:
-                    if len(prompts_batch) == 1:
-                        answers.append(self(
-                            prompts_batch[0],
-                            max_new_tokens=max_new_tokens,
-                            return_tensors=return_tensors,
-                            return_text=return_text,
-                            return_full_text=return_full_text,
-                            clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                            prefix=prefix,
-                            truncation=truncation,
-                            postfix=postfix,
-                        ))
-                    else:
-                        answers.extend(
-                            self.call_batch(
-                                prompts_batch,
-                                max_new_tokens=max_new_tokens,
-                                return_tensors=return_tensors,
-                                return_text=return_text,
-                                return_full_text=return_full_text,
-                                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                                prefix=prefix,
-                                truncation=truncation,
-                                postfix=postfix,
-                            )
-                        )
-
-            return self.call_batch(
-                prompts=prompt_s,
-                max_new_tokens=max_new_tokens,
-                return_tensors=return_tensors,
-                return_text=return_text,
-                return_full_text=return_full_text,
+        if isinstance(prompt_s, str):
+            return self.call_single_prompt(
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                prefix=prefix,
-                truncation=truncation,
+                max_new_tokens=max_new_tokens,
                 postfix=postfix,
+                prefix=prefix,
+                prompt=prompt_s,
+                return_full_text=return_full_text,
+                return_tensors=return_tensors,
+                return_text=return_text
             )
+
+        # split the prompts into batches
+        prompts_batches: Iterable[List[str], None, None] = self.split_to_batches(prompt_s)
+        answers: List[CompletionDict] = []
+        # generate the batches
+        for prompts_batch in prompts_batches:
+            prompts_batch: List[str]
+            if len(prompts_batch) == 1:
+                answers.append(
+                    self.call_single_prompt(
+                        prompt=prompts_batch[0],
+                        max_new_tokens=max_new_tokens,
+                        return_tensors=return_tensors,
+                        return_text=return_text,
+                        return_full_text=return_full_text,
+                        clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                        prefix=prefix,
+                        postfix=postfix,
+                    )
+                )
+            else:
+                answers.extend(
+                    self.call_batch(
+                        prompts_batch,
+                        max_new_tokens=max_new_tokens,
+                        return_tensors=return_tensors,
+                        return_text=return_text,
+                        return_full_text=return_full_text,
+                        clean_up_tokenization_spaces=clean_up_tokenization_spaces,
+                        prefix=prefix,
+                        postfix=postfix,
+                    )
+                )
+        return answers
+
+    def call_single_prompt(
+            self,
+            clean_up_tokenization_spaces,
+            max_new_tokens,
+            postfix,
+            prefix,
+            prompt,
+            return_full_text,
+            return_tensors,
+            return_text
+    ) -> CompletionDict:
         tokens: LongTensor
         prefix_len: int
         postfix_len: int
         prompt_len: int
-
         tokens, prefix_len, prompt_len, postfix_len = self.pre_processing_strategy(
-            prompt=prompt_s,
+            prompt=prompt,
             prefix=prefix,
-            truncation=truncation,
             postfix=postfix
         )
         # O(len(prompt) + len(prefix) + len(postfix))
-
         if max_new_tokens is None:
             max_new_tokens = int(prompt_len * self.answer_length_multiplier)
             # O(1)
@@ -288,7 +290,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
             return_full_text: bool = True,
             clean_up_tokenization_spaces: bool = False,
             prefix: str = "",
-            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
             postfix: str = "",
     ) -> List[CompletionDict]:
         """A helper for __call__ that handles the case when many prompts are given
@@ -306,7 +307,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 This parameter is forwarded to the decode function of the AutoTokenizer class
             prefix: str Prefix added to prompt and not returned to the user,
                 even if return_full_text is true.
-            truncation: TruncationStrategy - whether to truncate the prompt
             postfix: str - a postfix to add to the prompt and not returned to the user,
                 even if return_full_text is true."""
         # check the parameters
@@ -325,7 +325,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 prefix=prefix,
-                truncation=truncation,
                 postfix=postfix,
             )]
         if len(prompts) == 0:
@@ -333,7 +332,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         # tokenize the prompts
         tokenized_prompts_lengths: List[Tuple[Tensor, int, int, int]] = [
             self.pre_processing_strategy(
-                prompt, truncation=truncation, prefix=prefix, postfix=postfix
+                prompt, prefix=prefix, postfix=postfix
             ) for prompt in prompts
         ]
         tokenized_prompts: List[Tensor] = [tokenized_prompt for tokenized_prompt, _, _, _ in tokenized_prompts_lengths]
@@ -401,3 +400,13 @@ class GroupedGenerationPipeLine(Callable, ABC):
     def forward_batch(self, tokenized_prompts: List[LongTensor], num_new_tokens: int) -> List[TokenIDS]:
         """Generates a batch of sequences"""
         return [self._forward(tokenized_prompt, num_new_tokens) for tokenized_prompt in tokenized_prompts]
+
+    def split_to_batches(self, prompts: Iterable[str]) -> Generator[List[str], None, None]:
+        """Splits the prompts into batches"""
+        curr_batch = []
+        for prompt in prompts:
+            if len(curr_batch) >= self.max_batch_size:
+                yield curr_batch
+                curr_batch = []
+            curr_batch.append(prompt)
+        yield curr_batch
