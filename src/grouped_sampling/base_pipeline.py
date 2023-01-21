@@ -303,7 +303,12 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 (prompt + generated text)
                 (if false, it will return only the generated text)
             clean_up_tokenization_spaces: bool - whether to clean up tokenization spaces
-                This parameter is forwarded to the decode function of the AutoTokenizer class"""
+                This parameter is forwarded to the decode function of the AutoTokenizer class
+            prefix: str Prefix added to prompt and not returned to the user,
+                even if return_full_text is true.
+            truncation: TruncationStrategy - whether to truncate the prompt
+            postfix: str - a postfix to add to the prompt and not returned to the user,
+                even if return_full_text is true."""
         # check the parameters
         if not return_tensors and not return_text:
             raise ValueError("You must return at least one of the return_tensors and return_text parameters")
@@ -396,4 +401,3 @@ class GroupedGenerationPipeLine(Callable, ABC):
     def forward_batch(self, tokenized_prompts: List[LongTensor], num_new_tokens: int) -> List[TokenIDS]:
         """Generates a batch of sequences"""
         return [self._forward(tokenized_prompt, num_new_tokens) for tokenized_prompt in tokenized_prompts]
-
