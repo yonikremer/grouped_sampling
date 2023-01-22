@@ -71,13 +71,13 @@ class GroupedGenerationUtils:
         self.temp: float = temp
         self.vocab_size: int = vocab_size
         if cuda.is_available():
-            self.model = self.model.cuda()
+            self.model = self.model.cuda()  # pragma: no cover
 
     @property
     def padding_tokens(self) -> LongTensor:
         cpu_tokens = ones(self.group_size - 1, dtype=long) * self.padding_id  # O(group_size)
         if cuda.is_available():
-            return cpu_tokens.cuda()
+            return cpu_tokens.cuda()  # pragma: no cover
         return cpu_tokens
 
     def prepare_model_kwargs(
@@ -93,7 +93,7 @@ class GroupedGenerationUtils:
         if not isinstance(tokens, Tensor):
             tokens = LongTensor(tokens)  # O(n)
         if cuda.is_available():
-            tokens = tokens.cuda()
+            tokens = tokens.cuda()  # pragma: no cover
         padded_tokens: LongTensor = cat(
             (tokens, self.padding_tokens), dim=0
         ).unsqueeze(0)
@@ -109,8 +109,10 @@ class GroupedGenerationUtils:
         )
         # O(attention_len) so O(n + group_size)
         if cuda.is_available():
-            padded_tokens = padded_tokens.cuda()  # O(n + group_size)
-            attention_mask = attention_mask.cuda()  # O(n + group_size)
+            padded_tokens = padded_tokens.cuda()  # pragma: no cover
+            # O(n + group_size)
+            attention_mask = attention_mask.cuda()  # pragma: no cover
+            # O(n + group_size)
         else:
             warn("CUDA is not available, using CPU")
         return {
@@ -193,8 +195,8 @@ class GroupedGenerationUtils:
         # assert cpu_padded_tokens.shape[0] == len(batch), f"{cpu_padded_tokens.shape[0]} != {len(batch)}"
         cpu_attention_mask = ones([len(batch), padding_length], dtype=long)
         if cuda.is_available():
-            padded_tokens = cpu_padded_tokens.cuda()
-            attention_mask = cpu_attention_mask.cuda()
+            padded_tokens = cpu_padded_tokens.cuda()  # pragma: no cover
+            attention_mask = cpu_attention_mask.cuda()  # pragma: no cover
         else:
             warn("CUDA is not available, using CPU")
             padded_tokens = cpu_padded_tokens
