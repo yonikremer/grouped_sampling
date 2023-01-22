@@ -18,3 +18,12 @@ def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:
 def test_get_padding_id1(tokenizer: PreTrainedTokenizer):
     padding_id = get_padding_id(tokenizer)
     assert isinstance(padding_id, int), f"{padding_id} is not an int"
+    tokenizer.mask_token_id = None
+    tokenizer.unk_token_id = None
+    tokenizer.pad_token_id = None
+    with pytest.raises(RuntimeError):
+        get_padding_id(tokenizer)
+
+
+if __name__ == "__main__":
+    pytest.main()
