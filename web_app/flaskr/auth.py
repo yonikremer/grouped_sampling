@@ -10,12 +10,6 @@ from .database import get_db
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
-class UnAuthorizedException(Exception):
-    """Exception raised when the user is not logged in"""
-    def __init__(self, func_description):
-        super().__init__("You must be logged in to ", func_description)
-
-
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
     """Register a new user.
