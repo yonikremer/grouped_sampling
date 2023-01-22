@@ -11,20 +11,20 @@ def parent_directory(original_directory: str) -> str:
 
 
 this_files_dir = os.path.dirname(__file__)
-# C:\yoni\final_project\final_project\web_app\flaskr
+# C:\Users\yonik\grouped_sampling\web_app\flaskr
 this_dir_parent = parent_directory(this_files_dir)
-# C:\yoni\final_project\final_project\web_app
+# C:\Users\yonik\grouped_sampling\web_app
 
 DATABASE_FOLDER = os.path.join(this_dir_parent, "instance")
-# C:\yoni\final_project\final_project\web_app\instance
+# C:\Users\yonik\grouped_sampling\web_app\instance
 DATABASE_FULL_PATH = os.path.join(DATABASE_FOLDER, "flaskr.sqlite")
-# C:\yoni\final_project\final_project\web_app\instance\flaskr.sqlite
+# C:\Users\yonik\grouped_sampling\web_app\instance\flaskr.sqlite
 TESTING_DATABASE_PATH = os.path.join(DATABASE_FOLDER, "testing_data.sqlite")
-# C:\yoni\final_project\final_project\web_app\flaskr\testing_data.sqlite
+# C:\Users\yonik\grouped_sampling\web_app\flaskr\testing_data.sqlite
 SQL_SCHEMA_SCRIPT_PATH = os.path.join(this_files_dir, "schema.sql")
-# C:\yoni\final_project\final_project\web_app\flaskr\schema.sql
+# C:\Users\yonik\grouped_sampling\web_app\flaskr\schema.sql
 TESTING_DATA_PATH = os.path.join(this_dir_parent, "tests", "testing_data.sql")
-# C:\yoni\final_project\final_project\web_app\tests\testing_data.sql
+# C:\Users\yonik\grouped_sampling\web_app\tests\testing_data.sql
 
 
 def get_db() -> sqlite3.Connection:
