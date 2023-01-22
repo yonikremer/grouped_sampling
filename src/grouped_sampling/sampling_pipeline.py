@@ -28,12 +28,12 @@ class TokenProb:
     def __lt__(self, other: "TokenProb"):
         """Overrides the < operator
         Comparison is done by the probability"""
-        return self.prob > other.prob
+        return self.prob > other.prob  # pragma: no cover
 
     def __gt__(self, other: "TokenProb"):
         """Overrides the > operator
         Comparison is done by the probability"""
-        return self.prob < other.prob
+        return self.prob < other.prob  # pragma: no cover
 
 
 class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
