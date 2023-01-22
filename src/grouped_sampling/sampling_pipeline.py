@@ -12,42 +12,6 @@ from .generation_type import GenerationType
 from .base_pipeline import GroupedGenerationPipeLine
 
 
-class ChangingSeed(Iterator):
-    """Context manager for changing the seed of the random module.
-    How to use:
-    with ChangingSeed(first_seed, number_of_different_seeds) as changing_seed:
-        for _ in changing_seed:
-            # do something with random module"""
-
-    def __init__(self, default_seed: int, max_num_calls: int):
-        self.default_seed: int = default_seed
-        self.curr_seed: int = self.default_seed
-        self.max_num_calls: int = max_num_calls
-        self.curr_num_calls: int = 0
-
-    def __enter__(self):
-        self.curr_num_calls = 0
-        self.curr_seed = self.default_seed
-        return self
-
-    def __exit__(self, *args):
-        self.curr_seed = self.default_seed
-        seed(self.default_seed)
-        manual_seed(self.default_seed)
-
-    def __iter__(self):
-        self.curr_seed = self.default_seed
-        return self
-
-    def __next__(self):
-        self.curr_seed += 1
-        seed(self.curr_seed)
-        manual_seed(self.curr_seed)
-        self.curr_num_calls += 1
-        if self.curr_num_calls > self.max_num_calls:
-            raise StopIteration
-
-
 class TokenProb:
     """Class for storing the probability of a token and the token itself.
     Used to store the probabilities of the next tokens in the sampling generator.
