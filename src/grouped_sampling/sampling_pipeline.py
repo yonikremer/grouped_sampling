@@ -14,7 +14,7 @@ from .base_pipeline import GroupedGenerationPipeLine
 
 class TokenProb:
     """Class for storing the probability of a token and the token itself.
-    Used to store the probabilities of the next tokens in the sampling generator.
+    Used to store the probabilities of the next tokens in the sampling pipeline.
     Is useful because it supports the < and > operators, which are used in the
     heapq module
     The < and > are the opposite of each other because the heapq module is only supporting minimum heaps
@@ -127,7 +127,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         """Gets a token id: probability mapping
         returns the TOP_K tokens
         with the highest probability.
-        this is the bottleneck of the sampling generator."""
+        this is the bottleneck of the sampling pipeline."""
         top_k_keys: List[int] = heapq.nlargest(
             self.top_k,
             range(prob_vec.shape[0]),

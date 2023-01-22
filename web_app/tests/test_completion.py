@@ -36,7 +36,7 @@ def count_completions(app: Flask) -> int:
 
 
 def valid_completion_create_requests() -> Generator[Dict[str, str]]:
-    """Returns a generator of good completion.create requests"""
+    """Returns a pipeline of good completion.create requests"""
     fields = ("prompt", "num_tokens", "model_name", "group_size", "generation_type",
               "top_p", "top_k", "temperature",)
     request: Dict[str, str] = {f: "" for f in fields}

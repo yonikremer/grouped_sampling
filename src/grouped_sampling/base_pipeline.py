@@ -29,9 +29,9 @@ def remove_nones(d: Dict[str, Any]) -> Dict[str, Any]:
 def get_padding_id(tokenizer: PreTrainedTokenizer):
     padding_id = tokenizer.pad_token_id
     if not isinstance(padding_id, int):
-        padding_id = tokenizer.unk_token_id
-    if not isinstance(padding_id, int):
         padding_id = tokenizer.mask_token_id
+    if not isinstance(padding_id, int):
+        padding_id = tokenizer.unk_token_id
     if not isinstance(padding_id, int):
         raise RuntimeError(f"padding_id is {padding_id} and its type is {type(padding_id)}")
     return padding_id
@@ -42,7 +42,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
     A callable object that given a func_prompt
      and length of wanted answer,
     generates text
-    the text generator has a model,
+    the text pipeline has a model,
     and some parameters
     (Defined in the subclasses)"""
 
@@ -356,7 +356,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
 
     def as_dict(self) -> Dict[str, Any]:
         """Returns a dictionary representation
-         of the generator
+         of the pipeline
         such that it can be saved and loaded
          using the from_dict method"""
         return {
