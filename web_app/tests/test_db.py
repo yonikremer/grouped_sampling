@@ -3,8 +3,8 @@ from sqlite3 import Connection
 
 from pytest import mark
 
-from web_app.flaskr.database import get_db
-from flask import Flask
+from web_app.flaskr.database import get_db, close_db
+from flask import Flask, g
 
 
 def test_and_get_close_db(app: Flask):
@@ -26,3 +26,11 @@ def test_tables_are_not_empty(app: Flask, table_name: str):
         my_cursor = my_db.cursor()
         my_cursor.execute(f"SELECT * FROM {table_name}")
         assert my_cursor.fetchone()
+
+
+def test_close_db(app: Flask):
+    """Test that the close_db function closes the connection."""
+    with app.app_context():
+        get_db()
+        close_db()
+        assert "my_db" not in g
