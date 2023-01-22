@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from math import ceil
-from typing import List, Dict, Tuple, Sequence, Any, Optional
+from typing import List, Dict, Tuple, Sequence, Any, Optional, Iterable
 
 from torch import Tensor, LongTensor
 
@@ -274,3 +274,6 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         super_dict = super(GroupedTreePipeLine, self).as_dict()
         super_dict.update({unique_attr: self.__getattribute__(unique_attr) for unique_attr in self.unique_attrs})
         return super_dict
+
+    def generate_batch(self, tokenized_prompts: Iterable[LongTensor], num_new_tokens: int) -> List[TokenIDS]:
+        return [self._forward(tokenized_prompt, num_new_tokens) for tokenized_prompt in tokenized_prompts]

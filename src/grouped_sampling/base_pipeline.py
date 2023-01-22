@@ -7,7 +7,6 @@ from typing import Optional, List, Union, Dict, Any, Tuple, Iterable, Generator
 from torch import LongTensor, Tensor
 from transformers import (
     AutoTokenizer,
-    AutoConfig,
     PreTrainedTokenizer,
 )
 
@@ -80,21 +79,13 @@ class GroupedGenerationPipeLine(Callable, ABC):
         max_batch_size: int
             The maximum batch size to be used
         """
-        self.max_batch_size = max_batch_size
+        self.answer_length_multiplier: float = answer_length_multiplier
+        self.max_batch_size: int = max_batch_size
         self.model_name: str = model_name
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         end_of_sentence_id = tokenizer.eos_token_id
         end_of_sentence_stop = end_of_sentence_stop and end_of_sentence_id is not None
         max_input_len = tokenizer.model_max_length
-        max_len_is_huge = max_input_len > MAX_MODEL_INPUT_SIZE
-        if max_len_is_huge or max_input_len is None:
-            config = AutoConfig.from_pretrained(model_name)
-            max_input_len = config.max_position_embeddings
-            max_len_is_still_huge = max_input_len > MAX_MODEL_INPUT_SIZE
-            if max_len_is_still_huge or max_input_len is None:
-                raise ValueError(
-                    "The maximum length of the model is too big"
-                )
         self.pre_processing_strategy: PreProcessor = PreProcessor(
             tokenizer=tokenizer,
             max_input_len=max_input_len,
@@ -115,7 +106,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
             "vocab_size": tokenizer.vocab_size,
         }
         self.wrapped_model: GroupedGenerationUtils = GroupedGenerationUtils(**remove_nones(wrapped_model_kwargs))
-        self.answer_length_multiplier: float = answer_length_multiplier
 
     @property
     @abstractmethod
@@ -123,7 +113,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
         """A method that chooses the generation type
         Returns:
             a GenerationType object"""
-        raise NotImplementedError
 
     @abstractmethod
     def _forward(
@@ -140,7 +129,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 from the __call__ method
         Returns:
             the prompt + generated text as a list/tuple of ints"""
-        pass
 
     def __call__(
             self,
@@ -187,12 +175,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
              -- The token
               ids of the generated text.
             """
-
-        if max_new_tokens is None and \
-                not self.wrapped_model.end_of_sentence_stop:
-            raise ValueError(
-                "max_new_tokens must be given if end_of_sentence_stop is False"
-            )
         if isinstance(prompt_s, str):
             return self.call_single_prompt(
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
@@ -309,13 +291,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 even if return_full_text is true.
             postfix: str - a postfix to add to the prompt and not returned to the user,
                 even if return_full_text is true."""
-        # check the parameters
-        if not return_tensors and not return_text:
-            raise ValueError("You must return at least one of the return_tensors and return_text parameters")
-        if not isinstance(prompts, list):
-            raise TypeError
-        if len(prompts) > self.max_batch_size:
-            raise ValueError("The maximum batch size is " + str(self.max_batch_size))
         if len(prompts) == 1:
             return [self(
                 prompts[0],
@@ -335,11 +310,15 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 prompt, prefix=prefix, postfix=postfix
             ) for prompt in prompts
         ]
-        tokenized_prompts: List[Tensor] = [tokenized_prompt for tokenized_prompt, _, _, _ in tokenized_prompts_lengths]
 
+        tokenized_prompts: List[Tensor] = [tokenized_prompt for tokenized_prompt, _, _, _ in tokenized_prompts_lengths]
         prefix_lengths: List[int] = [prefix_length for _, prefix_length, _, _ in tokenized_prompts_lengths]
         prompts_lengths: List[int] = [prompt_length for _, _, prompt_length, _ in tokenized_prompts_lengths]
         postfix_lengths: List[int] = [postfix_length for _, _, _, postfix_length in tokenized_prompts_lengths]
+
+        if max_new_tokens is None:
+            max_new_tokens = int(max(prompts_lengths) * self.answer_length_multiplier)
+
         # generate the sequences
         generated_sequences: List[List[List[int]]] = self.forward_batch(
             tokenized_prompts,
@@ -397,9 +376,9 @@ class GroupedGenerationPipeLine(Callable, ABC):
         my_dict.update(wrapped_model_dict)
         return cls(**my_dict)
 
+    @abstractmethod
     def forward_batch(self, tokenized_prompts: List[LongTensor], num_new_tokens: int) -> List[TokenIDS]:
         """Generates a batch of sequences"""
-        return [self._forward(tokenized_prompt, num_new_tokens) for tokenized_prompt in tokenized_prompts]
 
     def split_to_batches(self, prompts: Iterable[str]) -> Generator[List[str], None, None]:
         """Splits the prompts into batches"""
