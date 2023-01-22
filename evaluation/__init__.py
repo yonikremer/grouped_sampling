@@ -97,7 +97,7 @@ def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, D
 
 
 def create_pipeline() -> GroupedGenerationPipeLine:
-    """Creates a text generator from the evaluated_text_generator_dict.json file"""
+    """Creates a text pipeline from the evaluated_text_generator_dict.json file"""
     parent_folder = Path(__file__).parent
     with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
