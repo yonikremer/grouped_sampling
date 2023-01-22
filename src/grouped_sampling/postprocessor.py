@@ -16,7 +16,7 @@ class PostProcessor:
     def __call__(
             self,
             token_ids: TokenIDS,
-            num_new_tokens: Optional[int],
+            num_new_tokens: int,
             prompt_len: int,
             return_text: bool,
             return_tensors: bool,
@@ -36,26 +36,13 @@ class PostProcessor:
         """
         # define n as the length of the token_ids
         full_prompt_len = prefix_len + prompt_len + postfix_len
-        if num_new_tokens is None:
-            shorten_token_list = token_ids
-            # O(1)
-        else:
-            final_num_tokens = full_prompt_len + num_new_tokens
-            # O(1)
-            if len(token_ids) > final_num_tokens:
-                shorten_token_list = token_ids[:final_num_tokens]
-                # O(final_num_tokens)
-                # because we are copying final_num_tokens
-                # elements from one list to the other
-            else:
-                shorten_token_list = token_ids
-                # O(1)
+        final_num_tokens = full_prompt_len + num_new_tokens
 
-        generated_tokens = shorten_token_list[full_prompt_len:]
+        generated_tokens = token_ids[full_prompt_len:]
         # O(num_new_tokens) because we are copying
         # num_new_tokens elements from one list to the other
         if return_full_text:
-            prompt_tokens = shorten_token_list[prefix_len:prefix_len + prompt_len]
+            prompt_tokens = token_ids[prefix_len:prefix_len + prompt_len]
             # Without prefix and postfix
             # O(prompt_len) because we are copying prompt_len
             # elements from one list to the other
