@@ -34,24 +34,14 @@ class PreProcessor:
             truncation=self.truncation,
             max_length=self.max_input_len,
         )
-        if isinstance(tokenized_text, dict) or isinstance(tokenized_text, BatchEncoding):
-            token_tensor: LongTensor = tokenized_text["input_ids"]
-            # O(1) because we are accessing a single element
-            # in a dictionary and saving the reference to it.
-        elif isinstance(tokenized_text, LongTensor):
-            token_tensor: LongTensor = tokenized_text
-            # O(1) because we are saving the reference to the tensor
-        else:
-            raise TypeError(
-                "The tokenizer output is not one of:"
-                "dict, BatchEncoding, LongTensor"
-            )
+        token_tensor: LongTensor = tokenized_text["input_ids"]
+        # O(1) because we are accessing a single element
+        # in a dictionary and saving the reference to it.
         token_tensor = token_tensor.squeeze()
         # O(n) where n is the number of tokens in the text
         # because we are copying n elements from one tensor to the other
         # the number of tokens in the text
         # is always less than the number of characters in the text
-
         return token_tensor
 
     def __call__(
