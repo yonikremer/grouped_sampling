@@ -94,3 +94,6 @@ def test_register_logout_login(client: FlaskClient, auth: AuthActions, valid_use
     with client:
         client.get("/")
         assert g.user["username"] == valid_username
+
+    # logout
+    auth.logout()
