@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from src.grouped_sampling import GroupedGenerationUtils, TokenIDS, DEFAULT_REPETITION_PENALTY
+from src.grouped_sampling.generation_utils import safe_cat_batch
 
 
 def create_wrapped_models() -> List[GroupedGenerationUtils]:
@@ -51,6 +52,33 @@ def test_prepare_model_kwargs_batch(wrapped_model: GroupedGenerationUtils):
     model_kwargs = wrapped_model.prepare_model_kwargs_batch(actual_batch)
     input_ids = model_kwargs["input_ids"]
     assert (len(actual_batch), max_len + wrapped_model.group_size - 1) == input_ids.shape
+
+
+def test_safe_cat_batch():
+    # check that it raises ValueError with empty lists
+    with pytest.raises(ValueError):
+        safe_cat_batch([])
+    # check that it works with a single tensor
+    example_tensor = torch.tensor([1, 2, 3])
+    catted = safe_cat_batch([example_tensor])
+    assert torch.all(torch.eq(catted, example_tensor))
+    # check that it works with multiple tensors
+    example_tensor_2 = torch.tensor([4, 5, 6])
+    catted = safe_cat_batch([example_tensor, example_tensor_2])
+    assert torch.all(torch.eq(catted, torch.cat([example_tensor, example_tensor_2])))
+
+
+@pytest.mark.parametrize("wrapped_model", create_wrapped_models())
+def test_str_repr(wrapped_model: GroupedGenerationUtils):
+    repr_ans = repr(wrapped_model)
+    str_ans = str(wrapped_model)
+    assert str_ans == repr_ans
+    assert "GroupedGenerationUtils" in str_ans
+    assert "temp" in str_ans
+    assert "repetition_penalty" in str_ans
+    assert "group_size" in str_ans
+    assert "end_of_sentence_stop" in str_ans
+    assert isinstance(str_ans, str)
 
 
 if __name__ == '__main__':
