@@ -54,8 +54,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
         if key == "default_seed":
-            seed(value)
-            manual_seed(value)
+            seed(value)  # pragma: no cover
+            manual_seed(value)  # pragma: no cover
 
     @property
     def generation_type(self) -> GenerationType:
