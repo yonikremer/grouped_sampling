@@ -47,6 +47,4 @@ def get_model_id(my_model_name: str) -> int:
             (my_model_name,)
         ).fetchone()
         model_id = model_row['id'] if model_row else None
-    if not isinstance(model_id, int):
-        raise TypeError("model_id is not an int")
     return model_id
