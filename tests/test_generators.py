@@ -239,7 +239,7 @@ def test_calling_generators(curr_text_generator):
 @pytest.mark.parametrize("curr_text_generator", create_text_generators())
 def test_dict_conversions(curr_text_generator: GroupedGenerationPipeLine):
     new_generator = type(curr_text_generator).from_dict(curr_text_generator.as_dict())
-    assert type(curr_text_generator) == type(new_generator)
+    assert type(curr_text_generator) is type(new_generator)
     assert curr_text_generator.model_name == new_generator.model_name
     assert curr_text_generator.wrapped_model.group_size == new_generator.wrapped_model.group_size
     assert curr_text_generator.wrapped_model.temp == new_generator.wrapped_model.temp
