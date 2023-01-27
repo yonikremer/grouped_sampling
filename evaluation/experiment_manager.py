@@ -68,7 +68,8 @@ class ExperimentManager:
         f_1: List[float] = bert_scores["f1"]
         precision: List[float] = bert_scores["precision"]
         recall: List[float] = bert_scores["recall"]
-        assert len(f_1) == len(precision) == len(recall)
+        if not len(f_1) == len(precision) == len(recall):
+            raise AssertionError
         # add scores to the dataframe
         new_data: DataFrame = DataFrame.from_dict({
             "input_language": [input_lang_name] * len(f_1),
