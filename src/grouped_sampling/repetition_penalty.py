@@ -117,7 +117,6 @@ def repetition_penalty_factory(
         return DEFAULT_REPETITION_PENALTY
     if theta == 1:
         return NoRepetitionPenalty()
-    elif theta > 1:
+    if theta > 1:
         return LogitScalingRepetitionPenalty(theta)
-    else:
-        raise ValueError("theta must be greater than 1")
+    raise ValueError("theta must be greater than 1")
