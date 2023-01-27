@@ -1,14 +1,14 @@
+from keras.layers import Dense, Layer
 from tensorflow import Tensor
-from keras.layers import Layer, Dense
 
 
 class PointWiseFeedForwardNetwork(Layer):
     layer1: Dense
     layer2: Dense
 
-    def __init__(self, d_model: int, dff: int, **kwargs): 
+    def __init__(self, d_model: int, dff: int, **kwargs):
         super().__init__(**kwargs)
-        self.layer1 = Dense(dff, activation='relu')
+        self.layer1 = Dense(dff, activation="relu")
         self.layer2 = Dense(d_model)
 
     def call(self, x: Tensor, **kwargs) -> Tensor:
