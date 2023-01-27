@@ -207,7 +207,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         """prob_tensor: tensor of shape (batch_size, group_size, vocab_size)"""
         pool = Pool()
         # create a list of arguments for each process
-        args = [prob_mat for prob_mat in prob_tensor]
+        args = list(prob_tensor)
         new_tokens = pool.map(self.generate_group, args)
         # close the pool
         pool.close()
