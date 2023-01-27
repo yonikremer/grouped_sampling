@@ -72,7 +72,6 @@ class PreProcessor:
             'a' is the number of characters in the prefix
             'b' is the number of characters in the prompt
             'c' is the number of characters in the postfix"""
-
         prefix_tokens: LongTensor = self.get_token_tensor(prefix)
         # O(A) where A is the number of characters in the prefix.
         postfix_tokens: LongTensor = self.get_token_tensor(postfix)

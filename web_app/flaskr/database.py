@@ -50,7 +50,6 @@ def close_db(e=None):
 
 def init_database() -> None:
     """Deletes and recreates the database."""
-
     if not os.path.exists(DATABASE_FOLDER):
         os.makedirs(DATABASE_FOLDER)
 
@@ -62,7 +61,6 @@ def init_database() -> None:
 
 def init_testing_database():
     """Initializes the database for testing."""
-
     if not os.path.exists(DATABASE_FOLDER):
         os.makedirs(DATABASE_FOLDER)
 

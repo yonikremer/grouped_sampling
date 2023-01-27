@@ -187,7 +187,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
              -- The token
               ids of the generated text.
             """
-
         if max_new_tokens is None and \
                 not self.wrapped_model.end_of_sentence_stop:
             raise ValueError(
