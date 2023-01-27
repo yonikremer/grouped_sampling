@@ -10,7 +10,7 @@ class PointWiseFeedForwardNetwork(Layer):
         super().__init__(**kwargs)
         self.layer1 = Dense(dff, activation='relu')
         self.layer2 = Dense(d_model)
-    
+
     def call(self, x: Tensor, **kwargs) -> Tensor:
         """x's shape:
         (batch_size, seq_len, d_model)
