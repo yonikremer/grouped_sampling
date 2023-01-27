@@ -1,12 +1,10 @@
-import tensorflow as tf
 import numpy as np
-from tensorflow import Tensor
+import tensorflow as tf
 from keras.backend import floatx
+from tensorflow import Tensor
 
 
-def create_positional_encoding(
-        max_len: int,
-        d_model: int) -> Tensor:
+def create_positional_encoding(max_len: int, d_model: int) -> Tensor:
     """Returns the positional encoding
      for a given a maximal sequence length
       and model dimension.
@@ -14,10 +12,8 @@ def create_positional_encoding(
     returns: Tensor of shape
     (1, max_len, d_model)"""
 
-    def get_angles(
-            positions: np.ndarray,
-            timestamps: np.ndarray) \
-            -> np.ndarray:
+    def get_angles(positions: np.ndarray,
+                   timestamps: np.ndarray) -> np.ndarray:
         """Returns the angle in radians for given positions,
         timestamps and the dimension of the model
         input:
@@ -29,8 +25,8 @@ def create_positional_encoding(
             float_d_model = np.float32(d_model)
         else:
             float_d_model = np.float16(d_model)
-        is_even = (2 * (timestamps // 2))
-        exp1 = (is_even / float_d_model)
+        is_even = 2 * (timestamps // 2)
+        exp1 = is_even / float_d_model
         angle_rates = 1 / np.power(10000, exp1)
 
         return positions * angle_rates
@@ -53,6 +49,4 @@ def create_positional_encoding(
     pos_encode = angle_rads[np.newaxis, ...]
     # (1, max_len, d_model)
 
-    return tf.cast(
-        pos_encode,
-        dtype=floatx())
+    return tf.cast(pos_encode, dtype=floatx())

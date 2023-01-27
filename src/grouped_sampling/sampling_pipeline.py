@@ -4,12 +4,12 @@ import heapq
 from collections.abc import Iterator
 from multiprocessing import Pool
 from random import seed
-from typing import Callable, List, Dict, Optional, Any, Iterable
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
-from torch import Tensor, zeros, argmax, multinomial, manual_seed
+from torch import Tensor, argmax, manual_seed, multinomial, zeros
 
-from .generation_type import GenerationType
 from .base_pipeline import GroupedGenerationPipeLine
+from .generation_type import GenerationType
 
 
 class ChangingSeed(Iterator):
@@ -55,7 +55,8 @@ class TokenProb:
     heapq module
     The < and > are the opposite of each other because the heapq module is only supporting minimum heaps
     and I need a maximum heap"""
-    __slots__ = ['token_id', 'prob']
+
+    __slots__ = ["token_id", "prob"]
 
     def __init__(self, token_id: int, prob: Tensor):
         self.token_id: int = token_id
@@ -76,13 +77,19 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
     """A GroupedGenerationPipeLine that generates text
     using random sampling
     with top-k or top-p filtering."""
+
     default_seed: int = 0
     seed(default_seed)
     manual_seed(default_seed)
     unique_attrs = "top_k", "top_p"
 
-    def __init__(self, top_k: Optional[int] = None,
-                 top_p: Optional[float] = None, *args, **kwargs):
+    def __init__(
+        self,
+        top_k: Optional[int] = None,
+        top_p: Optional[float] = None,
+        *args,
+        **kwargs,
+    ):
         self.top_p: Optional[float] = top_p
         self.top_k: Optional[int] = top_k
         super().__init__(*args, **kwargs)
@@ -109,7 +116,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
 
     @property
     def sampling_func(self) -> Callable[[Tensor], int]:
-        gen_type_to_filter_method: Dict[GenerationType, Callable[[Tensor, ], int]] = {
+        gen_type_to_filter_method: Dict[GenerationType, Callable[[
+            Tensor,
+        ], int]] = {
             GenerationType.TOP_K: self.top_k_sampling,
             GenerationType.TOP_P: self.top_p_sampling,
             GenerationType.GREEDY: GroupedSamplingPipeLine.highest_prob_token,
@@ -148,11 +157,10 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
             if curr_token_prob.prob <= 0.0:
                 break
             if curr_token_prob.prob > 1:
-                raise ValueError(
-                    f"Probability of token {token_id} "
-                    f"in the vector {prob_vec} "
-                    f"is {curr_token_prob.prob}"
-                    f" which is higher than 1")
+                raise ValueError(f"Probability of token {token_id} "
+                                 f"in the vector {prob_vec} "
+                                 f"is {curr_token_prob.prob}"
+                                 f" which is higher than 1")
             prob_sum += curr_token_prob.prob
             new_probs[token_id] = curr_token_prob.prob
         if prob_sum == 0.0:
@@ -164,11 +172,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         returns the TOP_K tokens
         with the highest probability.
         this is the bottleneck of the sampling generator."""
-        top_k_keys: List[int] = heapq.nlargest(
-            self.top_k,
-            range(prob_vec.shape[0]),
-            key=lambda x: prob_vec[x]
-        )
+        top_k_keys: List[int] = heapq.nlargest(self.top_k,
+                                               range(prob_vec.shape[0]),
+                                               key=lambda x: prob_vec[x])
         prob_sum = sum(prob_vec[token_id] for token_id in top_k_keys)
         new_probs = zeros(prob_vec.shape, dtype=float)
         for token_id in top_k_keys:
@@ -186,8 +192,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         # so the complexity is O(group_size)
         # (vocab_size is constant)
         new_group: List[int] = [
-            self.sampling_func(prob_vec)
-            for prob_vec in prob_mat
+            self.sampling_func(prob_vec) for prob_vec in prob_mat
         ]
         # the complexity of the loop is O(group_size)
         # because self.sampling_func gets a tensor
@@ -216,9 +221,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         return new_tokens
 
     def _forward(
-            self,
-            tokenized_prompt: Tensor,
-            num_new_tokens: int,
+        self,
+        tokenized_prompt: Tensor,
+        num_new_tokens: int,
     ) -> List[List[int]]:
         """Complexity:
             O(
@@ -238,8 +243,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
             # so the complexity of the loop is
             # O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
             prob_mat: Tensor = self.wrapped_model.get_prob_mat(
-                curr_token_list, len(tokenized_prompt)
-            )
+                curr_token_list, len(tokenized_prompt))
             # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
             # len(curr_token_list) <= n + l
             # so the complexity is
@@ -264,33 +268,38 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         return curr_token_list
 
     def forward_batch(
-            self,
-            tokenized_prompts: List[Tensor],
-            num_new_tokens: List[int],
+        self,
+        tokenized_prompts: List[Tensor],
+        num_new_tokens: List[int],
     ) -> List[List[int]]:
-        generation_start_indexes = [len(prompt) for prompt in tokenized_prompts]
-        curr_sequences: List[List[int]] = [tokenized_prompt.tolist() for tokenized_prompt in tokenized_prompts]
+        generation_start_indexes = [
+            len(prompt) for prompt in tokenized_prompts
+        ]
+        curr_sequences: List[List[int]] = [
+            tokenized_prompt.tolist() for tokenized_prompt in tokenized_prompts
+        ]
         for _ in range(num_new_tokens // self.wrapped_model.group_size):
             prob_tensor = self.wrapped_model.get_prob_mat_batch(
                 tokens=tokenized_prompts,
                 generation_start_indexes=generation_start_indexes,
             )  # tensor of shape (batch_size, group_size, vocab_size)
-            new_tokens: List[List[int]] = self.generate_group_batch(prob_tensor)
+            new_tokens: List[List[int]] = self.generate_group_batch(
+                prob_tensor)
             for i, new_token in enumerate(new_tokens):
                 curr_sequences[i].extend(new_token)
         return curr_sequences
 
     def __repr__(self):
         super_representation = super().__repr__()
-        unique_representation = '/n'.join(
+        unique_representation = "/n".join(
             f"{unique_attr_name}={getattr(self, unique_attr_name)}"
             for unique_attr_name in self.unique_attrs)
         return super_representation + unique_representation
 
     def as_dict(self) -> Dict[str, Any]:
         super_dict = super(GroupedSamplingPipeLine, self).as_dict()
-        super_dict.update(
-            {unique_attr: self.__getattribute__(unique_attr)
-             for unique_attr in self.unique_attrs}
-        )
+        super_dict.update({
+            unique_attr: self.__getattribute__(unique_attr)
+            for unique_attr in self.unique_attrs
+        })
         return super_dict

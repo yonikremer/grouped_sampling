@@ -1,9 +1,9 @@
 import os
 import sys
 
+import coverage
 import pytest
 from _pytest.config import ExitCode
-import coverage
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -20,7 +20,7 @@ def main() -> bool:
     return exitcode == ExitCode.OK and report in (1, 100)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     webapp_folder = os.path.join(script_dir, "web_app")
     sys.path.append(webapp_folder)
     if main():  # if all tests passed
