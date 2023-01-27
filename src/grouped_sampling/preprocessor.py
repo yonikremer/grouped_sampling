@@ -2,25 +2,25 @@ from typing import Tuple
 
 from torch import LongTensor, cat
 from transformers import PreTrainedTokenizer
-from transformers.tokenization_utils_base import TruncationStrategy, BatchEncoding
+from transformers.tokenization_utils_base import BatchEncoding, TruncationStrategy
 
 
 class PreProcessor:
     framework: str = "pt"
 
     def __init__(
-            self,
-            tokenizer: PreTrainedTokenizer,
-            max_input_len: int,
-            truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
+        self,
+        tokenizer: PreTrainedTokenizer,
+        max_input_len: int,
+        truncation: TruncationStrategy = TruncationStrategy.DO_NOT_TRUNCATE,
     ):
         self.tokenizer: PreTrainedTokenizer = tokenizer
         self.max_input_len: int = max_input_len
         self.truncation: TruncationStrategy = truncation
 
     def get_token_tensor(
-            self,
-            text: str,
+        self,
+        text: str,
     ) -> LongTensor:
         """Complexity: O(n) where n is the number of characters in the text"""
         if len(text) == 0:
@@ -34,7 +34,8 @@ class PreProcessor:
             truncation=self.truncation,
             max_length=self.max_input_len,
         )
-        if isinstance(tokenized_text, dict) or isinstance(tokenized_text, BatchEncoding):
+        if isinstance(tokenized_text, dict) or isinstance(
+                tokenized_text, BatchEncoding):
             token_tensor: LongTensor = tokenized_text["input_ids"]
             # O(1) because we are accessing a single element
             # in a dictionary and saving the reference to it.
@@ -42,10 +43,8 @@ class PreProcessor:
             token_tensor: LongTensor = tokenized_text
             # O(1) because we are saving the reference to the tensor
         else:
-            raise TypeError(
-                "The tokenizer output is not one of:"
-                "dict, BatchEncoding, LongTensor"
-            )
+            raise TypeError("The tokenizer output is not one of:"
+                            "dict, BatchEncoding, LongTensor")
         token_tensor = token_tensor.squeeze()
         # O(n) where n is the number of tokens in the text
         # because we are copying n elements from one tensor to the other
@@ -55,10 +54,10 @@ class PreProcessor:
         return token_tensor
 
     def __call__(
-            self,
-            prompt: str,
-            prefix: str = "",
-            postfix: str = "",
+        self,
+        prompt: str,
+        prefix: str = "",
+        postfix: str = "",
     ) -> Tuple[LongTensor, int, int, int]:
         """A helper method for __call__ that tokenize the prompt
         all the arguments are sent directly from the __call__ method
@@ -72,16 +71,17 @@ class PreProcessor:
             'a' is the number of characters in the prefix
             'b' is the number of characters in the prompt
             'c' is the number of characters in the postfix"""
-
         prefix_tokens: LongTensor = self.get_token_tensor(prefix)
         # O(A) where A is the number of characters in the prefix.
         postfix_tokens: LongTensor = self.get_token_tensor(postfix)
         # O(B) where B is the number of characters in the postfix.
         prompt_tokens: LongTensor = self.get_token_tensor(prompt)
         # O(C) where C is the number of characters in the prompt.
-        token_tensor: LongTensor = cat((prefix_tokens, prompt_tokens, postfix_tokens))
+        token_tensor: LongTensor = cat(
+            (prefix_tokens, prompt_tokens, postfix_tokens))
         # O(a + b + c) where 'a' is the number of tokens in the prefix.
         # 'b' is the number of tokens in the prompt.
         # 'c' is the number of tokens in the postfix.
         # we know that the number of tokens is less than the number of characters
-        return token_tensor, len(prefix_tokens), len(prompt_tokens), len(postfix_tokens)
+        return token_tensor, len(prefix_tokens), len(prompt_tokens), len(
+            postfix_tokens)
