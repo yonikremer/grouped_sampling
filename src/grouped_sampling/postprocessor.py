@@ -7,23 +7,24 @@ from src.grouped_sampling import TokenIDS
 
 
 class PostProcessor:
+
     def __init__(
-            self,
-            tokenizer: PreTrainedTokenizer,
+        self,
+        tokenizer: PreTrainedTokenizer,
     ):
         self.tokenizer: PreTrainedTokenizer = tokenizer
 
     def __call__(
-            self,
-            token_ids: TokenIDS,
-            num_new_tokens: Optional[int],
-            prompt_len: int,
-            return_text: bool,
-            return_tensors: bool,
-            return_full_text: bool,
-            clean_up_tokenization_spaces: bool,
-            prefix_len: int = 0,
-            postfix_len: int = 0,
+        self,
+        token_ids: TokenIDS,
+        num_new_tokens: Optional[int],
+        prompt_len: int,
+        return_text: bool,
+        return_tensors: bool,
+        return_full_text: bool,
+        clean_up_tokenization_spaces: bool,
+        prefix_len: int = 0,
+        postfix_len: int = 0,
     ):
         """A helper method for __call__
         that converts the token ids to dictionary
@@ -55,7 +56,8 @@ class PostProcessor:
         # O(num_new_tokens) because we are copying
         # num_new_tokens elements from one list to the other
         if return_full_text:
-            prompt_tokens = shorten_token_list[prefix_len:prefix_len + prompt_len]
+            prompt_tokens = shorten_token_list[prefix_len:prefix_len +
+                                               prompt_len]
             # Without prefix and postfix
             # O(prompt_len) because we are copying prompt_len
             # elements from one list to the other
@@ -75,7 +77,7 @@ class PostProcessor:
             final_ans["generated_text"] = self.tokenizer.decode(
                 final_token_list,
                 skip_special_tokens=True,
-                clean_up_tokenization_spaces=clean_up_tokenization_spaces
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
             )
             # decoding is O(m)
             # where m is the number of tokens in the text

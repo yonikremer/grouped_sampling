@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Callable, Tuple, Dict, Any
+from typing import Any, Callable, Dict, Tuple
 
 from datasets import Dataset, load_dataset
 from pandas import Series
@@ -16,16 +16,15 @@ except ImportError:
 else:  # if we are using kaggle, we need to set the api key
     using_kaggle = True
 
-
 STAT_NAME_TO_FUNC: Tuple[Tuple[str, Callable[[Series], float]]] = (
-            ("mean", lambda x: x.mean()),
-            ("median", lambda x: x.median()),
-            ("25_percentile", lambda x: x.quantile(0.25)),
-            ("75_percentile", lambda x: x.quantile(0.75)),
-            ("min", lambda x: x.min()),
-            ("max", lambda x: x.max()),
-            ("standard_deviation", lambda x: x.std()),
-        )
+    ("mean", lambda x: x.mean()),
+    ("median", lambda x: x.median()),
+    ("25_percentile", lambda x: x.quantile(0.25)),
+    ("75_percentile", lambda x: x.quantile(0.75)),
+    ("min", lambda x: x.min()),
+    ("max", lambda x: x.max()),
+    ("standard_deviation", lambda x: x.std()),
+)
 
 BERT_SCORES = ("BERT_f1", "BERT_precision", "BERT_recall")
 WORKSPACE = USERNAME = "yonikremer"
@@ -74,7 +73,8 @@ def get_project_name(debug: bool = __debug__) -> str:
     return "grouped-sampling-debug" if debug else "grouped-sampling-evaluation"
 
 
-def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, Dataset, str, str]:
+def process_translation_data(sub_set_name: str,
+                             debug: bool) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
     # noinspection PyUnreachableCode
@@ -85,21 +85,37 @@ def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, D
     processed_data1_dict: Dataset
     processed_data2_dict: Dataset
 
-    def rename_keys(x: Dict[str, Any], input_lang_name: str, output_lang_name: str) -> Dict[str, str]:
+    def rename_keys(x: Dict[str, Any], input_lang_name: str,
+                    output_lang_name: str) -> Dict[str, str]:
         translation: Dict[str, str] = x["translation"]
-        return {input_lang_name: translation[input_lang_name], output_lang_name: translation[output_lang_name]}
+        return {
+            input_lang_name: translation[input_lang_name],
+            output_lang_name: translation[output_lang_name],
+        }
 
-    subset_part1 = sub_set.map(rename_keys,
-                               fn_kwargs={"input_lang_name": language_code1, "output_lang_name": language_code2})
-    subset_part2 = sub_set.map(rename_keys,
-                               fn_kwargs={"input_lang_name": language_code2, "output_lang_name": language_code1})
+    subset_part1 = sub_set.map(
+        rename_keys,
+        fn_kwargs={
+            "input_lang_name": language_code1,
+            "output_lang_name": language_code2,
+        },
+    )
+    subset_part2 = sub_set.map(
+        rename_keys,
+        fn_kwargs={
+            "input_lang_name": language_code2,
+            "output_lang_name": language_code1,
+        },
+    )
     return subset_part1, subset_part2, language_code1, language_code2
 
 
 def create_pipeline() -> GroupedGenerationPipeLine:
     """Creates a text generator from the evaluated_text_generator_dict.json file"""
     parent_folder = Path(__file__).parent
-    with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
+    with open(
+            os.path.join(parent_folder, "evaluated_text_generator_dict.json"),
+            "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
     pipeline = GroupedSamplingPipeLine(**evaluated_text_generator_dict)
     return pipeline

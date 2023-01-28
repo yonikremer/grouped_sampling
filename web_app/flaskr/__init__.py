@@ -1,6 +1,5 @@
 """This file initializes the app and registers the blueprints."""
 
-
 from flask import Flask
 
 
@@ -11,7 +10,7 @@ def create_app(test_config=None):
 
     app.config.from_mapping(SECRET_KEY="dev")
 
-    from . import auth, completion, model, database
+    from . import auth, completion, database, model
 
     if test_config is not None:
         # load the test config if passed in
@@ -23,5 +22,5 @@ def create_app(test_config=None):
     app.register_blueprint(auth.bp)
     app.register_blueprint(completion.bp)
     app.register_blueprint(model.bp)
-    app.add_url_rule('/', endpoint='index')
+    app.add_url_rule("/", endpoint="index")
     return app
