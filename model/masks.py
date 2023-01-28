@@ -2,8 +2,8 @@ from typing import Tuple
 
 import tensorflow as tf
 from tensorflow import Tensor
-from keras.backend import floatx
 from tensorflow.python.ops.linalg.linalg_impl import band_part
+from keras.backend import floatx
 
 
 def create_masks(

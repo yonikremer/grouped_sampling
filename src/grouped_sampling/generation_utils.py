@@ -2,8 +2,8 @@ from typing import Dict, List, Iterable
 from warnings import warn
 
 from torch import cuda, LongTensor, ones, long, Tensor, cat, no_grad, full
-from transformers import AutoModelForCausalLM
 from torch.nn import Softmax
+from transformers import AutoModelForCausalLM
 
 from .token_ids import TokenIDS
 from .repetition_penalty import RepetitionPenaltyStrategy

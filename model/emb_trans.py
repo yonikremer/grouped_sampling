@@ -2,9 +2,9 @@ from typing import List
 
 import tensorflow as tf
 from keras.layers import Layer, Embedding
-from tensorflow import Tensor
 from keras import activations
 from keras.backend import int_shape
+from tensorflow import Tensor
 
 
 class EmbeddingTransposed(Layer):
