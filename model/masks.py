@@ -1,15 +1,12 @@
 from typing import Tuple
 
 import tensorflow as tf
+from keras.backend import floatx
 from tensorflow import Tensor
 from tensorflow.python.ops.linalg.linalg_impl import band_part
-from keras.backend import floatx
 
 
-def create_masks(
-        inp: Tensor,
-        pad_int: int) \
-        -> Tuple[Tensor, Tensor]:
+def create_masks(inp: Tensor, pad_int: int) -> Tuple[Tensor, Tensor]:
     """Creates all the masks needed for the model
     input:
     inp: Tensor of shape
@@ -22,8 +19,7 @@ def create_masks(
     (batch_size, 1, 1, seq_len)"""
     seq_len = inp.shape[1]
 
-    def create_padding_mask(
-            seq: Tensor) -> Tensor:
+    def create_padding_mask(seq: Tensor) -> Tensor:
         """Returns a padding mask for the given sequence.
         Input:
             seq:
@@ -44,10 +40,8 @@ def create_masks(
 
     def create_look_ahead_mask() -> tf.Tensor:
         """Returns a look ahead mask
-         for the given sequence length."""
-        ones = tf.ones(
-            (seq_len, seq_len),
-            dtype=floatx())
+        for the given sequence length."""
+        ones = tf.ones((seq_len, seq_len), dtype=floatx())
         mask = 1 - band_part(ones, -1, 0)
         # (seq_len, seq_len)
         return mask
@@ -56,9 +50,7 @@ def create_masks(
     # (seq_len, seq_len)
     padding_mask = create_padding_mask(inp)
     # (batch_size, 1, 1, seq_len)
-    look_ahead_mask = tf.maximum(
-        padding_mask,
-        look_ahead_mask)
+    look_ahead_mask = tf.maximum(padding_mask, look_ahead_mask)
     # (batch_size, 1, 1, seq_len)
 
     return padding_mask, look_ahead_mask
