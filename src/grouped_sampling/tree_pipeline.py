@@ -229,7 +229,7 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         # the maximum length of new_prompts is (actual_top_k ** group_size + n)
         all_completions_ended: bool = all(
             self.wrapped_model.end_of_sentence_id in tokenized_ans
-            for tokenized_ans in completion_probs.keys())
+            for tokenized_ans in completion_probs)
         # O(group_size * len(completion_probs))
         num_groups: Optional[int] = None
         if num_tokens is not None:
