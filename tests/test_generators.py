@@ -48,7 +48,6 @@ def create_text_generators(
     for top_k in TOP_KS:
         top_k_sampling_gen.top_k = top_k
         yield top_k_sampling_gen
-    del top_k_sampling_gen
 
     top_p_sampling_gen = GroupedSamplingPipeLine(
         model_name=MODEL_NAME,
@@ -61,7 +60,6 @@ def create_text_generators(
     for top_p in TOP_PS:
         top_p_sampling_gen.top_p = top_p
         yield top_p_sampling_gen
-    del top_p_sampling_gen
 
     curr_tree_gen = GroupedTreePipeLine(
         model_name=MODEL_NAME,
@@ -78,7 +76,6 @@ def create_text_generators(
         for top_p in TOP_PS:
             curr_tree_gen.top_p = top_p
             yield curr_tree_gen
-    del curr_tree_gen
 
 
 def test_initialization():
