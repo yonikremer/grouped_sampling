@@ -170,7 +170,6 @@ class GroupedGenerationUtils:
             for sequence in batch
         ]
         answer = safe_cat_batch(padded_batch)
-        # assert answer.shape == (len(batch), length), f"{answer.shape} != {(len(batch), length)}"
         return answer
 
     def prepare_model_kwargs_batch(
@@ -182,13 +181,9 @@ class GroupedGenerationUtils:
             a dictionary of the arguments for the model call
             Complexity: O(batch size *(group_size + n)) where n is the number of batch
         """
-        # assert len(batch) > 0, "batch is empty"
-        # assert len(batch) > 1, "use prepare_model_kwargs instead"
         padding_length = (max([len(sequence)
                                for sequence in batch]) + self.group_size - 1)
         cpu_padded_tokens = self.pad_batch(batch, padding_length)
-        # assert cpu_padded_tokens.shape[1] == padding_length, f"{cpu_padded_tokens.shape[1]} != {padding_length}"
-        # assert cpu_padded_tokens.shape[0] == len(batch), f"{cpu_padded_tokens.shape[0]} != {len(batch)}"
         cpu_attention_mask = ones([len(batch), padding_length], dtype=long)
         if cuda.is_available():
             padded_tokens = cpu_padded_tokens.cuda()
@@ -197,8 +192,6 @@ class GroupedGenerationUtils:
             warn("CUDA is not available, using CPU")
             padded_tokens = cpu_padded_tokens
             attention_mask = cpu_attention_mask
-        # assert padded_tokens.shape[1] == padding_length, f"{padded_tokens.shape[1]} != {padding_length}"
-        # assert padded_tokens.shape[0] == len(batch), f"{padded_tokens.shape[0]} != {len(batch)}"
         return {"input_ids": padded_tokens, "attention_mask": attention_mask}
 
     def get_logit_mat_batch(self, batch: List[TokenIDS]) -> Tensor:
@@ -211,17 +204,8 @@ class GroupedGenerationUtils:
         # assert len(batch) > 0, "batch is empty"
         # assert len(batch) > 1, "use get_logit_mat instead"
         model_kwargs = self.prepare_model_kwargs_batch(batch)
-        # assert model_kwargs["input_ids"].shape[0] == len(batch)
-        # assert model_kwargs["attention_mask"].shape[0] == len(batch)
-        # max_len = max([len(sequence) for sequence in batch])
-        # assert model_kwargs["input_ids"].shape[1] == max_len + self.group_size - 1, \
-        #     f"{model_kwargs['input_ids'].shape[1]} != {max_len + self.group_size - 1}"
         with no_grad():
             all_logits: Tensor = self.model(**model_kwargs).logits
-        # assert all_logits.shape[0] == len(batch), f"The shape of the logits is not correct, " \
-        #                                            f"expected {len(batch)} but got {all_logits.shape[0]}"
-        # assert all_logits.shape[2] == self.vocab_size, f"The shape of the logits is not correct, " \
-        #                                                f"expected {self.vocab_size} but got {all_logits.shape[2]}"
         unscaled_relevant_logits: List[Tensor] = []
         for i, sequence in enumerate(batch):
             # chose stop_index such that the target_length of the sequence is group_size
@@ -229,17 +213,10 @@ class GroupedGenerationUtils:
                 i,
                 len(sequence) - 1:len(sequence) +
                 self.group_size, :self.vocab_size, ]
-            # assert curr_relevant_logits.shape == (self.group_size, self.vocab_size), \
-            #     f"curr_relevant_logits.shape = {curr_relevant_logits.shape} != " \
-            #     f"(self.group_size, self.vocab_size) = ({self.group_size}, {self.vocab_size})"
             un_squeezed_logits = curr_relevant_logits.unsqueeze(0)
-            # assert un_squeezed_logits.shape == (1, self.group_size, self.vocab_size), \
-            #     f"un_squeezed_logits.shape = {un_squeezed_logits.shape} != " \
-            #     f"(1, self.group_size, self.vocab_size) = (1, {self.group_size}, {self.vocab_size})"
             unscaled_relevant_logits.append(un_squeezed_logits)
 
         answer = cat(unscaled_relevant_logits)
-        # assert answer.shape == (len(batch), self.group_size, self.vocab_size)
         return answer
 
     def get_prob_mat_batch(self, tokens: List[TokenIDS],
@@ -250,10 +227,6 @@ class GroupedGenerationUtils:
         complexity: O(batch size * (n^2 + group_size^2)) where n is the target_length of the longest batch sequence.
         notice that the logits are not divided by the temperature in this function."""
         unscaled_relevant_logits = self.get_logit_mat_batch(tokens)
-        # assert unscaled_relevant_logits.shape[0] == len(tokens)
-        # assert unscaled_relevant_logits.shape[1] == self.group_size
-        # assert unscaled_relevant_logits.shape[2] == self.vocab_size, \
-        #     f"{unscaled_relevant_logits.shape[2]} != {self.vocab_size}"
         if not self.end_of_sentence_stop:
             try:
                 unscaled_relevant_logits[:, :, self.
