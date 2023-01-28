@@ -101,7 +101,7 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
          and every completion that have repeated tokens
          complexity: sum([len(completion) for completion in completions])"""
         filtered_completions: Dict[Tuple[int], float]
-        filtered_completions = dict()
+        filtered_completions = {}
         for curr_comp, curr_prob in zip(completions, probs):
             if self.wrapped_model.end_of_sentence_id in curr_comp:
                 # complexity: O(m) where m is the length of the sequence
@@ -222,7 +222,7 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         if num_groups == 1 or all_completions_ended:
             return completion_probs
 
-        new_completions: Dict[Tuple[int], float] = dict()
+        new_completions: Dict[Tuple[int], float] = {}
         if num_tokens is None:
             new_number_tokens = None
         else:
