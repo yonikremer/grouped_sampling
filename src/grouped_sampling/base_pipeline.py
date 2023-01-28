@@ -136,7 +136,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 from the __call__ method
         Returns:
             the prompt + generated text as a list/tuple of ints"""
-        pass
 
     def __call__(
         self,
