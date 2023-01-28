@@ -14,7 +14,7 @@ bp = Blueprint('model', __name__)
 def view_all():
     """See the table models as an HTML page"""
     my_db: Connection = get_db()
-    QUERY = f"SELECT created, model_name, username FROM model m JOIN user u ON m.user_id = u.id ORDER BY created DESC"
+    QUERY = "SELECT created, model_name, username FROM model m JOIN user u ON m.user_id = u.id ORDER BY created DESC"
     df = pd.read_sql_query(QUERY, my_db)
     html_table = df.to_html(classes='data', header="true", border=0, index=False)
     return render_template("model/view_all.html", table=html_table)
