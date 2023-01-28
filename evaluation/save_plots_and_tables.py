@@ -31,7 +31,7 @@ def get_relevant_experiments() -> List[APIExperiment]:
         pattern=None
     )
     unsorted_relevant_experiments = (exp for exp in all_experiments if experiment_filter(exp))
-    return sorted(unsorted_relevant_experiments, key=lambda exp: get_duration(exp))
+    return sorted(unsorted_relevant_experiments, key=get_duration)
 
 
 def get_parameter(experiment: APIExperiment, parameter_name: str) -> Optional[str]:
