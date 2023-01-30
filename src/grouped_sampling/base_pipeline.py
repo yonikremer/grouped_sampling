@@ -18,8 +18,6 @@ from .preprocessor import PreProcessor
 from .repetition_penalty import DEFAULT_REPETITION_PENALTY, RepetitionPenaltyStrategy
 from .token_ids import TokenIDS
 
-MAX_MODEL_INPUT_SIZE = 32768
-
 
 def remove_nones(d: Dict[str, Any]) -> Dict[str, Any]:
     """Returns a copy of a dictionary with all the not None values"""
