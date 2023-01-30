@@ -61,8 +61,7 @@ class Transformer(Model):
         # embedding transposed layer
         # because it is sharing
         # parameters with the embedding layer
-        return sum(layer.count_params() for
-                    layer in sub_layers)
+        return sum(layer.count_params() for layer in sub_layers)
 
     def call(self, x: Tensor, training: bool) \
             -> Tensor:
