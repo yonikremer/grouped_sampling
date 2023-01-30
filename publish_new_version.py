@@ -3,9 +3,8 @@
 import os
 import subprocess
 
-import toml
 import build
-
+import toml
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -52,7 +51,8 @@ def build_version(new_version: str) -> None:
     if version_already_exists(new_version):
         return
     """Build the new version."""
-    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist", distribution="sdist")
+    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist",
+                                                  distribution="sdist")
     # return only when the build is finished
     while not version_already_exists(new_version):
         pass
@@ -64,12 +64,20 @@ def publish_version(new_version: str):
     pypi_api_token = get_pypi_api_token()
     try:
         # define an expression for all the files is the dist folder that have the same version number as the new version
-        subprocess.call(
-            ["twine", "upload", "--username", username, "--password", pypi_api_token, "--verbose",
-             version_file_path(new_version)]
-        )
+        subprocess.call([
+            "twine",
+            "upload",
+            "--username",
+            username,
+            "--password",
+            pypi_api_token,
+            "--verbose",
+            version_file_path(new_version),
+        ])
     except Exception as e:
-        print("Publishing failed. Decreasing version number back to the original version.")
+        print(
+            "Publishing failed. Decreasing version number back to the original version."
+        )
         decrease_version()
         raise e
 

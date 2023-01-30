@@ -38,7 +38,7 @@ class GroupedGenerationUtils:
         temp: float = 1.0,
         use_softmax: bool = True,
         load_in_8bit: bool = True,
-            **kwargs,
+        **kwargs,
     ):
         """initializes the model wrapper
         Args:
@@ -70,7 +70,7 @@ class GroupedGenerationUtils:
         self.model = AutoModelForCausalLM.from_pretrained(
             pretrained_model_name_or_path=model_name,
             load_in_8bit=load_in_8bit and cuda.is_available(),
-            **kwargs
+            **kwargs,
         )
         self.temp: float = temp
         self.vocab_size: int = vocab_size

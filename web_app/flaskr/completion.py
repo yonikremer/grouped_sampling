@@ -3,35 +3,37 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from sqlite3 import Connection
-from typing import Any, Tuple, Dict
+from typing import Any, Dict, Tuple
 
-from flask import Blueprint, g, render_template, request, redirect, url_for
-from werkzeug.datastructures import ImmutableMultiDict
 import pandas as pd
+from flask import Blueprint, g, redirect, render_template, request, url_for
+from werkzeug.datastructures import ImmutableMultiDict
 
 from src.grouped_sampling import (
+    CompletionDict,
     GroupedGenerationPipeLine,
     GroupedSamplingPipeLine,
-    GroupedTreePipeLine, CompletionDict,
-
+    GroupedTreePipeLine,
 )
+
 from .auth import login_required
 from .database import get_db
 from .model import get_model_id
 
-bp = Blueprint('completion', __name__)
+bp = Blueprint("completion", __name__)
 
 
 @dataclass
 class CompletionData:
     """Contains all the data for the completion page"""
+
     prompt: str
     answer: str
     num_tokens: int
     generator: GroupedGenerationPipeLine
 
 
-@bp.route('/')
+@bp.route("/")
 def index():
     """The page with all the completions"""
     my_db: Connection = get_db()
@@ -39,11 +41,12 @@ def index():
     columns = (" username, c.created, prompt, answer, num_tokens, model_name,"
                " group_size, generation_type, top_p, top_k, temperature ")
     join_statement = " completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id "
-    QUERY = ("SELECT "
-             f" {columns} "
-             f" FROM {join_statement} ORDER BY c.created")
+    QUERY = "SELECT " f" {columns} " f" FROM {join_statement} ORDER BY c.created"
     df = pd.read_sql_query(QUERY, my_db)
-    html_table = df.to_html(classes='data', header="true", border=0, index=False)
+    html_table = df.to_html(classes="data",
+                            header="true",
+                            border=0,
+                            index=False)
     return render_template("completion/index.html", table=html_table)
 
 
@@ -51,7 +54,9 @@ def index():
 def add_comp_to_db(comp_data: CompletionData):
     """Adds an answer to the database"""
     columns = "user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature"
-    QUERY_STRUCTURE: str = f"""INSERT INTO completion ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+    QUERY_STRUCTURE: str = (
+        f"""INSERT INTO completion ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+    )
     connection = get_db()
     generator: GroupedGenerationPipeLine = comp_data.generator
     model_id: int = get_model_id(generator.model_name)
@@ -66,7 +71,7 @@ def add_comp_to_db(comp_data: CompletionData):
         top_p = None
     #     user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature
     arguments = (
-        g.user['id'],
+        g.user["id"],
         comp_data.prompt,
         comp_data.answer,
         comp_data.num_tokens,
@@ -75,7 +80,7 @@ def add_comp_to_db(comp_data: CompletionData):
         generator.generation_type.value,
         top_p,
         top_k,
-        generator.wrapped_model.temp
+        generator.wrapped_model.temp,
     )
     connection.execute(QUERY_STRUCTURE, arguments)
     connection.commit()
@@ -102,10 +107,15 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
         else:
             new_request[input_name] = wanted_type(old_request[input_name])
 
-    generation_type_names_to_classes = {"sampling": GroupedSamplingPipeLine, "tree": GroupedTreePipeLine}
+    generation_type_names_to_classes = {
+        "sampling": GroupedSamplingPipeLine,
+        "tree": GroupedTreePipeLine,
+    }
 
-    if new_request['generation_type'] in generation_type_names_to_classes:
-        new_request['generation_type_class'] = generation_type_names_to_classes[new_request['generation_type']]
+    if new_request["generation_type"] in generation_type_names_to_classes:
+        new_request[
+            "generation_type_class"] = generation_type_names_to_classes[
+                new_request["generation_type"]]
     else:
         raise ValueError(f"generation_type must be either one of"
                          f" {generation_type_names_to_classes.keys()}, "
@@ -115,34 +125,35 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
 
 
 @login_required
-@bp.route('/create', methods=('GET', 'POST'))
+@bp.route("/create", methods=("GET", "POST"))
 def create():
     """Creates a new completion
     If a completion is created successfully, directs to the main page.
     else, recursively redirect to this page (completion/create) until a successful completion"""
     if request.method == "POST":
         new_request = preprocess_create_form(request.form)
-        text_generator: GroupedGenerationPipeLine = new_request['generation_type_class'](
-            model_name=new_request['model_name'],
-            group_size=new_request['group_size'],
-            top_p=new_request['top_p'],
-            top_k=new_request['top_k'],
-            temp=new_request['temperature']
+        text_generator: GroupedGenerationPipeLine = new_request[
+            "generation_type_class"](
+                model_name=new_request["model_name"],
+                group_size=new_request["group_size"],
+                top_p=new_request["top_p"],
+                top_k=new_request["top_k"],
+                temp=new_request["temperature"],
         )
         raw_answer: CompletionDict = text_generator(
-            prompt_s=new_request['prompt'],
-            max_new_tokens=new_request['num_tokens'],
+            prompt_s=new_request["prompt"],
+            max_new_tokens=new_request["num_tokens"],
             return_text=True,
             return_tensors=False,
             return_full_text=False,
         )
-        answer: str = raw_answer['generated_text']
+        answer: str = raw_answer["generated_text"]
         completion = CompletionData(
-            prompt=new_request['prompt'],
+            prompt=new_request["prompt"],
             answer=answer,
-            num_tokens=new_request['num_tokens'],
-            generator=text_generator
+            num_tokens=new_request["num_tokens"],
+            generator=text_generator,
         )
         add_comp_to_db(completion)
-        return redirect(url_for('completion.index'))
+        return redirect(url_for("completion.index"))
     return render_template("completion/create.html")

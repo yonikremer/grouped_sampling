@@ -296,5 +296,9 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         })
         return super_dict
 
-    def forward_batch(self, tokenized_prompts: Iterable[LongTensor], num_new_tokens: int) -> List[TokenIDS]:
-        return [self._forward(tokenized_prompt, num_new_tokens) for tokenized_prompt in tokenized_prompts]
+    def forward_batch(self, tokenized_prompts: Iterable[LongTensor],
+                      num_new_tokens: int) -> List[TokenIDS]:
+        return [
+            self._forward(tokenized_prompt, num_new_tokens)
+            for tokenized_prompt in tokenized_prompts
+        ]

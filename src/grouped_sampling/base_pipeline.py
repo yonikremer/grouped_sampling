@@ -5,10 +5,7 @@ from collections.abc import Callable
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 from torch import LongTensor, Tensor
-from transformers import (
-    AutoTokenizer,
-    PreTrainedTokenizer,
-)
+from transformers import AutoTokenizer, PreTrainedTokenizer
 
 from .completion_dict import CompletionDict
 from .generation_type import GenerationType
@@ -329,13 +326,26 @@ class GroupedGenerationPipeLine(Callable, ABC):
             for tokenized_prompt, _, _, _ in tokenized_prompts_lengths
         ]
 
-        tokenized_prompts: List[Tensor] = [tokenized_prompt for tokenized_prompt, _, _, _ in tokenized_prompts_lengths]
-        prefix_lengths: List[int] = [prefix_length for _, prefix_length, _, _ in tokenized_prompts_lengths]
-        prompts_lengths: List[int] = [prompt_length for _, _, prompt_length, _ in tokenized_prompts_lengths]
-        postfix_lengths: List[int] = [postfix_length for _, _, _, postfix_length in tokenized_prompts_lengths]
+        tokenized_prompts: List[Tensor] = [
+            tokenized_prompt
+            for tokenized_prompt, _, _, _ in tokenized_prompts_lengths
+        ]
+        prefix_lengths: List[int] = [
+            prefix_length
+            for _, prefix_length, _, _ in tokenized_prompts_lengths
+        ]
+        prompts_lengths: List[int] = [
+            prompt_length
+            for _, _, prompt_length, _ in tokenized_prompts_lengths
+        ]
+        postfix_lengths: List[int] = [
+            postfix_length
+            for _, _, _, postfix_length in tokenized_prompts_lengths
+        ]
 
         if max_new_tokens is None:
-            max_new_tokens = int(max(prompts_lengths) * self.answer_length_multiplier)
+            max_new_tokens = int(
+                max(prompts_lengths) * self.answer_length_multiplier)
 
         # generate the sequences
         generated_sequences: List[List[List[int]]] = self.forward_batch(

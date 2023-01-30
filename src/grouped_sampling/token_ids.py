@@ -1,3 +1,3 @@
-from typing import Tuple, List, Union
+from typing import List, Tuple, Union
 
 TokenIDS = Union[List[int], Tuple[int]]

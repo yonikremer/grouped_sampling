@@ -1,7 +1,7 @@
 from typing import Generator
 
 import pytest
-from transformers import PreTrainedTokenizer, AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizer
 
 from src.grouped_sampling.base_pipeline import get_padding_id
 
