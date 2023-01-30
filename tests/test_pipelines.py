@@ -7,10 +7,10 @@ import pytest
 from torch import Tensor, equal
 
 from src.grouped_sampling import (
+    CompletionDict,
     GroupedGenerationPipeLine,
     GroupedSamplingPipeLine,
     GroupedTreePipeLine,
-    CompletionDict,
     NoRepetitionPenalty,
 )
 
@@ -34,8 +34,7 @@ TEST_PIPELINE = GroupedSamplingPipeLine(
 )
 
 
-def create_pipelines(
-) -> Generator[GroupedGenerationPipeLine, None, None]:
+def create_pipelines() -> Generator[GroupedGenerationPipeLine, None, None]:
     top_k_sampling_gen = GroupedSamplingPipeLine(
         model_name=MODEL_NAME,
         group_size=GROUP_SIZES[0],
@@ -84,16 +83,16 @@ def test_initialization():
 
 def test_str():
     for curr_pipeline in create_pipelines():
-        assert isinstance(str(curr_pipeline),
-                          str), f"{str(curr_pipeline)} is not a string"
+        assert isinstance(
+            str(curr_pipeline), str
+        ), f"{str(curr_pipeline)} is not a string"
 
 
 @pytest.mark.parametrize(
     "curr_pipeline, edge_case_prompt",
     product(islice(create_pipelines(), 3, 5), EDGE_CASE_PROMPTS),
 )
-def test_edge_cases(curr_pipeline: GroupedGenerationPipeLine,
-                    edge_case_prompt: str):
+def test_edge_cases(curr_pipeline: GroupedGenerationPipeLine, edge_case_prompt: str):
     answer = curr_pipeline(
         prompt_s=edge_case_prompt,
         max_new_tokens=curr_pipeline.wrapped_model.group_size * 2,
@@ -122,27 +121,31 @@ def test_pre_and_post_process():
         return_full_text=True,
     )
     assert isinstance(returned_val, dict), f"{returned_val} is not a dict"
-    assert ("generated_text" in returned_val.keys()
-            ), f"{returned_val} doesn't contain 'generated_text'"
-    assert ("generated_token_ids" in returned_val.keys()
-            ), f"{returned_val} doesn't contain 'generated_token_ids'"
+    assert (
+        "generated_text" in returned_val.keys()
+    ), f"{returned_val} doesn't contain 'generated_text'"
+    assert (
+        "generated_token_ids" in returned_val.keys()
+    ), f"{returned_val} doesn't contain 'generated_token_ids'"
     returned_text = returned_val["generated_text"]
-    assert isinstance(returned_text,
-                      str), f"{returned_val['generated_text']} is not a string"
+    assert isinstance(
+        returned_text, str
+    ), f"{returned_val['generated_text']} is not a string"
     generated_token_ids: Tensor = returned_val["generated_token_ids"]
     assert isinstance(
-        generated_token_ids,
-        Tensor), f"{returned_val['generated_token_ids']} is not a list"
+        generated_token_ids, Tensor
+    ), f"{returned_val['generated_token_ids']} is not a list"
     assert returned_text.startswith(
-        prompt), f"{returned_text} doesn't start with {prompt}"
+        prompt
+    ), f"{returned_text} doesn't start with {prompt}"
     prompt_tokens: Tensor
     prompt_tokens, _, _, _ = pipeline.pre_processing_strategy(prompt)
     assert equal(
-        generated_token_ids[:len(prompt_tokens)], prompt_tokens
+        generated_token_ids[: len(prompt_tokens)], prompt_tokens
     ), f"{returned_val['generated_token_ids'].tolist()} is not equal to {prompt_tokens}"
     assert isinstance(
-        generated_token_ids[:len(prompt_tokens)],
-        Tensor), f"{returned_val['generated_token_ids']} is not a tensor"
+        generated_token_ids[: len(prompt_tokens)], Tensor
+    ), f"{returned_val['generated_token_ids']} is not a tensor"
     post_processed_text: str = pipeline.post_processing_strategy(
         token_ids=generated_token_ids.tolist(),
         num_new_tokens=10,
@@ -152,8 +155,9 @@ def test_pre_and_post_process():
         return_full_text=True,
         clean_up_tokenization_spaces=True,
     )["generated_text"]
-    assert (returned_text == post_processed_text
-            ), f"{returned_text} is not equal to {post_processed_text}"
+    assert (
+        returned_text == post_processed_text
+    ), f"{returned_text} is not equal to {post_processed_text}"
 
     returned_val: CompletionDict = pipeline(
         prompt_s=prompt,
@@ -164,10 +168,12 @@ def test_pre_and_post_process():
     )
     returned_text = returned_val["generated_text"]
     assert not returned_text.startswith(
-        prompt), f"{returned_text} doesn't start with {prompt}"
+        prompt
+    ), f"{returned_text} doesn't start with {prompt}"
     prompt_tokens, _, _, _ = pipeline.pre_processing_strategy(prompt)
     assert not equal(
-        returned_val["generated_token_ids"][:len(prompt_tokens)], prompt_tokens
+        returned_val["generated_token_ids"][: len(
+            prompt_tokens)], prompt_tokens
     ), f"{returned_val['generated_token_ids'][:len(prompt_tokens)]} is equal to {prompt_tokens}"
 
 
@@ -184,10 +190,12 @@ def test_prefix():
         return_full_text=True,
         prefix=prefix,
     )
-    assert (prompt in answer["generated_text"]
-            ), f"{answer['generated_text']} doesn't contain {prompt}"
-    assert (prefix not in answer["generated_text"]
-            ), f"{answer['generated_text']} doesn't contain {prefix}"
+    assert (
+        prompt in answer["generated_text"]
+    ), f"{answer['generated_text']} doesn't contain {prompt}"
+    assert (
+        prefix not in answer["generated_text"]
+    ), f"{answer['generated_text']} doesn't contain {prefix}"
     answer: str = pipeline(
         prompt_s=prompt,
         max_new_tokens=10,
@@ -242,28 +250,30 @@ def test_max_new_tokens_is_none():
     ), f"{answer['generated_text']} doesn't start with {TEST_PROMPT}"
 
     assert len(answer["generated_text"]) > len(
-        TEST_PROMPT), f"{answer['generated_text']} is too short"
+        TEST_PROMPT
+    ), f"{answer['generated_text']} is too short"
 
 
 def test_call_many_prompts():
     """Tests the __call__ method when many prompts are given"""
     pipeline = TEST_PIPELINE
-    PROMPTS: List[str] = [
-        "This is a test prompt", "This is another test prompt"
-    ]
-    answers: List[CompletionDict] = pipeline(prompt_s=PROMPTS,
-                                             max_new_tokens=10,
-                                             return_text=True,
-                                             return_full_text=True)
+    PROMPTS: List[str] = ["This is a test prompt",
+                          "This is another test prompt"]
+    answers: List[CompletionDict] = pipeline(
+        prompt_s=PROMPTS, max_new_tokens=10, return_text=True, return_full_text=True
+    )
     assert isinstance(answers, list), f"{answers} is not a list"
     for prompt, answer in zip(PROMPTS, answers):
         assert isinstance(answer, dict), f"{answer} is not a dict"
-        assert ("generated_text" in answer.keys()
-                ), f"{answer} doesn't contain the key 'generated_text'"
-        assert isinstance(answer["generated_text"],
-                          str), f"{answer['generated_text']} is not a string"
+        assert (
+            "generated_text" in answer.keys()
+        ), f"{answer} doesn't contain the key 'generated_text'"
+        assert isinstance(
+            answer["generated_text"], str
+        ), f"{answer['generated_text']} is not a string"
         assert answer["generated_text"].startswith(
-            prompt), f"{answer['generated_text']} doesn't start with {prompt}"
+            prompt
+        ), f"{answer['generated_text']} doesn't start with {prompt}"
 
     pipeline.max_batch_size = 2
     prompts = PROMPTS * 2 + [PROMPTS[0]]
@@ -276,50 +286,74 @@ def test_call_many_prompts():
     )
     assert isinstance(answers, list), f"{answers} is not a list"
     assert len(answers) == len(
-        prompts), f"{answers} doesn't have the same length as {prompts}"
+        prompts
+    ), f"{answers} doesn't have the same length as {prompts}"
     for prompt, answer in zip(prompts, answers):
         assert isinstance(answer, dict), f"{answer} is not a dict"
-        assert ("generated_text" in answer.keys()
-                ), f"{answer} doesn't contain the key 'generated_text'"
-        assert isinstance(answer["generated_text"],
-                          str), f"{answer['generated_text']} is not a string"
+        assert (
+            "generated_text" in answer.keys()
+        ), f"{answer} doesn't contain the key 'generated_text'"
+        assert isinstance(
+            answer["generated_text"], str
+        ), f"{answer['generated_text']} is not a string"
         assert answer["generated_text"].startswith(
-            prompt), f"{answer['generated_text']} doesn't start with {prompt}"
+            prompt
+        ), f"{answer['generated_text']} doesn't start with {prompt}"
 
 
 def test_call_batch():
     pipeline = TEST_PIPELINE
     empty_batch = []
     empty_batch_answer = pipeline(empty_batch)
-    assert empty_batch_answer == [], f"{empty_batch_answer} is not an empty list"
+    assert empty_batch_answer == [
+    ], f"{empty_batch_answer} is not an empty list"
     batch_of_size_one = [TEST_PROMPT]
-    batch_of_size_one_answer = pipeline(batch_of_size_one, return_full_text=True)
-    assert isinstance(batch_of_size_one_answer, list), f"{batch_of_size_one_answer} is not a list"
-    assert len(batch_of_size_one_answer) == 1, f"{batch_of_size_one_answer} doesn't have a length of 1"
-    assert isinstance(batch_of_size_one_answer[0], dict), f"{batch_of_size_one_answer[0]} is not a dict"
-    assert "generated_text" in batch_of_size_one_answer[0].keys(), \
-        f"{batch_of_size_one_answer[0]} doesn't contain the key 'generated_text'"
-    assert isinstance(batch_of_size_one_answer[0]["generated_text"], str), \
-        f"{batch_of_size_one_answer[0]['generated_text']} is not a string"
-    assert batch_of_size_one_answer[0]["generated_text"].startswith(TEST_PROMPT), \
-        f"{batch_of_size_one_answer[0]['generated_text']} doesn't start with {TEST_PROMPT}"
-    assert len(batch_of_size_one_answer[0]["generated_text"]) > len(TEST_PROMPT), \
-        f"{batch_of_size_one_answer[0]['generated_text']} is too short"
+    batch_of_size_one_answer = pipeline(
+        batch_of_size_one, return_full_text=True)
+    assert isinstance(
+        batch_of_size_one_answer, list
+    ), f"{batch_of_size_one_answer} is not a list"
+    assert (
+        len(batch_of_size_one_answer) == 1
+    ), f"{batch_of_size_one_answer} doesn't have a length of 1"
+    assert isinstance(
+        batch_of_size_one_answer[0], dict
+    ), f"{batch_of_size_one_answer[0]} is not a dict"
+    assert (
+        "generated_text" in batch_of_size_one_answer[0].keys()
+    ), f"{batch_of_size_one_answer[0]} doesn't contain the key 'generated_text'"
+    assert isinstance(
+        batch_of_size_one_answer[0]["generated_text"], str
+    ), f"{batch_of_size_one_answer[0]['generated_text']} is not a string"
+    assert batch_of_size_one_answer[0]["generated_text"].startswith(
+        TEST_PROMPT
+    ), f"{batch_of_size_one_answer[0]['generated_text']} doesn't start with {TEST_PROMPT}"
+    assert len(batch_of_size_one_answer[0]["generated_text"]) > len(
+        TEST_PROMPT
+    ), f"{batch_of_size_one_answer[0]['generated_text']} is too short"
     batch_of_size_two = [TEST_PROMPT, TEST_PROMPT]
-    batch_of_size_two_answer = pipeline(batch_of_size_two, return_full_text=True)
-    assert isinstance(batch_of_size_two_answer, list), f"{batch_of_size_two_answer} is not a list"
-    assert len(batch_of_size_two_answer) == 2, f"{batch_of_size_two_answer} doesn't have a length of 2"
+    batch_of_size_two_answer = pipeline(
+        batch_of_size_two, return_full_text=True)
+    assert isinstance(
+        batch_of_size_two_answer, list
+    ), f"{batch_of_size_two_answer} is not a list"
+    assert (
+        len(batch_of_size_two_answer) == 2
+    ), f"{batch_of_size_two_answer} doesn't have a length of 2"
     for answer in batch_of_size_two_answer:
-        assert isinstance(answer, dict), \
-            f"{answer} is not a dict"
-        assert "generated_text" in answer.keys(), \
-            f"{answer} doesn't contain the key 'generated_text'"
-        assert isinstance(answer["generated_text"], str), \
-            f"{answer['generated_text']} is not a string"
-        assert answer["generated_text"].startswith(TEST_PROMPT), \
-            f"{answer['generated_text']} doesn't start with {TEST_PROMPT}"
-        assert len(answer["generated_text"]) > len(TEST_PROMPT), \
-            f"{answer['generated_text']} is too short"
+        assert isinstance(answer, dict), f"{answer} is not a dict"
+        assert (
+            "generated_text" in answer.keys()
+        ), f"{answer} doesn't contain the key 'generated_text'"
+        assert isinstance(
+            answer["generated_text"], str
+        ), f"{answer['generated_text']} is not a string"
+        assert answer["generated_text"].startswith(
+            TEST_PROMPT
+        ), f"{answer['generated_text']} doesn't start with {TEST_PROMPT}"
+        assert len(answer["generated_text"]) > len(
+            TEST_PROMPT
+        ), f"{answer['generated_text']} is too short"
 
 
 @pytest.mark.parametrize("curr_pipeline", create_pipelines())
@@ -337,24 +371,32 @@ def test_calling_pipelines(curr_pipeline):
 
 @pytest.mark.parametrize("curr_pipeline", create_pipelines())
 def test_dict_conversions(curr_pipeline: GroupedGenerationPipeLine):
-    new_pipeline = type(curr_pipeline).from_dict(
-        curr_pipeline.as_dict())
+    new_pipeline = type(curr_pipeline).from_dict(curr_pipeline.as_dict())
     assert type(curr_pipeline) is type(new_pipeline)
     assert curr_pipeline.model_name == new_pipeline.model_name
-    assert (curr_pipeline.wrapped_model.group_size ==
-            new_pipeline.wrapped_model.group_size)
+    assert (
+        curr_pipeline.wrapped_model.group_size == new_pipeline.wrapped_model.group_size
+    )
     assert curr_pipeline.wrapped_model.temp == new_pipeline.wrapped_model.temp
     assert curr_pipeline.generation_type == new_pipeline.generation_type
-    assert (curr_pipeline.wrapped_model.end_of_sentence_id ==
-            new_pipeline.wrapped_model.end_of_sentence_id)
-    assert (curr_pipeline.wrapped_model.end_of_sentence_stop ==
-            new_pipeline.wrapped_model.end_of_sentence_stop)
-    assert (curr_pipeline.wrapped_model.max_input_len ==
-            new_pipeline.wrapped_model.max_input_len)
-    assert (curr_pipeline.answer_length_multiplier ==
-            new_pipeline.answer_length_multiplier)
-    assert (curr_pipeline.wrapped_model.vocab_size ==
-            new_pipeline.wrapped_model.vocab_size)
+    assert (
+        curr_pipeline.wrapped_model.end_of_sentence_id
+        == new_pipeline.wrapped_model.end_of_sentence_id
+    )
+    assert (
+        curr_pipeline.wrapped_model.end_of_sentence_stop
+        == new_pipeline.wrapped_model.end_of_sentence_stop
+    )
+    assert (
+        curr_pipeline.wrapped_model.max_input_len
+        == new_pipeline.wrapped_model.max_input_len
+    )
+    assert (
+        curr_pipeline.answer_length_multiplier == new_pipeline.answer_length_multiplier
+    )
+    assert (
+        curr_pipeline.wrapped_model.vocab_size == new_pipeline.wrapped_model.vocab_size
+    )
     if hasattr(curr_pipeline, "top_k"):
         assert curr_pipeline.top_k == new_pipeline.top_k
     if hasattr(curr_pipeline, "top_p"):
