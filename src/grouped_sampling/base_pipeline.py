@@ -5,10 +5,7 @@ from collections.abc import Callable
 from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 from torch import LongTensor
-from transformers import (
-    AutoTokenizer,
-    PreTrainedTokenizer,
-)
+from transformers import AutoTokenizer, PreTrainedTokenizer
 
 from .completion_dict import CompletionDict
 from .generation_type import GenerationType
@@ -321,12 +318,16 @@ class GroupedGenerationPipeLine(Callable, ABC):
         prompts_lengths: List[int]
         prefix_length: int
         postfix_length: int
-        tokenized_prompts, prompts_lengths, prefix_length, postfix_length = self.pre_processing_strategy.call_batch(
-            prompts, prefix, postfix
-        )
+        (
+            tokenized_prompts,
+            prompts_lengths,
+            prefix_length,
+            postfix_length,
+        ) = self.pre_processing_strategy.call_batch(prompts, prefix, postfix)
 
         if max_new_tokens is None:
-            max_new_tokens = int(max(prompts_lengths) * self.answer_length_multiplier)
+            max_new_tokens = int(
+                max(prompts_lengths) * self.answer_length_multiplier)
 
         # generate the sequences
         generated_sequences: List[List[List[int]]] = self.forward_batch(
@@ -345,8 +346,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 return_text=return_text,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-            ) for generated_sequence, prompt_length
-            in zip(
+            ) for generated_sequence, prompt_length in zip(
                 generated_sequences,
                 prompts_lengths,
             )
