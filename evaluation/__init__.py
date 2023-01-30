@@ -77,22 +77,23 @@ def get_project_name(debug: bool = __debug__) -> str:
 def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
-    # noinspection PyUnreachableCode
     if debug:
-        sub_set = load_dataset(DATASET_NAME, sub_set_name, split="train[:2]")
+        sub_set: Dataset = load_dataset(DATASET_NAME, sub_set_name, split="train[:2]")
     else:
-        sub_set = load_dataset(DATASET_NAME, sub_set_name, split="train")
-    processed_data1_dict: Dataset
-    processed_data2_dict: Dataset
+        sub_set: Dataset = load_dataset(DATASET_NAME, sub_set_name, split="train")
 
     def rename_keys(x: Dict[str, Any], input_lang_name: str, output_lang_name: str) -> Dict[str, str]:
         translation: Dict[str, str] = x["translation"]
         return {input_lang_name: translation[input_lang_name], output_lang_name: translation[output_lang_name]}
 
-    subset_part1 = sub_set.map(rename_keys,
-                               fn_kwargs={"input_lang_name": language_code1, "output_lang_name": language_code2})
-    subset_part2 = sub_set.map(rename_keys,
-                               fn_kwargs={"input_lang_name": language_code2, "output_lang_name": language_code1})
+    subset_part1: Dataset = sub_set.map(
+        rename_keys,
+        fn_kwargs={"input_lang_name": language_code1, "output_lang_name": language_code2}
+    )
+    subset_part2: Dataset = sub_set.map(
+        rename_keys,
+        fn_kwargs={"input_lang_name": language_code2, "output_lang_name": language_code1}
+    )
     return subset_part1, subset_part2, language_code1, language_code2
 
 
