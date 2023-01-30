@@ -83,7 +83,7 @@ def save_plot_from_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
             data.keys(),
             [
                 data[curr_group_size][curr_metric_name]
-                for curr_group_size in data.keys()
+                for curr_group_size in data
             ],
             color=curr_color,
             label=curr_metric_name,
