@@ -8,7 +8,7 @@ from src.grouped_sampling.generation_utils import safe_cat_batch
 
 
 def create_wrapped_models() -> List[GroupedGenerationUtils]:
-    return [GroupedGenerationUtils(
+    wrapped_model_example1 = GroupedGenerationUtils(
         model_name="gpt2",
         group_size=8,
         vocab_size=50257,
@@ -17,7 +17,8 @@ def create_wrapped_models() -> List[GroupedGenerationUtils]:
         repetition_penalty_strategy=DEFAULT_REPETITION_PENALTY,
         end_of_sentence_id=50256,
         padding_id=0,
-    )]
+    )
+    return [wrapped_model_example1]
 
 
 @pytest.mark.parametrize("wrapped_model", create_wrapped_models())
