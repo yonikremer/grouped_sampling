@@ -49,9 +49,9 @@ def version_already_exists(new_version: str) -> bool:
 
 
 def build_version(new_version: str) -> None:
+    """Build the new version."""
     if version_already_exists(new_version):
         return
-    """Build the new version."""
     build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist", distribution="sdist")
     # return only when the build is finished
     while not version_already_exists(new_version):
