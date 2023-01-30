@@ -1,7 +1,7 @@
+import heapq
 from abc import ABC
 from typing import List
 from warnings import warn
-import heapq
 
 from torch import Tensor, argmax, multinomial, zeros
 
@@ -72,9 +72,8 @@ class TopPSamplingStrategy(SamplingStrategy):
 
     def __call__(self, prob_vec: Tensor) -> int:
         prob_sum: float = 0.0
-        converted_probs = [
-            TokenProb(i, prob) for i, prob in enumerate(prob_vec)
-        ]
+        converted_probs = [TokenProb(i, prob)
+                           for i, prob in enumerate(prob_vec)]
         heapq.heapify(converted_probs)
         new_probs: Tensor = zeros(prob_vec.shape, dtype=float)
         while prob_sum < self.top_p and len(converted_probs) > 0:
@@ -83,8 +82,10 @@ class TopPSamplingStrategy(SamplingStrategy):
             if curr_token_prob.prob <= 0.0:
                 break
             if curr_token_prob.prob > 1:
-                raise ValueError(f"Probability of token {token_id} "
-                                 f"in the vector {prob_vec} is higher than 1")
+                raise ValueError(
+                    f"Probability of token {token_id} "
+                    f"in the vector {prob_vec} is higher than 1"
+                )
             new_probs[token_id] = curr_token_prob.prob
             prob_sum += curr_token_prob.prob
         return self.pure_sampling_function(new_probs)
@@ -104,9 +105,7 @@ class TopKSamplingStrategy(SamplingStrategy):
 
     def __call__(self, prob_vec: Tensor) -> int:
         top_k_keys: List[int] = heapq.nlargest(
-            self.top_k,
-            range(prob_vec.shape[0]),
-            key=lambda x: prob_vec[x]
+            self.top_k, range(prob_vec.shape[0]), key=lambda x: prob_vec[x]
         )
         prob_sum = sum(prob_vec[token_id] for token_id in top_k_keys)
         new_probs = zeros(prob_vec.shape, dtype=float)
