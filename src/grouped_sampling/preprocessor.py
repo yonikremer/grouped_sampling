@@ -2,7 +2,7 @@ from typing import Tuple
 
 from torch import LongTensor, cat
 from transformers import PreTrainedTokenizer
-from transformers.tokenization_utils_base import BatchEncoding, TruncationStrategy
+from transformers.tokenization_utils_base import TruncationStrategy
 
 
 class PreProcessor:
@@ -34,16 +34,6 @@ class PreProcessor:
             truncation=self.truncation,
             max_length=self.max_input_len,
         )
-        if isinstance(tokenized_text, (dict, BatchEncoding)):
-            token_tensor: LongTensor = tokenized_text["input_ids"]
-            # O(1) because we are accessing a single element
-            # in a dictionary and saving the reference to it.
-        elif isinstance(tokenized_text, LongTensor):
-            token_tensor: LongTensor = tokenized_text
-            # O(1) because we are saving the reference to the tensor
-        else:
-            raise TypeError("The tokenizer output is not one of:"
-                            "dict, BatchEncoding, LongTensor")
         token_tensor: LongTensor = tokenized_text["input_ids"]
         # O(1) because we are accessing a single element
         # in a dictionary and saving the reference to it.
