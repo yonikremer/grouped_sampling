@@ -15,7 +15,6 @@ from evaluation import (
     get_project_name,
     lang_code_to_name,
 )
-from src.grouped_sampling import GroupedGenerationPipeLine
 
 
 class ExperimentManager:
@@ -24,7 +23,7 @@ class ExperimentManager:
     df: DataFrame
     language_pairs: Set[Tuple[str, str]] = set()
 
-    def __init__(self, generator: GroupedGenerationPipeLine, debug: bool):
+    def __init__(self, debug: bool, parameters: Dict[str, Any] = None):
         self.experiment = Experiment(
             api_key=get_comet_api_key(),
             project_name=get_project_name(debug=debug),
@@ -34,14 +33,16 @@ class ExperimentManager:
             log_git_metadata=False,
             log_git_patch=False,
         )
-        self.experiment.log_parameters(generator.as_dict())
+        self.experiment.log_parameters(parameters)
         self.start_time = datetime.now()
-        self.df = DataFrame(columns=[
-            "input_text",
-            "target_text",
-            "input_language",
-            "output_language",
-        ] + list(BERT_SCORES))
+        self.df = DataFrame(
+            columns=[
+                        "input_text",
+                        "target_text",
+                        "input_language",
+                        "output_language",
+                    ] + list(BERT_SCORES)
+        )
 
     def log_stats(self, scores: DataFrame, title: str) -> None:
         self.experiment.log_dataframe_profile(scores,
