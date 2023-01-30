@@ -39,7 +39,7 @@ A lower group size will cause lower performance both in runtime and text quality
 ## The project book:
 The project book is where I explain the project in great details.
 The book includes a detailed explanation of the technical background and the solution. 
-It is written in Hebrew in the file [documents\העבודה עצמה.docx](documents\העבודה%20עצמה.docx)
+It is written in Hebrew in the file [documents/עבודה סופית לגמרי.pdf](documents/עבודה סופית לגמרי.pdf)
 
 ## Other Documents:
 There are other documents I created for the project
