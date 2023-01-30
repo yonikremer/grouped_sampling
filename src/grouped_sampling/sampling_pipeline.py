@@ -135,11 +135,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         returns the TOP_K tokens
         with the highest probability.
         this is the bottleneck of the sampling pipeline."""
-        top_k_keys: List[int] = heapq.nlargest(
-            self.top_k,
-            range(prob_vec.shape[0]),
-            key=lambda x: prob_vec[x]
-        )
+        top_k_keys: List[int] = heapq.nlargest(self.top_k,
+                                               range(prob_vec.shape[0]),
+                                               key=lambda x: prob_vec[x])
         prob_sum = sum(prob_vec[token_id] for token_id in top_k_keys)
         new_probs = zeros(prob_vec.shape, dtype=float)
         for token_id in top_k_keys:
