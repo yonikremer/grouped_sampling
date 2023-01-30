@@ -321,7 +321,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         prompts_lengths: List[int]
         prefix_length: int
         postfix_length: int
-        tokenized_prompts, prompts_lengths, prefix_length, postfix_length = self.pre_processing_strategy.call_batch(
+        tokenized_prompts, prefix_length, prompts_lengths, postfix_length = self.pre_processing_strategy.call_batch(
             prompts, prefix, postfix
         )
 
