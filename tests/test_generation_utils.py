@@ -49,7 +49,7 @@ def test_prepare_model_kwargs_batch(wrapped_model: GroupedGenerationUtils):
     for key in model_kwargs_non_batch.keys():
         assert torch.all(torch.eq(model_kwargs_batch[key], model_kwargs_non_batch[key])), f"key {key} is not equal"
     actual_batch = [[1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
-    max_len = max([len(seq) for seq in actual_batch])
+    max_len = max(len(seq) for seq in actual_batch)
     model_kwargs = wrapped_model.prepare_model_kwargs_batch(actual_batch)
     input_ids = model_kwargs["input_ids"]
     assert (len(actual_batch), max_len + wrapped_model.group_size - 1) == input_ids.shape
