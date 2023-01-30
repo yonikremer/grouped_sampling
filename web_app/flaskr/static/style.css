@@ -48,7 +48,7 @@ nav ul  {
   padding: 0;
 }
 
-nav ul li a, nav ul li span, header .action {
+nav ul li a, nav ul li span, header {
   display: block;
   padding: 0.5rem;
 }
@@ -90,12 +90,12 @@ nav ul li a, nav ul li span, header .action {
   margin-bottom: 0;
 }
 
-.post .about {
+.post {
   color: slategray;
   font-style: italic;
 }
 
-.post .body {
+.post {
   white-space: pre-line;
 }
 
@@ -121,10 +121,6 @@ nav ul li a, nav ul li span, header .action {
 .content textarea {
   min-height: 12em;
   resize: vertical;
-}
-
-input.danger {
-  color: #cc2f2e;
 }
 
 input[type=submit] {
