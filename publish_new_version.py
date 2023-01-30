@@ -60,19 +60,16 @@ def build_version(new_version: str) -> None:
 
 def publish_version(new_version: str):
     """Publish the new version to PyPI."""
-    username = "__token__"
-    pypi_api_token = get_pypi_api_token()
     upload_settings = Settings(
-        username=username,
-        password=pypi_api_token,
+        username="__token__",
+        password=get_pypi_api_token(),
         repository="pypi",
         disable_progress_bar=True,
     )
     upload(
-        upload_settings,
-        [version_file_path(new_version)],
+        upload_settings=upload_settings,
+        dists=[version_file_path(new_version)],
     )
-
 
 
 def get_pypi_api_token() -> str:
