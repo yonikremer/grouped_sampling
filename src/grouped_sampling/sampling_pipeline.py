@@ -164,7 +164,6 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         # of constant size (vocab_size,)
         # and therefore must be O(1) in complexity
         # and the loop has group_size iterations.
-        del prob_mat
         for i, token_id in enumerate(new_group):
             if token_id == self.wrapped_model.end_of_sentence_id:
                 return new_group[:i + 1]
