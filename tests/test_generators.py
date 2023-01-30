@@ -24,6 +24,14 @@ repeating_prompt: str = "This is a very long text. " * 2
 long_prompt: str = "This is a very long text. " * 512
 EDGE_CASE_PROMPTS = [long_prompt, repeating_prompt]
 TEST_PROMPT = "This is a test prompt."
+TEST_PIPELINE = GroupedSamplingPipeLine(
+        model_name=MODEL_NAME,
+        group_size=GROUP_SIZES[0],
+        top_k=TOP_KS[0],
+        top_p=None,
+        temp=TEMPERATURES[0],
+        answer_length_multiplier=1.0,
+    )
 
 
 def create_text_generators(
@@ -104,7 +112,7 @@ def test_edge_cases(curr_text_generator: GroupedGenerationPipeLine,
 
 def test_pre_and_post_process():
     """Tests the different returning options"""
-    generator: GroupedGenerationPipeLine = next(create_text_generators())
+    generator: GroupedGenerationPipeLine = TEST_PIPELINE
     prompt: str = "This is a test prompt"
     returned_val: CompletionDict = generator(
         prompt_s=prompt,
@@ -165,7 +173,7 @@ def test_pre_and_post_process():
 
 def test_prefix():
     """Tests that the prefix option of the methods __call__ and preprocess works"""
-    generator: GroupedGenerationPipeLine = next(create_text_generators())
+    generator: GroupedGenerationPipeLine = TEST_PIPELINE
     prompt: str = "test prompt"
     prefix = "This is a "
     answer: CompletionDict = generator(
@@ -194,7 +202,7 @@ def test_prefix():
 
 def test_postfix():
     """Tests that the postfix option of the methods __call__ and preprocess works"""
-    generator: GroupedGenerationPipeLine = next(create_text_generators())
+    generator: GroupedGenerationPipeLine = TEST_PIPELINE
     prompt: str = "This is a"
     postfix = " Test postfix"
     answer: str = generator(
@@ -220,7 +228,7 @@ def test_postfix():
 
 
 def test_max_new_tokens_is_none():
-    curr_text_generator = next(create_text_generators())
+    curr_text_generator = TEST_PIPELINE
     curr_text_generator.wrapped_model.end_of_sentence_stop = True
     answer: CompletionDict = curr_text_generator(
         prompt_s=TEST_PROMPT,
@@ -239,7 +247,7 @@ def test_max_new_tokens_is_none():
 
 def test_call_many_prompts():
     """Tests the __call__ method when many prompts are given"""
-    generator = next(create_text_generators())
+    generator = TEST_PIPELINE
     PROMPTS: List[str] = [
         "This is a test prompt", "This is another test prompt"
     ]
@@ -280,7 +288,7 @@ def test_call_many_prompts():
 
 
 def test_call_batch():
-    generator = next(create_text_generators())
+    generator = TEST_PIPELINE
     empty_batch = []
     empty_batch_answer = generator(empty_batch)
     assert empty_batch_answer == [], f"{empty_batch_answer} is not an empty list"
