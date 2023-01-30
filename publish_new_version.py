@@ -2,10 +2,10 @@
 
 import os
 
-import toml
 import build
-from twine.settings import Settings
+import toml
 from twine.commands.upload import upload
+from twine.settings import Settings
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -52,7 +52,8 @@ def build_version(new_version: str) -> None:
     if version_already_exists(new_version):
         return
     """Build the new version."""
-    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist", distribution="sdist")
+    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist",
+                                                  distribution="sdist")
     # return only when the build is finished
     while not version_already_exists(new_version):
         pass
@@ -72,7 +73,6 @@ def publish_version(new_version: str):
         upload_settings,
         [version_file_path(new_version)],
     )
-
 
 
 def get_pypi_api_token() -> str:
