@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from math import ceil
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Iterable
 
 from torch import LongTensor, Tensor
 
