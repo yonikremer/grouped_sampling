@@ -24,9 +24,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
 
     def __init__(
             self,
+            *args,
             top_k: Optional[int] = None,
             top_p: Optional[float] = None,
-            *args,
             **kwargs,
     ):
         self.top_p: Optional[float] = top_p
