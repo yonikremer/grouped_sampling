@@ -188,8 +188,7 @@ class GroupedGenerationUtils:
             a dictionary of the arguments for the model call
             Complexity: O(batch size *(group_size + n)) where n is the number of batch
         """
-        padding_length = (max([len(sequence)
-                               for sequence in batch]) + self.group_size - 1)
+        padding_length: int = max(len(sequence) for sequence in batch) + self.group_size - 1
         cpu_padded_tokens = self.pad_batch(batch, padding_length)
         cpu_attention_mask = ones([len(batch), padding_length], dtype=long)
         if cuda.is_available():
