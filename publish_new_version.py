@@ -1,11 +1,11 @@
 """A script that publish a new version of the library to PyPI."""
 
 import os
-import subprocess
 
 import toml
 import build
-
+from twine.settings import Settings
+from twine.commands.upload import upload
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -62,16 +62,17 @@ def publish_version(new_version: str):
     """Publish the new version to PyPI."""
     username = "__token__"
     pypi_api_token = get_pypi_api_token()
-    try:
-        # define an expression for all the files is the dist folder that have the same version number as the new version
-        subprocess.call(
-            ["twine", "upload", "--username", username, "--password", pypi_api_token, "--verbose",
-             version_file_path(new_version)]
-        )
-    except Exception as e:
-        print("Publishing failed. Decreasing version number back to the original version.")
-        decrease_version()
-        raise e
+    upload_settings = Settings(
+        username=username,
+        password=pypi_api_token,
+        repository="pypi",
+        disable_progress_bar=True,
+    )
+    upload(
+        upload_settings,
+        [version_file_path(new_version)],
+    )
+
 
 
 def get_pypi_api_token() -> str:
