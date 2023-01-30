@@ -1,5 +1,3 @@
-from typing import Optional
-
 from torch import tensor
 from transformers import PreTrainedTokenizer
 
@@ -36,7 +34,6 @@ class PostProcessor:
         """
         # define n as the length of the token_ids
         full_prompt_len = prefix_len + prompt_len + postfix_len
-        final_num_tokens = full_prompt_len + num_new_tokens
 
         generated_tokens = token_ids[full_prompt_len:]
         # O(num_new_tokens) because we are copying
