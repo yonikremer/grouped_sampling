@@ -38,7 +38,7 @@ class GroupedGenerationUtils:
         temp: float = 1.0,
         use_softmax: bool = True,
         load_in_8bit: bool = True,
-            **kwargs,
+        **kwargs,
     ):
         """initializes the model wrapper
         Args:
@@ -62,7 +62,8 @@ class GroupedGenerationUtils:
         self.use_softmax: bool = use_softmax
         self.end_of_sentence_id: int = end_of_sentence_id
         self.repetition_penalty_strategy: RepetitionPenaltyStrategy = (
-            repetition_penalty_strategy)
+            repetition_penalty_strategy
+        )
         self.group_size: int = group_size
         self.max_input_len: int = max_input_len
         self.padding_id: int = padding_id
@@ -70,7 +71,7 @@ class GroupedGenerationUtils:
         self.model = AutoModelForCausalLM.from_pretrained(
             pretrained_model_name_or_path=model_name,
             load_in_8bit=load_in_8bit and cuda.is_available(),
-            **kwargs
+            **kwargs,
         )
         self.temp: float = temp
         self.vocab_size: int = vocab_size
@@ -79,8 +80,9 @@ class GroupedGenerationUtils:
 
     @property
     def padding_tokens(self) -> LongTensor:
-        cpu_tokens = (ones(self.group_size - 1, dtype=long) * self.padding_id
-                      )  # O(group_size)
+        cpu_tokens = (
+            ones(self.group_size - 1, dtype=long) * self.padding_id
+        )  # O(group_size)
         if cuda.is_available():
             return cpu_tokens.cuda()  # pragma: no cover
         return cpu_tokens
@@ -97,8 +99,9 @@ class GroupedGenerationUtils:
             tokens = LongTensor(tokens)  # O(n)
         if cuda.is_available():
             tokens = tokens.cuda()  # pragma: no cover
-        padded_tokens: LongTensor = cat((tokens, self.padding_tokens),
-                                        dim=0).unsqueeze(0)
+        padded_tokens: LongTensor = cat((tokens, self.padding_tokens), dim=0).unsqueeze(
+            0
+        )
         # the target_length of padded_tokens is n + group_size - 1
         # so creating it is O(n + group_size)
         attention_len = padded_tokens.shape[1]  # n + group_size - 1
@@ -139,15 +142,15 @@ class GroupedGenerationUtils:
             # so the complexity is O(n^2 + group_size^2)
         unscaled_relevant_logits: Tensor
         unscaled_relevant_logits = outputs.logits[
-            0, -self.group_size:, :self.vocab_size]
+            0, -self.group_size:, : self.vocab_size
+        ]
         # The shape of unscaled_relevant_logits is (group_size, vocab_size)
         # So the complexity of this line should be
         # O(group_size) because we are coping group_size * vocab_size
         # elements from one tensor to the another
         return unscaled_relevant_logits
 
-    def pad_sequence(self, sequence: TokenIDS,
-                     target_length: int) -> LongTensor:
+    def pad_sequence(self, sequence: TokenIDS, target_length: int) -> LongTensor:
         """pads the sequence with the padding token
         Args:
             sequence: the sequence to be padded
@@ -157,7 +160,7 @@ class GroupedGenerationUtils:
         Complexity: O(n) where n is the length of the sequence
         """
         padding_tensor: LongTensor = full(
-            (target_length - len(sequence), ),
+            (target_length - len(sequence),),
             self.padding_id,
         )
         return cat((LongTensor(sequence), padding_tensor), dim=0)
@@ -180,7 +183,8 @@ class GroupedGenerationUtils:
         return answer
 
     def prepare_model_kwargs_batch(
-            self, batch: List[TokenIDS]) -> Dict[str, LongTensor]:
+        self, batch: List[TokenIDS]
+    ) -> Dict[str, LongTensor]:
         """preparing the arguments for the model call
         Args:
             batch: the raw batch
@@ -188,7 +192,9 @@ class GroupedGenerationUtils:
             a dictionary of the arguments for the model call
             Complexity: O(batch size *(group_size + n)) where n is the number of batch
         """
-        padding_length: int = max(len(sequence) for sequence in batch) + self.group_size - 1
+        padding_length: int = (
+            max(len(sequence) for sequence in batch) + self.group_size - 1
+        )
         cpu_padded_tokens = self.pad_batch(batch, padding_length)
         cpu_attention_mask = ones([len(batch), padding_length], dtype=long)
         if cuda.is_available():
@@ -217,16 +223,18 @@ class GroupedGenerationUtils:
             # chose stop_index such that the target_length of the sequence is group_size
             curr_relevant_logits = all_logits[
                 i,
-                len(sequence) - 1:len(sequence) +
-                self.group_size, :self.vocab_size, ]
+                len(sequence) - 1: len(sequence) + self.group_size,
+                : self.vocab_size,
+            ]
             un_squeezed_logits = curr_relevant_logits.unsqueeze(0)
             unscaled_relevant_logits.append(un_squeezed_logits)
 
         answer = cat(unscaled_relevant_logits)
         return answer
 
-    def get_prob_mat_batch(self, tokens: List[TokenIDS],
-                           generation_start_indexes: Iterable[int]) -> Tensor:
+    def get_prob_mat_batch(
+        self, tokens: List[TokenIDS], generation_start_indexes: Iterable[int]
+    ) -> Tensor:
         """Given a batch of sequences of batch,
         returns the probability matrix of shape (group_size, vocab_size)
         where logits[i] is the logits vector of the i-th next token
@@ -235,14 +243,15 @@ class GroupedGenerationUtils:
         unscaled_relevant_logits = self.get_logit_mat_batch(tokens)
         if not self.end_of_sentence_stop:
             try:
-                unscaled_relevant_logits[:, :, self.
-                                         end_of_sentence_id] = -float("inf")
+                unscaled_relevant_logits[:, :,
+                                         self.end_of_sentence_id] = -float("inf")
             except IndexError as e:
                 print("unscaled_relevant_logits", unscaled_relevant_logits)
                 print("self.end_of_sentence_id", self.end_of_sentence_id)
                 raise e
         penalized_logits = self.repetition_penalty_strategy.call_batch(
-            unscaled_relevant_logits, tokens, generation_start_indexes)
+            unscaled_relevant_logits, tokens, generation_start_indexes
+        )
         return self.logits_to_probs(penalized_logits)
 
     def get_prob_mat(self, tokens: TokenIDS, generation_start: int) -> Tensor:
@@ -260,7 +269,8 @@ class GroupedGenerationUtils:
             # so the complexity is O(group_size)
             # setting the logits to -inf so the probability will be 0
         penalized_logits = self.repetition_penalty_strategy(
-            unscaled_relevant_logits, tokens, generation_start)
+            unscaled_relevant_logits, tokens, generation_start
+        )
         # O(group_size * n)
         # where n is the number of tokens generated by the algorithm
         prob_tensor = self.logits_to_probs(penalized_logits)  # O(group_size)
@@ -295,6 +305,5 @@ class GroupedGenerationUtils:
 
     def as_dict(self):
         return {
-            attr_name: getattr(self, attr_name)
-            for attr_name in self.descriptive_attrs
+            attr_name: getattr(self, attr_name) for attr_name in self.descriptive_attrs
         }
