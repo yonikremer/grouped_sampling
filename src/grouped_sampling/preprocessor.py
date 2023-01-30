@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 
 from torch import LongTensor, cat
 from transformers import PreTrainedTokenizer
@@ -76,3 +76,38 @@ class PreProcessor:
         # we know that the number of tokens is less than the number of characters
         return token_tensor, len(prefix_tokens), len(prompt_tokens), len(
             postfix_tokens)
+
+    def call_batch(
+            self,
+            prompts: List[str],
+            prefix: str = "",
+            postfix: str = "",
+    ) -> Tuple[List[LongTensor], int, List[int], int]:
+        """
+        Args:
+            prompts: a list of prompts to tokenize
+            prefix: the prefix
+            postfix: the postfix
+        Returns:
+            a tuple of:
+                List of tokenized (prefix + prompt + postfix) as a long tensor
+                the length of the prefix in tokens
+                the lengths of the prompts in tokens
+                the length of the postfix in tokens
+        """
+        prefix_tokens: LongTensor = self.get_token_tensor(prefix)
+        # O(A) where A is the number of characters in the prefix.
+        postfix_tokens: LongTensor = self.get_token_tensor(postfix)
+        # O(B) where B is the number of characters in the postfix.
+        prompt_tokens: List[LongTensor] = [
+            self.get_token_tensor(prompt) for prompt in prompts
+        ]
+        prompt_lengths = [len(prompt) for prompt in prompt_tokens]
+        # O(sum(len(prompt) for prompt in prompts)
+        # where C is the number of characters in the prompt.
+        token_tensors: List[LongTensor] = [
+            cat((prefix_tokens, prompt_tokens, postfix_tokens))
+            for prompt_tokens in prompt_tokens
+        ]
+        return token_tensors, len(prefix_tokens), prompt_lengths, len(postfix_tokens)
+

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
-from torch import LongTensor, Tensor
+from torch import LongTensor
 from transformers import (
     AutoTokenizer,
     PreTrainedTokenizer,
@@ -319,20 +319,13 @@ class GroupedGenerationPipeLine(Callable, ABC):
         if len(prompts) == 0:
             return []
         # tokenize the prompts
-        tokenized_prompts_lengths: List[Tuple[Tensor, int, int, int]] = [
-            self.pre_processing_strategy(prompt,
-                                         prefix=prefix,
-                                         postfix=postfix) for prompt in prompts
-        ]
-        tokenized_prompts: List[Tensor] = [
-            tokenized_prompt
-            for tokenized_prompt, _, _, _ in tokenized_prompts_lengths
-        ]
-
-        tokenized_prompts: List[Tensor] = [tokenized_prompt for tokenized_prompt, _, _, _ in tokenized_prompts_lengths]
-        prefix_lengths: List[int] = [prefix_length for _, prefix_length, _, _ in tokenized_prompts_lengths]
-        prompts_lengths: List[int] = [prompt_length for _, _, prompt_length, _ in tokenized_prompts_lengths]
-        postfix_lengths: List[int] = [postfix_length for _, _, _, postfix_length in tokenized_prompts_lengths]
+        tokenized_prompts: List[LongTensor]
+        prompts_lengths: List[int]
+        prefix_length: int
+        postfix_length: int
+        tokenized_prompts, prompts_lengths, prefix_length, postfix_length = self.pre_processing_strategy.call_batch(
+            prompts, prefix, postfix
+        )
 
         if max_new_tokens is None:
             max_new_tokens = int(max(prompts_lengths) * self.answer_length_multiplier)
@@ -354,12 +347,10 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 return_text=return_text,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-            ) for generated_sequence, prefix_length, prompt_length,
-            postfix_length in zip(
+            ) for generated_sequence, prompt_length
+            in zip(
                 generated_sequences,
-                prefix_lengths,
                 prompts_lengths,
-                postfix_lengths,
             )
         ]
 
