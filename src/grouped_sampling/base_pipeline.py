@@ -23,7 +23,7 @@ MAX_MODEL_INPUT_SIZE = 32768
 
 def remove_nones(d: Dict[str, Any]) -> Dict[str, Any]:
     """Returns a copy of a dictionary with all the not None values"""
-    return {key: d[key] for key in d.keys() if d[key] is not None}
+    return {key: value for key, value in d.items() if value is not None}
 
 
 def get_padding_id(tokenizer: PreTrainedTokenizer):
