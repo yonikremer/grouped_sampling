@@ -11,16 +11,10 @@ from datasets import Dataset, get_dataset_config_names
 from transformers import TextGenerationPipeline, AutoModelForCausalLM, AutoTokenizer
 
 from evaluation.experiment_manager import ExperimentManager
-from evaluation import lang_code_to_name, process_translation_data, DATASET_NAME
+from evaluation import lang_code_to_name, process_translation_data, DATASET_NAME, disable_progress_bars
 from src.grouped_sampling import GenerationType
 
-from transformers.utils.logging import disable_progress_bar
-
-disable_progress_bar()
-
-from datasets.utils.logging import disable_progress_bar
-
-disable_progress_bar()
+disable_progress_bars()
 
 METRIC_NAME = "bertscore"
 metric: EvaluationModule = load(METRIC_NAME, cache_dir=os.path.join(os.path.dirname(__file__), "metrics", "cache"))

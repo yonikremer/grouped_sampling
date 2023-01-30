@@ -103,3 +103,20 @@ def create_pipeline() -> GroupedGenerationPipeLine:
         evaluated_text_generator_dict = json.load(json_file)
     pipeline = GroupedSamplingPipeLine(**evaluated_text_generator_dict)
     return pipeline
+
+
+def disable_transformers_progress_bar():
+    from transformers.utils.logging import disable_progress_bar
+
+    disable_progress_bar()
+
+
+def disable_datasets_progress_bar():
+    from datasets.utils.logging import disable_progress_bar
+
+    disable_progress_bar()
+
+
+def disable_progress_bars():
+    disable_transformers_progress_bar()
+    disable_datasets_progress_bar()

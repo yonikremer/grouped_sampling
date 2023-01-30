@@ -6,19 +6,12 @@ from warnings import warn
 
 from evaluate import TranslationEvaluator
 from datasets import Dataset, get_dataset_config_names
-# noinspection PyUnresolvedReferences
 
 from evaluation.experiment_manager import ExperimentManager
-from evaluation import lang_code_to_name, process_translation_data, DATASET_NAME, create_pipeline
+from evaluation import lang_code_to_name, process_translation_data, DATASET_NAME, create_pipeline, disable_progress_bars
 from src.grouped_sampling import GroupedGenerationPipeLine
 
-from transformers.utils.logging import disable_progress_bar
-
-disable_progress_bar()
-
-from datasets.utils.logging import disable_progress_bar
-
-disable_progress_bar()
+disable_progress_bars()
 
 
 def sub_experiment_half(
