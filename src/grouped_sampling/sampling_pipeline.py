@@ -1,39 +1,15 @@
 from __future__ import annotations
 
-import heapq
 from multiprocessing import Pool
 from random import seed
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
-from torch import Tensor, argmax, manual_seed, multinomial, zeros
+from torch import Tensor, manual_seed
 
 from .base_pipeline import GroupedGenerationPipeLine
 from .generation_type import GenerationType
-
-
-class TokenProb:
-    """Class for storing the probability of a token and the token itself.
-    Used to store the probabilities of the next tokens in the sampling pipeline.
-    Is useful because it supports the < and > operators, which are used in the
-    heapq module
-    The < and > are the opposite of each other because the heapq module is only supporting minimum heaps
-    and I need a maximum heap"""
-
-    __slots__ = ["token_id", "prob"]
-
-    def __init__(self, token_id: int, prob: Tensor):
-        self.token_id: int = token_id
-        self.prob: Tensor = prob
-
-    def __lt__(self, other: "TokenProb"):
-        """Overrides the < operator
-        Comparison is done by the probability"""
-        return self.prob > other.prob  # pragma: no cover
-
-    def __gt__(self, other: "TokenProb"):
-        """Overrides the > operator
-        Comparison is done by the probability"""
-        return self.prob < other.prob  # pragma: no cover
+from .sampling_stradegy import TopPSamplingStrategy, TopKSamplingStrategy, SamplingStrategy, GreedySamplingStrategy, \
+    PureSamplingStrategy
 
 
 class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
@@ -47,11 +23,11 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
     unique_attrs = "top_k", "top_p"
 
     def __init__(
-        self,
-        top_k: Optional[int] = None,
-        top_p: Optional[float] = None,
-        *args,
-        **kwargs,
+            self,
+            top_k: Optional[int] = None,
+            top_p: Optional[float] = None,
+            *args,
+            **kwargs,
     ):
         self.top_p: Optional[float] = top_p
         self.top_k: Optional[int] = top_k
@@ -78,73 +54,20 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         raise RuntimeError("Uncovered case in generation_type property")
 
     @property
-    def sampling_func(self) -> Callable[[Tensor], int]:
-        gen_type_to_filter_method: Dict[GenerationType, Callable[[
-            Tensor,
-        ], int]] = {
-            GenerationType.TOP_K: self.top_k_sampling,
-            GenerationType.TOP_P: self.top_p_sampling,
-            GenerationType.GREEDY: GroupedSamplingPipeLine.highest_prob_token,
-            GenerationType.RANDOM: GroupedSamplingPipeLine.unfiltered_sampling,
-        }
-        return gen_type_to_filter_method[self.generation_type]
-
-    @staticmethod
-    def unfiltered_sampling(prob_vec: Tensor) -> int:
-        """A sampling function that doesn't filter any tokens.
-        returns a random token id sampled from the probability vector"""
-        return multinomial(prob_vec, 1).item()
-
-    @staticmethod
-    def highest_prob_token(prob_vec: Tensor) -> int:
-        """Gets a probability vector of shape (vocab_size,)
-        returns the token id with the highest probability"""
-        return argmax(prob_vec).item()
-
-    def top_p_sampling(self, prob_vec: Tensor) -> int:
-        """Gets a probability vector of shape (vocab_size,)
-        computes a probability vector with the top p tokens
-        such that their sum in the original vector is <= self.top_p.
-        and samples from that vector.
-        If token with the highest probability
-        have a probability higher than top_p, it will be sampled"""
-        prob_sum: float = 0.0
-        converted_probs = [
-            TokenProb(i, prob) for i, prob in enumerate(prob_vec)
-        ]
-        heapq.heapify(converted_probs)
-        new_probs = zeros(prob_vec.shape, dtype=float)
-        while prob_sum < self.top_p and len(converted_probs) > 0:
-            curr_token_prob: TokenProb = heapq.heappop(converted_probs)
-            token_id = curr_token_prob.token_id
-            if curr_token_prob.prob <= 0.0:
-                break
-            if curr_token_prob.prob > 1:
-                raise ValueError(f"Probability of token {token_id} "
-                                 f"in the vector {prob_vec} "
-                                 f"is {curr_token_prob.prob}"
-                                 f" which is higher than 1")
-            prob_sum += curr_token_prob.prob
-            new_probs[token_id] = curr_token_prob.prob
-        if prob_sum == 0.0:
-            return converted_probs[0].token_id
-        return GroupedSamplingPipeLine.unfiltered_sampling(new_probs)
-
-    def top_k_sampling(self, prob_vec: Tensor) -> int:
-        """Gets a token id: probability mapping
-        returns the TOP_K tokens
-        with the highest probability.
-        this is the bottleneck of the sampling pipeline."""
-        top_k_keys: List[int] = heapq.nlargest(
-            self.top_k,
-            range(prob_vec.shape[0]),
-            key=lambda x: prob_vec[x]
-        )
-        prob_sum = sum(prob_vec[token_id] for token_id in top_k_keys)
-        new_probs = zeros(prob_vec.shape, dtype=float)
-        for token_id in top_k_keys:
-            new_probs[token_id] = prob_vec[token_id] / prob_sum
-        return GroupedSamplingPipeLine.unfiltered_sampling(new_probs)
+    def sampling_func(self) -> SamplingStrategy:
+        if self.top_k is None and self.top_p is None:
+            return PureSamplingStrategy()
+        if self.top_k == 1 or self.top_p == 0.0:
+            return GreedySamplingStrategy()
+        if self.top_k is not None:
+            if self.top_k > 1:
+                return TopKSamplingStrategy(self.top_k)
+            raise ValueError("top_k must be a positive integer")
+        if self.top_p is not None:
+            if self.top_p < 1.0:
+                return TopPSamplingStrategy(self.top_p)
+            return PureSamplingStrategy()
+        raise RuntimeError("Uncovered case in generation_type property")
 
     def generate_group(self, prob_mat: Tensor) -> List[int]:
         """
@@ -185,9 +108,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         return new_tokens
 
     def _forward(
-        self,
-        tokenized_prompt: Tensor,
-        num_new_tokens: int,
+            self,
+            tokenized_prompt: Tensor,
+            num_new_tokens: int,
     ) -> List[List[int]]:
         """Complexity:
             O(
@@ -232,9 +155,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         return curr_token_list
 
     def forward_batch(
-        self,
-        tokenized_prompts: List[Tensor],
-        num_new_tokens: List[int],
+            self,
+            tokenized_prompts: List[Tensor],
+            num_new_tokens: List[int],
     ) -> List[List[int]]:
         generation_start_indexes = [
             len(prompt) for prompt in tokenized_prompts
