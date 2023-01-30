@@ -7,10 +7,10 @@ import pytest
 from torch import Tensor, equal
 
 from src.grouped_sampling import (
+    CompletionDict,
     GroupedGenerationPipeLine,
     GroupedSamplingPipeLine,
     GroupedTreePipeLine,
-    CompletionDict,
     NoRepetitionPenalty,
 )
 
@@ -283,35 +283,47 @@ def test_call_batch():
     generator = next(create_text_generators())
     empty_batch = []
     empty_batch_answer = generator(empty_batch)
-    assert empty_batch_answer == [], f"{empty_batch_answer} is not an empty list"
+    assert empty_batch_answer == [
+    ], f"{empty_batch_answer} is not an empty list"
     batch_of_size_one = [TEST_PROMPT]
-    batch_of_size_one_answer = generator(batch_of_size_one, return_full_text=True)
-    assert isinstance(batch_of_size_one_answer, list), f"{batch_of_size_one_answer} is not a list"
-    assert len(batch_of_size_one_answer) == 1, f"{batch_of_size_one_answer} doesn't have a length of 1"
-    assert isinstance(batch_of_size_one_answer[0], dict), f"{batch_of_size_one_answer[0]} is not a dict"
-    assert "generated_text" in batch_of_size_one_answer[0].keys(), \
-        f"{batch_of_size_one_answer[0]} doesn't contain the key 'generated_text'"
-    assert isinstance(batch_of_size_one_answer[0]["generated_text"], str), \
-        f"{batch_of_size_one_answer[0]['generated_text']} is not a string"
-    assert batch_of_size_one_answer[0]["generated_text"].startswith(TEST_PROMPT), \
-        f"{batch_of_size_one_answer[0]['generated_text']} doesn't start with {TEST_PROMPT}"
-    assert len(batch_of_size_one_answer[0]["generated_text"]) > len(TEST_PROMPT), \
-        f"{batch_of_size_one_answer[0]['generated_text']} is too short"
+    batch_of_size_one_answer = generator(batch_of_size_one,
+                                         return_full_text=True)
+    assert isinstance(batch_of_size_one_answer,
+                      list), f"{batch_of_size_one_answer} is not a list"
+    assert (len(batch_of_size_one_answer) == 1
+            ), f"{batch_of_size_one_answer} doesn't have a length of 1"
+    assert isinstance(batch_of_size_one_answer[0],
+                      dict), f"{batch_of_size_one_answer[0]} is not a dict"
+    assert (
+        "generated_text" in batch_of_size_one_answer[0].keys()
+    ), f"{batch_of_size_one_answer[0]} doesn't contain the key 'generated_text'"
+    assert isinstance(
+        batch_of_size_one_answer[0]["generated_text"], str
+    ), f"{batch_of_size_one_answer[0]['generated_text']} is not a string"
+    assert batch_of_size_one_answer[0]["generated_text"].startswith(
+        TEST_PROMPT
+    ), f"{batch_of_size_one_answer[0]['generated_text']} doesn't start with {TEST_PROMPT}"
+    assert len(batch_of_size_one_answer[0]["generated_text"]) > len(
+        TEST_PROMPT
+    ), f"{batch_of_size_one_answer[0]['generated_text']} is too short"
     batch_of_size_two = [TEST_PROMPT, TEST_PROMPT]
-    batch_of_size_two_answer = generator(batch_of_size_two, return_full_text=True)
-    assert isinstance(batch_of_size_two_answer, list), f"{batch_of_size_two_answer} is not a list"
-    assert len(batch_of_size_two_answer) == 2, f"{batch_of_size_two_answer} doesn't have a length of 2"
+    batch_of_size_two_answer = generator(batch_of_size_two,
+                                         return_full_text=True)
+    assert isinstance(batch_of_size_two_answer,
+                      list), f"{batch_of_size_two_answer} is not a list"
+    assert (len(batch_of_size_two_answer) == 2
+            ), f"{batch_of_size_two_answer} doesn't have a length of 2"
     for answer in batch_of_size_two_answer:
-        assert isinstance(answer, dict), \
-            f"{answer} is not a dict"
-        assert "generated_text" in answer.keys(), \
-            f"{answer} doesn't contain the key 'generated_text'"
-        assert isinstance(answer["generated_text"], str), \
-            f"{answer['generated_text']} is not a string"
-        assert answer["generated_text"].startswith(TEST_PROMPT), \
-            f"{answer['generated_text']} doesn't start with {TEST_PROMPT}"
-        assert len(answer["generated_text"]) > len(TEST_PROMPT), \
-            f"{answer['generated_text']} is too short"
+        assert isinstance(answer, dict), f"{answer} is not a dict"
+        assert ("generated_text" in answer.keys()
+                ), f"{answer} doesn't contain the key 'generated_text'"
+        assert isinstance(answer["generated_text"],
+                          str), f"{answer['generated_text']} is not a string"
+        assert answer["generated_text"].startswith(
+            TEST_PROMPT
+        ), f"{answer['generated_text']} doesn't start with {TEST_PROMPT}"
+        assert len(answer["generated_text"]) > len(
+            TEST_PROMPT), f"{answer['generated_text']} is too short"
 
 
 @pytest.mark.parametrize("curr_text_generator", create_text_generators())
