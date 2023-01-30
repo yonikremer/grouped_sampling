@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import heapq
-from collections.abc import Iterator
 from multiprocessing import Pool
 from random import seed
 from typing import Any, Callable, Dict, Iterable, List, Optional
