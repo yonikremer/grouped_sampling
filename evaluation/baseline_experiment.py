@@ -18,7 +18,6 @@ disable_progress_bars()
 
 METRIC_NAME = "bertscore"
 metric: EvaluationModule = load(METRIC_NAME, cache_dir=os.path.join(os.path.dirname(__file__), "metrics", "cache"))
-print("metric is of type: ", type(metric))
 
 
 def process_sub_set_half(
@@ -33,7 +32,6 @@ def process_sub_set_half(
 
     pipeline: TextGenerationPipeline
     inputs = [prefix + x["translation"][in_lang_code] + postfix for x in sub_set_half]
-    assert all(isinstance(x, str) for x in inputs)
     references: List[str] = [x["translation"][out_lang_code] for x in sub_set_half]
     return inputs, references
 
