@@ -162,7 +162,7 @@ def save_stat_table(stat_name: str) -> None:
             f"Could not find any experiments with the stat {stat_name}.")
     df = DataFrame()
     for curr_metric_name in metric_names:
-        for curr_group_size in group_size_to_score_stats.keys():
+        for curr_group_size in group_size_to_score_stats:
             df.loc[curr_group_size,
                    curr_metric_name] = group_size_to_score_stats[
                        curr_group_size][curr_metric_name]
