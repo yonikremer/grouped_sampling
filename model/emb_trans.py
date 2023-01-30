@@ -16,6 +16,7 @@ class EmbeddingTransposed(Layer):
         super(EmbeddingTransposed, self).__init__(*args, **kwargs)
         self.tied_to = tied_to
         self.activation = activations.get(activation)
+        self.built = False
 
     def build(self, *args, **kwargs):
         super(EmbeddingTransposed, self).build(*args, **kwargs)
