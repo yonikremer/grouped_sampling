@@ -67,7 +67,11 @@ class GroupedGenerationUtils:
         self.max_input_len: int = max_input_len
         self.padding_id: int = padding_id
         self.end_of_sentence_stop: bool = end_of_sentence_stop
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, load_in_8bit=load_in_8bit, **kwargs)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            pretrained_model_name_or_path=model_name,
+            load_in_8bit=load_in_8bit and cuda.is_available(),
+            **kwargs
+        )
         self.temp: float = temp
         self.vocab_size: int = vocab_size
         if cuda.is_available():
