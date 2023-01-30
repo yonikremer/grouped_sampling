@@ -13,7 +13,7 @@ def main():
 
     app: Flask = create_app()
 
-    app.run(host='localhost', port=3000, debug=True)
+    app.run(host="localhost", port=3000, debug=True)
 
 
 if __name__ == "__main__":
