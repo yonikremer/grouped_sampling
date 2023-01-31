@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from typing import Callable, Tuple, Dict, Any
+from warnings import warn
 
 from datasets import Dataset, load_dataset
 from pandas import Series
@@ -70,7 +71,7 @@ def get_comet_api_key() -> str:
 
 def get_project_name(debug: bool = __debug__) -> str:
     if debug:
-        print("WARING: RUNNING ON DEBUG MODE")
+        warn("RUNNING IN DEBUG MODE")
     return "grouped-sampling-debug" if debug else "grouped-sampling-evaluation"
 
 
