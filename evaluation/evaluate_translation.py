@@ -36,13 +36,16 @@ def sub_experiment_half(
 
 
 def run_experiment(
-        generator: GroupedGenerationPipeLine,
+        pipeline: GroupedGenerationPipeLine,
         my_evaluator: TranslationEvaluator,
         sub_sut_names: List[str],
         debug: bool,
 ) -> None:
-    generator.task = "translation"
-    manager = ExperimentManager(generator, debug=debug)
+    pipeline.task = "translation"
+    manager = ExperimentManager(
+        debug=debug,
+        parameters=pipeline.as_dict(),
+    )
     for i, sub_set_name in enumerate(sub_sut_names):
         print(f"Running sub-experiment {i + 1} out of {len(sub_sut_names)}")
         subset_part1: Dataset
@@ -50,9 +53,9 @@ def run_experiment(
         language_code1: str
         language_code2: str
         subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name, debug)
-        sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, generator, manager)
+        sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, pipeline, manager)
         if not debug:
-            sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, generator, manager)
+            sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, pipeline, manager)
     manager.end_experiment()
 
 
