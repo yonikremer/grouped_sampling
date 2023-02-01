@@ -53,7 +53,7 @@ class ScaledDotProductAttention(Layer):
                 scaled_attention_logits += (mask * tf.float16.min)
                 # changed from -1e9 to inf to avoid overflow
             else:
-                scaled_attention_logits += (mask * -1e9) 
+                scaled_attention_logits += (mask * -1e9)
 
         # Normalize
         attention_weights = self.softmax(
@@ -146,7 +146,7 @@ class MyMultiHeadAttention(Layer):
         scaled_attention = self.sdpa(q, k, v, mask)
         # (batch_size, num_heads, seq_len_q, depth)
 
-        scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3]) 
+        scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])
         # (batch_size, seq_len_q, num_heads, depth)
 
         concat_attention = tf.reshape(
