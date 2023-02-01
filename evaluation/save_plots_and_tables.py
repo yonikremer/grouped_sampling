@@ -1,6 +1,6 @@
 """This is a script that plots the results of the experiments and saves the figures to the plots folder"""
 from os.path import abspath, dirname, join
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 from comet_ml import API, APIExperiment
 from matplotlib import pyplot as plt
@@ -55,15 +55,18 @@ def get_group_size(experiment: APIExperiment) -> int:
     return int(get_parameter(experiment, "group_size"))
 
 
+def filter_dict_by_name(dict_list: List[Dict[str, Any]], name: str) -> List[Dict[str, Any]]:
+    return [curr_dict for curr_dict in dict_list if curr_dict["name"] == name]
+
+
 def get_score_stat(experiment: APIExperiment, stat: str) -> Dict[str, float]:
     score_stat = {}
     for curr_metric_name in metric_names:
-        summary: List[dict] = experiment.get_metrics_summary()
-        for curr_metric_value in filter(
-                lambda x: x["name"] == f"general_{curr_metric_name}_{stat}",
-                summary):
-            score_stat[curr_metric_name] = float(
-                curr_metric_value["valueCurrent"])
+        summary: List[Dict[str, Any]] = experiment.get_metrics_summary()
+        metric_stat_name: str = f"general_{curr_metric_name}_{stat}"
+        metric_values = filter_dict_by_name(summary, metric_stat_name)
+        for curr_metric_value in metric_values:
+            score_stat[curr_metric_name] = float(curr_metric_value["valueCurrent"])
     return score_stat
 
 
