@@ -50,7 +50,8 @@ class PreProcessor:
         prefix: str = "",
         postfix: str = "",
     ) -> Tuple[LongTensor, int, int, int]:
-        """A helper method for __call__ that tokenize the prompt
+        """
+        A helper method for __call__ that tokenize the prompt
         all the arguments are sent directly from the __call__ method
         Returns:
             the tokenized prompt as a list of ints,
@@ -61,7 +62,8 @@ class PreProcessor:
         Complexity: O(a + b + c) where:
             'a' is the number of characters in the prefix
             'b' is the number of characters in the prompt
-            'c' is the number of characters in the postfix"""
+            'c' is the number of characters in the postfix
+        """
         prefix_tokens: LongTensor = self.get_token_tensor(prefix)
         # O(A) where A is the number of characters in the prefix.
         postfix_tokens: LongTensor = self.get_token_tensor(postfix)

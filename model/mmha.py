@@ -28,13 +28,15 @@ class ScaledDotProductAttention(Layer):
              v: Tensor,
              mask: Optional[Tensor] = None)\
             -> Tensor:
-        """Scaled Dot-Product Attention
+        """
+        Scaled Dot-Product Attention
         input:
         q: Tensor (batch_size, seq_len, d_model),
         k: Tensor (batch_size, seq_len, d_model),
         v: Tensor (batch_size, seq_len, d_model),
         mask: Optional[Tensor (batch_size, 1, 1, seq_len)]
-        output: Tensor (batch_size, seq_len, d_model)"""
+        output: Tensor (batch_size, seq_len, d_model)
+        """
         matmul_qk = tf.matmul(q, k, transpose_b=True)
         # (batch_size, seq_len, seq_len)
 
@@ -97,7 +99,8 @@ class MyMultiHeadAttention(Layer):
 
     def split_heads(self,
                     x: Tensor) -> Tensor:
-        """Split the last dimension into
+        """
+        Split the last dimension into
          (num_heads, depth).
          Transpose the result such that the
          shape is
@@ -113,7 +116,8 @@ class MyMultiHeadAttention(Layer):
              q: Tensor,
              mask: Tensor) \
             -> Tensor:
-        """inputs:
+        """
+        inputs:
         v_k: Tensor of shape
         (batch_size, seq_len, d_model)
         in self attention,
@@ -121,7 +125,8 @@ class MyMultiHeadAttention(Layer):
         q: Tensor of shape
         (batch_size, seq_len, d_model)
         mask: Optional[Tensor]
-        of shape (batch_size, seq_len)"""
+        of shape (batch_size, seq_len)
+        """
         batch_size = tf.shape(q)[0]
 
         q: Tensor = self.wq(q)

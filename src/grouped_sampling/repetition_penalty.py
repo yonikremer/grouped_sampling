@@ -57,7 +57,8 @@ class LogitScalingRepetitionPenalty(RepetitionPenaltyStrategy):
 
     def __call__(self, logits: Tensor, tokens: TokenIDS,
                  generation_start: int) -> Tensor:
-        """applies repetition penalty,
+        """
+        applies repetition penalty,
         using the repetition_penalty_theta parameter defined in the class
         the formula from the paper is:
         softmax(original_logits, T) =

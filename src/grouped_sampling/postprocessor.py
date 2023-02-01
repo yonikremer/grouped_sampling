@@ -23,7 +23,8 @@ class PostProcessor:
             prefix_len: int = 0,
             postfix_len: int = 0,
     ):
-        """A helper method for __call__
+        """
+        A helper method for __call__
         that converts the token ids to dictionary
         token_ids - the token ids from the _forward method
         prompt_len - the length of the tokenized prompt

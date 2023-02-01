@@ -13,9 +13,11 @@ from .sampling_stradegy import TopPSamplingStrategy, TopKSamplingStrategy, Sampl
 
 
 class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
-    """A GroupedGenerationPipeLine that generates text
+    """
+    A GroupedGenerationPipeLine that generates text
     using random sampling
-    with top-k or top-p filtering."""
+    with top-k or top-p filtering.
+    """
 
     default_seed: int = 0
     seed(default_seed)
@@ -74,7 +76,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         Gets a probability matrix of shape (group_size, vocab_size)
         Generates a group of tokens
          using the choice_function.
-         Complexity: O(group_size)"""
+         Complexity: O(group_size)
+         """
         prob_mat.cpu()
         # coping a tensor of size (group_size, vocab_size)
         # so the complexity is O(group_size)
@@ -112,7 +115,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
             tokenized_prompt: Tensor,
             num_new_tokens: int,
     ) -> List[List[int]]:
-        """Complexity:
+        """
+        Complexity:
             O(
                 ((n ^ 3) / group_size) +
                 ((n * l ^ 2) / group_size) +
@@ -120,7 +124,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
                 n
             )
         where l is the number of tokens in the prompt
-        and n is the number of new tokens to generate"""
+        and n is the number of new tokens to generate
+        """
         # let's define l = len(tokenized_prompt), n = num_new_tokens
         # coping a tensor of size lso O(l)
         curr_token_list: List[int] = tokenized_prompt.tolist()

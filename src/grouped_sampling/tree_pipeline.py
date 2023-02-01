@@ -22,9 +22,11 @@ class NoCompletionsFound(Exception):
 
 
 class GroupedTreePipeLine(GroupedGenerationPipeLine):
-    """A GroupedGenerationPipeLine that generates text
+    """
+    A GroupedGenerationPipeLine that generates text
     in a TREE like fashion,
-    without random sampling."""
+    without random sampling.
+    """
 
     unique_attrs = "top_k", "top_p"
 
@@ -42,23 +44,29 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
 
     @property
     def actual_top_k(self) -> int:
-        """The maximum number of tokens to consider for each position
-        It is always smaller than or equal to the vocab size"""
+        """
+        The maximum number of tokens to consider for each position
+        It is always smaller than or equal to the vocab size
+        """
         return min(self.top_k, int(self.wrapped_model.vocab_size * self.top_p))
 
     @staticmethod
     def no_duplicates(my_sequence: List[Any], prompt_length: int) -> bool:
-        """Return if there isn't a repetition in the sequence
-        complexity: O(n) where n is the length of the sequence"""
+        """
+        Return if there isn't a repetition in the sequence
+        complexity: O(n) where n is the length of the sequence
+        """
         generated_tokens = my_sequence[prompt_length:]
         return len(generated_tokens) == len(set(generated_tokens))
 
     @staticmethod
     def combinations(mat: Sequence[Sequence[Any]],
                      prompt_length: int) -> List[List[Any]]:
-        """Returns all the lists such that list[j] is in mat[j]
+        """
+        Returns all the lists such that list[j] is in mat[j]
         complexity: O(prod(len(vec) for vec in mat))
-        the maximal length of the returned list is the product of the lengths of the vectors in mat"""
+        the maximal length of the returned list is the product of the lengths of the vectors in mat
+        """
         mat_at_zero = mat[0]
         if len(mat) == 1:
             return [[item]
@@ -76,14 +84,16 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
 
     @staticmethod
     def seq_prob(tokens, prob_mat, org_prompt_prob) -> float:
-        """Given the probability matrix
+        """
+        Given the probability matrix
          and a list of tokens,
         returns the probability
         of the sequence.
         prob_mat[a][b] is the probability of
         the token with id b the a-th
         token in the sequence
-        complexity: O(n) where n is the length of the sequence"""
+        complexity: O(n) where n is the length of the sequence
+        """
         probability = org_prompt_prob
         for i, curr_token in enumerate(tokens):
             probability *= prob_mat[i][curr_token]  # complexity: O(1)
@@ -94,11 +104,13 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         completions: List[List[int]],
         probs: List[float],
     ) -> Dict[Tuple[int], float]:
-        """Given a list of tokenized answers
+        """
+        Given a list of tokenized answers
          and the probability of each completion,
         removes every repeated completion
          and every completion that have repeated tokens
-         complexity: sum([len(completion) for completion in completions])"""
+         complexity: sum([len(completion) for completion in completions])
+         """
         filtered_completions: Dict[Tuple[int], float]
         filtered_completions = {}
         for curr_comp, curr_prob in zip(completions, probs):
@@ -122,7 +134,8 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
 
     def generate_group(self, prob_mat: Tensor,
                        org_prompt: TokenIDS) -> List[List[int]]:
-        """given a matrix of probabilities,
+        """
+        given a matrix of probabilities,
         returns a list of lists of tokens.
         samples the tokens such that
         for each place in the group,
@@ -135,7 +148,8 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         over all complexity of the function is
         O(group_size)
         the maximum length of the returned list is
-        actual_top_k ^ group_size"""
+        actual_top_k ^ group_size
+        """
         # let's call len(org_prompt) = n
         # prob_tensor.shape is (group_size, vocab_size)
         possible_tokens: List[List[int]] = []  # complexity: O(1)
@@ -194,8 +208,10 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         org_prompt_prob: float,
         prompt_length: int,
     ) -> Dict[Tuple[int], float]:
-        """Recursively generates the next group of tokens
-        in a TREE like behavior"""
+        """
+        Recursively generates the next group of tokens
+        in a TREE like behavior
+        """
         # n is len(org_prompt)
         # m is num_tokens
         if self.wrapped_model.end_of_sentence_id in org_prompt:  # O(n)

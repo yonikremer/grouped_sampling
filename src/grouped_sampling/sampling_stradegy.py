@@ -7,12 +7,14 @@ from torch import Tensor, argmax, multinomial, zeros
 
 
 class TokenProb:
-    """Class for storing the probability of a token and the token itself.
+    """
+    Class for storing the probability of a token and the token itself.
     Used to store the probabilities of the next tokens in the sampling pipeline.
     Is useful because it supports the < and > operators, which are used in the
     heapq module
     The < and > are the opposite of each other because the heapq module is only supporting minimum heaps
-    and I need a maximum heap"""
+    and I need a maximum heap
+    """
 
     __slots__ = ["token_id", "prob"]
 
@@ -21,13 +23,17 @@ class TokenProb:
         self.prob: Tensor = prob
 
     def __lt__(self, other: "TokenProb"):
-        """Overrides the < operator
-        Comparison is done by the probability"""
+        """
+        Overrides the < operator
+        Comparison is done by the probability
+        """
         return self.prob > other.prob  # pragma: no cover
 
     def __gt__(self, other: "TokenProb"):
-        """Overrides the > operator
-        Comparison is done by the probability"""
+        """
+        Overrides the > operator
+        Comparison is done by the probability
+        """
         return self.prob < other.prob  # pragma: no cover
 
 
@@ -46,18 +52,22 @@ class GreedySamplingStrategy(SamplingStrategy):
 
 
 class PureSamplingStrategy(SamplingStrategy):
-    """A SamplingStrategy that samples from the probability vector
-    without any filtering"""
+    """
+    A SamplingStrategy that samples from the probability vector
+    without any filtering
+    """
 
     def __call__(self, prob_vec: Tensor) -> int:
         return multinomial(prob_vec, 1).item()
 
 
 class TopPSamplingStrategy(SamplingStrategy):
-    """A SamplingStrategy that samples from the top p tokens
+    """
+    A SamplingStrategy that samples from the top p tokens
     such that their sum in the original vector is <= self.top_p.
     If token with the highest probability
-    have a probability higher than top_p, it will be sampled"""
+    have a probability higher than top_p, it will be sampled
+    """
 
     pure_sampling_function: SamplingStrategy = PureSamplingStrategy()
 

@@ -12,10 +12,12 @@ class PointWiseFeedForwardNetwork(Layer):
         self.layer2 = Dense(d_model)
 
     def call(self, x: Tensor, **kwargs) -> Tensor:
-        """x's shape:
+        """
+        x's shape:
         (batch_size, seq_len, d_model)
         Returns tensor of shape
-        (batch_size, seq_len, d_model)"""
+        (batch_size, seq_len, d_model)
+        """
         x = self.layer1(x)
         # (batch_size, seq_len, dff)
         x = self.layer2(x)

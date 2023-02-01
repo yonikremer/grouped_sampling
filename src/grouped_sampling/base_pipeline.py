@@ -37,13 +37,15 @@ def get_padding_id(tokenizer: PreTrainedTokenizer):
 
 
 class GroupedGenerationPipeLine(Callable, ABC):
-    """An abstract base class for
+    """
+    An abstract base class for
     A callable object that given a func_prompt
      and length of wanted answer,
     generates text
     the text pipeline has a model,
     and some parameters
-    (Defined in the subclasses)"""
+    (Defined in the subclasses)
+    """
 
     framework: str = "pt"
     descriptive_attrs = (
@@ -64,7 +66,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
         answer_length_multiplier: float = 16,
         max_batch_size: int = 32,
     ):
-        """Model name: the name of the model
+        """
+        Model name: the name of the model
         used for loading from hugging face hub
         group size: int
         the number of tokens to be predicted at each model call
@@ -110,9 +113,11 @@ class GroupedGenerationPipeLine(Callable, ABC):
     @property
     @abstractmethod
     def generation_type(self) -> GenerationType:
-        """A method that chooses the generation type
+        """
+        A method that chooses the generation type
         Returns:
-            a GenerationType object"""
+            a GenerationType object
+        """
 
     @abstractmethod
     def _forward(
@@ -120,7 +125,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
         tokenized_prompt: LongTensor,
         num_new_tokens: int,
     ) -> TokenIDS:
-        """A helper method for __call__ that generates the new tokens
+        """
+        A helper method for __call__ that generates the new tokens
         Has a unique implementation for each subclass
         Args:
             tokenized_prompt: List[int]
@@ -128,7 +134,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
             num_new_tokens: int - the number of new tokens to generate
                 from the __call__ method
         Returns:
-            the prompt + generated text as a list/tuple of ints"""
+            the prompt + generated text as a list/tuple of ints
+        """
 
     def __call__(
         self,
@@ -141,7 +148,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
         prefix: str = "",
         postfix: str = "",
     ) -> CompletionDict | List[CompletionDict] | List[List[CompletionDict]]:
-        """The function that outside code should call to generate text
+        """
+        The function that outside code should call to generate text
         Args:
             prompt_s: str or list of str - the prompt(s) to start the generation from
                 (the text given by the user)
@@ -274,7 +282,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
         prefix: str = "",
         postfix: str = "",
     ) -> List[CompletionDict]:
-        """A helper for __call__ that handles the case when many prompts are given
+        """
+        A helper for __call__ that handles the case when many prompts are given
         Args:
             prompts: List of strings - the prompts to start the generation from (the text given by the user)
             should satisfy: self.max_batch_size >= len(prompts) >= 0
@@ -290,7 +299,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
             prefix: str Prefix added to prompt and not returned to the user,
                 even if return_full_text is true.
             postfix: str - a postfix to add to the prompt and not returned to the user,
-                even if return_full_text is true."""
+                even if return_full_text is true.
+        """
         # check the parameters
         if not return_tensors and not return_text:
             raise ValueError(
@@ -361,17 +371,21 @@ class GroupedGenerationPipeLine(Callable, ABC):
         return repr(self)
 
     def as_dict(self) -> Dict[str, Any]:
-        """Returns a dictionary representation
+        """
+        Returns a dictionary representation
          of the pipeline
         such that it can be saved and loaded
-         using the from_dict method"""
+         using the from_dict method
+         """
         return {key: getattr(self, key) for key in self.descriptive_attrs}
 
     @classmethod
     def from_dict(cls, my_dict: Dict[str, Any]):
-        """Creates an GroupedGenerationPipeLine from a dictionary
+        """
+        Creates an GroupedGenerationPipeLine from a dictionary
         The dictionary should have the same format
-         as the dictionary returned by the as_dict method"""
+         as the dictionary returned by the as_dict method
+         """
         if "generation_type" in my_dict.keys():
             my_dict.pop("generation_type")
         wrapped_model: GroupedGenerationUtils = my_dict.pop("wrapped_model")

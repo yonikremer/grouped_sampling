@@ -7,7 +7,8 @@ from tensorflow.python.ops.linalg.linalg_impl import band_part
 
 
 def create_masks(inp: Tensor, pad_int: int) -> Tuple[Tensor, Tensor]:
-    """Creates all the masks needed for the model
+    """
+    Creates all the masks needed for the model
     input:
     inp: Tensor of shape
     (batch_size, seq_len),
@@ -16,17 +17,20 @@ def create_masks(inp: Tensor, pad_int: int) -> Tuple[Tensor, Tensor]:
     tuple of (padding_mask, look_ahead_mask)
     padding_mask, look_ahead_mask:
     Tensors of shape
-    (batch_size, 1, 1, seq_len)"""
+    (batch_size, 1, 1, seq_len)
+    """
     seq_len = inp.shape[1]
 
     def create_padding_mask(seq: Tensor) -> Tensor:
-        """Returns a padding mask for the given sequence.
+        """
+        Returns a padding mask for the given sequence.
         Input:
             seq:
                 tf.Tensor of shape (batch_size, seq_len)
         Returns:
             tf.Tensor of shape
-            (batch_size, 1, 1, seq_len)"""
+            (batch_size, 1, 1, seq_len)
+            """
         bool_mask = tf.math.equal(seq, pad_int)
         mask = tf.cast(bool_mask, floatx())
         # For every item in the sequence, 1 if it is a padding token, 0 if it is not
@@ -39,8 +43,10 @@ def create_masks(inp: Tensor, pad_int: int) -> Tuple[Tensor, Tensor]:
     # the decoder.
 
     def create_look_ahead_mask() -> tf.Tensor:
-        """Returns a look ahead mask
-        for the given sequence length."""
+        """
+        Returns a look ahead mask
+        for the given sequence length.
+        """
         ones = tf.ones((seq_len, seq_len), dtype=floatx())
         mask = 1 - band_part(ones, -1, 0)
         # (seq_len, seq_len)

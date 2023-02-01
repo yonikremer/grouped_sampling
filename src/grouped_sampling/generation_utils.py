@@ -40,7 +40,8 @@ class GroupedGenerationUtils:
         load_in_8bit: bool = True,
             **kwargs,
     ):
-        """initializes the model wrapper
+        """
+        initializes the model wrapper
         Args:
             model_name: the name of the model to be used
             repetition_penalty_strategy:
@@ -91,7 +92,8 @@ class GroupedGenerationUtils:
         return cpu_tokens
 
     def prepare_model_kwargs(self, tokens: TokenIDS) -> Dict[str, LongTensor]:
-        """preparing the arguments for the model call
+        """
+        preparing the arguments for the model call
         Args:
             tokens: the batch to be sent to the model
         Returns:
@@ -126,11 +128,13 @@ class GroupedGenerationUtils:
         }
 
     def get_logits_matrix(self, tokens: TokenIDS) -> Tensor:
-        """Given a sequence of batch,
+        """
+        Given a sequence of batch,
         returns the logits matrix of shape (group_size, vocab_size)
         where logits[i] is the logits vector of the i-th next token
         complexity: O(n^2 + group_size^2) where n is the target_length of the batch
-        notice that the logits are not divided by the temperature in this function."""
+        notice that the logits are not divided by the temperature in this function.
+        """
         # define n as the number of batch in batch
         model_kwargs = self.prepare_model_kwargs(tokens)  # O(n + group_size)
         with no_grad():
@@ -152,7 +156,8 @@ class GroupedGenerationUtils:
 
     def pad_sequence(self, sequence: TokenIDS,
                      target_length: int) -> LongTensor:
-        """pads the sequence with the padding token
+        """
+        pads the sequence with the padding token
         Args:
             sequence: the sequence to be padded
             target_length: the target length of the padded sequence
@@ -167,7 +172,8 @@ class GroupedGenerationUtils:
         return cat((LongTensor(sequence), padding_tensor), dim=0)
 
     def pad_batch(self, batch: List[TokenIDS], length: int) -> LongTensor:
-        """pads a batch of batch
+        """
+        pads a batch of batch
         Args:
             batch: a list of batch
             length: the target_length to pad to
@@ -184,7 +190,8 @@ class GroupedGenerationUtils:
         return answer
 
     def prepare_model_kwargs_batch(self, batch: List[TokenIDS]) -> Dict[str, LongTensor]:
-        """preparing the arguments for the model call
+        """
+        preparing the arguments for the model call
         Args:
             batch: the raw batch
         Returns:
@@ -204,11 +211,13 @@ class GroupedGenerationUtils:
         return {"input_ids": padded_tokens, "attention_mask": attention_mask}
 
     def get_logit_mat_batch(self, batch: List[TokenIDS]) -> Tensor:
-        """Given a batch of sequences of tokens,
+        """
+        Given a batch of sequences of tokens,
         returns the logits matrix of shape (group_size, vocab_size)
         where logits[i] is the logits vector of the i-th next token
         complexity: O(n^2 + group_size^2) where n is the target_length of the batch
-        notice that the logits are not divided by the temperature in this function."""
+        notice that the logits are not divided by the temperature in this function.
+        """
         # define n as the number of batch in batch
         model_kwargs = self.prepare_model_kwargs_batch(batch)
         with no_grad():
@@ -227,11 +236,13 @@ class GroupedGenerationUtils:
 
     def get_prob_mat_batch(self, tokens: List[TokenIDS],
                            generation_start_indexes: Iterable[int]) -> Tensor:
-        """Given a batch of sequences of batch,
+        """
+        Given a batch of sequences of batch,
         returns the probability matrix of shape (group_size, vocab_size)
         where logits[i] is the logits vector of the i-th next token
         complexity: O(batch size * (n^2 + group_size^2)) where n is the target_length of the longest batch sequence.
-        notice that the logits are not divided by the temperature in this function."""
+        notice that the logits are not divided by the temperature in this function.
+        """
         unscaled_relevant_logits = self.get_logit_mat_batch(tokens)
         if not self.end_of_sentence_stop:
             try:
@@ -246,10 +257,12 @@ class GroupedGenerationUtils:
         return self.logits_to_probs(penalized_logits)
 
     def get_prob_mat(self, tokens: TokenIDS, generation_start: int) -> Tensor:
-        """Returns the probability matrix
+        """
+        Returns the probability matrix
         as a list of lists of floats
         Time complexity: O(n^2 + group_size^2)
-        where n is the number of tokens"""
+        where n is the number of tokens
+        """
         unscaled_relevant_logits = self.get_logits_matrix(tokens)
         # O(n^2 + group_size^2)
         # unscaled_relevant_logits is a tensor of shape (group_size, vocab_size)
@@ -273,8 +286,10 @@ class GroupedGenerationUtils:
         return prob_tensor
 
     def logits_to_probs(self, penalized_logits: Tensor) -> Tensor:
-        """Gets the logits matrix and returns the probability matrix
-        Time complexity: O(group_size)"""
+        """
+        Gets the logits matrix and returns the probability matrix
+        Time complexity: O(group_size)
+        """
         if self.use_softmax:
             # if the generation type
             # is not greedy then we need to apply softmax
