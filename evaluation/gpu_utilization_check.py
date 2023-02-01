@@ -7,8 +7,10 @@ from nvidia_smi import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtiliz
 
 
 def check_gpu_utilization(func: Callable) -> Callable:
-    """A decorator that checks the GPU utilization during the execution of the wrapped function
-    And prints a warning if it is zero for interval consecutive seconds"""
+    """
+    A decorator that checks the GPU utilization during the execution of the wrapped function
+    And prints a warning if it is zero for interval consecutive seconds
+    """
     def wrapper(*args, **kwargs):
         # Initialize the NVML library
         nvmlInit()
@@ -35,9 +37,11 @@ def check_gpu_utilization(func: Callable) -> Callable:
 
 
 def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event) -> None:
-    """A thread that checks the GPU utilization every second
+    """
+    A thread that checks the GPU utilization every second
      during the execution of the wrapped function
-     and sends a warning if the gpu utilization is zero for interval seconds"""
+     and sends a warning if the gpu utilization is zero for interval seconds
+     """
     while not stop_flag.is_set():
         # Get the GPU utilization using nvidia_smi
         utilization = nvmlDeviceGetUtilizationRates(handle)

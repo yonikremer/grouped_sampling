@@ -50,8 +50,10 @@ def lang_code_to_name(language_code: str) -> str:
 
 
 def get_comet_api_key() -> str:
-    """Returns the Comet API key from the file "final_project/evaluate/comet_api_key.txt"
-    if this file does not exist, asks the user to enter the key manually and saves it to the file"""
+    """
+    Returns the Comet API key from the file "final_project/evaluate/comet_api_key.txt"
+    if this file does not exist, asks the user to enter the key manually and saves it to the file
+    """
     if using_kaggle:
         return UserSecretsClient().get_secret("comet_ml_api_key")
     if os.getcwd() == "/content":

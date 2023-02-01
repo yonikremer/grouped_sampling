@@ -71,7 +71,8 @@ def get_score_stat(experiment: APIExperiment, stat: str) -> Dict[str, float]:
 
 
 def save_plot_from_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
-    """Adds a scatter plot to the panel.
+    """
+    Adds a scatter plot to the panel.
     makes sure that:
     the y scale is from 0 to 1
     the graph is added to the panel using ui.display_figure

@@ -7,24 +7,28 @@ from keras.backend import floatx
 def create_positional_encoding(
         max_len: int,
         d_model: int) -> Tensor:
-    """Returns the positional encoding
+    """
+    Returns the positional encoding
      for a given a maximal sequence length
       and model dimension.
     inputs: max_len: int, d_model: int
     returns: Tensor of shape
-    (1, max_len, d_model)"""
+    (1, max_len, d_model)
+    """
 
     def get_angles(
             positions: np.ndarray,
             timestamps: np.ndarray) \
             -> np.ndarray:
-        """Returns the angle in radians for given positions,
+        """
+        Returns the angle in radians for given positions,
         timestamps and the dimension of the model
         input:
         positions: np.ndarray of shape (max_len, 1),
         timestamps: np.ndarray of shape (1, d_model),
         d_model: int
-        output: np.ndarray of shape (max_len, d_model)"""
+        output: np.ndarray of shape (max_len, d_model)
+        """
         if floatx() == "float32":
             float_d_model = np.float32(d_model)
         else:

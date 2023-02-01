@@ -68,13 +68,15 @@ class ExperimentManager:
         output_lang_code: str,
         sub_set: Dataset,
     ) -> None:
-        """Args:
+        """
+        Args:
         bert_scores: Dict[str, List[float] | Any]
             with keys "f1", "precision", "recall"
             values of shape (number of examples in the sub-experiment,) and type float
         input_lang_code: The name of the input language in this sub experiment half
         output_lang_code: The name of the output language in this sub experiment half
-        sub_set: The dataset that was used for this sub experiment half"""
+        sub_set: The dataset that was used for this sub experiment half
+        """
         input_lang_name, output_lang_name = lang_code_to_name(
             input_lang_code), lang_code_to_name(output_lang_code)
         self.language_pairs.add((input_lang_name, output_lang_name))
