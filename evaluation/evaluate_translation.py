@@ -1,27 +1,37 @@
 from __future__ import annotations
 
-
 from typing import Any, Dict, List
 from warnings import warn
 
-from evaluate import TranslationEvaluator
 from datasets import Dataset, get_dataset_config_names
+from evaluate import TranslationEvaluator
 
+from evaluation import (
+    DATASET_NAME,
+    create_pipeline,
+    disable_progress_bars,
+    lang_code_to_name,
+    process_translation_data,
+)
 from evaluation.experiment_manager import ExperimentManager
-from evaluation import lang_code_to_name, process_translation_data, DATASET_NAME, create_pipeline, disable_progress_bars
 from src.grouped_sampling import GroupedGenerationPipeLine
 
 disable_progress_bars()
 
 
 def sub_experiment_half(
-        my_evaluator: TranslationEvaluator,
-        sub_set_half: Dataset,
-        in_lang_code: str, out_lang_code: str,
-        generator: GroupedGenerationPipeLine,
-        manager: ExperimentManager) -> None:
-    input_lang_name, output_lang_name = lang_code_to_name(in_lang_code), lang_code_to_name(out_lang_code)
-    prefix = f"Translate {input_lang_name} to {output_lang_name}: \n {input_lang_name}: "
+    my_evaluator: TranslationEvaluator,
+    sub_set_half: Dataset,
+    in_lang_code: str,
+    out_lang_code: str,
+    generator: GroupedGenerationPipeLine,
+    manager: ExperimentManager,
+) -> None:
+    input_lang_name, output_lang_name = lang_code_to_name(
+        in_lang_code), lang_code_to_name(out_lang_code)
+    prefix = (
+        f"Translate {input_lang_name} to {output_lang_name}: \n {input_lang_name}: "
+    )
     postfix = f"\n {output_lang_name}: "
     my_evaluator.METRIC_KWARGS = {"lang": out_lang_code}
     my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
@@ -30,16 +40,17 @@ def sub_experiment_half(
         model_or_pipeline=generator,
         data=sub_set_half,
         input_column=in_lang_code,
-        label_column=out_lang_code
+        label_column=out_lang_code,
     )
-    manager.log_sub_experiment(scores, in_lang_code, out_lang_code, sub_set_half)
+    manager.log_sub_experiment(scores, in_lang_code, out_lang_code,
+                               sub_set_half)
 
 
 def run_experiment(
-        pipeline: GroupedGenerationPipeLine,
-        my_evaluator: TranslationEvaluator,
-        sub_sut_names: List[str],
-        debug: bool,
+    pipeline: GroupedGenerationPipeLine,
+    my_evaluator: TranslationEvaluator,
+    sub_sut_names: List[str],
+    debug: bool,
 ) -> None:
     pipeline.task = "translation"
     manager = ExperimentManager(
@@ -52,10 +63,29 @@ def run_experiment(
         subset_part2: Dataset
         language_code1: str
         language_code2: str
-        subset_part1, subset_part2, language_code1, language_code2 = process_translation_data(sub_set_name, debug)
-        sub_experiment_half(my_evaluator, subset_part1, language_code1, language_code2, pipeline, manager)
+        (
+            subset_part1,
+            subset_part2,
+            language_code1,
+            language_code2,
+        ) = process_translation_data(sub_set_name, debug)
+        sub_experiment_half(
+            my_evaluator,
+            subset_part1,
+            language_code1,
+            language_code2,
+            pipeline,
+            manager,
+        )
         if not debug:
-            sub_experiment_half(my_evaluator, subset_part2, language_code2, language_code1, pipeline, manager)
+            sub_experiment_half(
+                my_evaluator,
+                subset_part2,
+                language_code2,
+                language_code1,
+                pipeline,
+                manager,
+            )
     manager.end_experiment()
 
 
@@ -70,7 +100,9 @@ def create_evaluator() -> TranslationEvaluator:
 def main(debug: bool = __debug__) -> None:
     if debug:
         # send a warning
-        warn("Running in debug mode, only a small subset of the data will be used")
+        warn(
+            "Running in debug mode, only a small subset of the data will be used"
+        )
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
     if debug:
         sub_sut_names = sub_sut_names[:1]
