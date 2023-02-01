@@ -112,4 +112,3 @@ class PreProcessor:
             for prompt_tokens in prompt_tokens
         ]
         return token_tensors, len(prefix_tokens), prompt_lengths, len(postfix_tokens)
-
