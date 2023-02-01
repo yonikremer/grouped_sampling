@@ -32,7 +32,7 @@ def runner(app: Flask):
 
 class AuthActions:
     """Contains helper methods for testing the authentication"""
-    
+
     def __init__(self, client: FlaskClient):
         self._client: FlaskClient = client
 
