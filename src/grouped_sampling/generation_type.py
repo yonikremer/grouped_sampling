@@ -3,6 +3,7 @@ from enum import Enum
 
 class GenerationType(Enum):
     """The type of generation to use"""
+    
     GREEDY = "greedy"
     TOP_K = "top_k"
     TOP_P = "top_p"
