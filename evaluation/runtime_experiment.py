@@ -1,22 +1,30 @@
 import json
 import time
 from os.path import abspath, dirname, join
-from typing import List, Iterable, Dict
+from typing import Dict, Iterable, List
 
-from datasets import get_dataset_config_names
 import matplotlib.pyplot as plt
+from datasets import get_dataset_config_names
 from pandas import DataFrame
 
-from evaluation import process_translation_data, DATASET_NAME, lang_code_to_name, create_pipeline
+from evaluation import (
+    DATASET_NAME,
+    create_pipeline,
+    lang_code_to_name,
+    process_translation_data,
+)
 
 curr_dir = dirname(abspath(__file__))
 
 
-def prompt_engineering(prompts: Iterable[str], input_language_code: str, output_language_code: str):
+def prompt_engineering(prompts: Iterable[str], input_language_code: str,
+                       output_language_code: str):
     input_language = lang_code_to_name(input_language_code)
     output_language = lang_code_to_name(output_language_code)
-    return [f"Translate {input_language} to {output_language}.\n{input_language}: {prompt} \n{output_language}: "
-            for prompt in prompts]
+    return [
+        f"Translate {input_language} to {output_language}.\n{input_language}: {prompt} \n{output_language}: "
+        for prompt in prompts
+    ]
 
 
 def get_prompts(debug: bool) -> List[str]:
@@ -28,7 +36,8 @@ def get_prompts(debug: bool) -> List[str]:
     language_code1: str
     language_code2: str
     for sub_set_name in sub_set_names:
-        subset_part, _, language_code1, language_code2 = process_translation_data(sub_set_name, debug)
+        subset_part, _, language_code1, language_code2 = process_translation_data(
+            sub_set_name, debug)
         prompts.extend(subset_part[language_code1])
         prompts.extend(subset_part[language_code2])
     return prompts
@@ -38,10 +47,16 @@ def save_plot(df: DataFrame):
     plots_folder = join(curr_dir, "plots")
     plot_path = join(plots_folder, "group_size_to_duration.png")
     plt.xscale("log")
-    df.plot(x="group size", y="duration", kind="scatter", logx=True,
-            title="Duration as a function of (log scaled) Group Size",
-            xlabel="Group Size (Log Scaled)", ylabel="Duration (Hours)")
-    plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
+    df.plot(
+        x="group size",
+        y="duration",
+        kind="scatter",
+        logx=True,
+        title="Duration as a function of (log scaled) Group Size",
+        xlabel="Group Size (Log Scaled)",
+        ylabel="Duration (Hours)",
+    )
+    plt.savefig(plot_path, bbox_inches="tight", pad_inches=0)
 
 
 def save_csv(df: DataFrame):
@@ -59,12 +74,12 @@ def create_df(group_size_to_duration: Dict[int, float]):
 
 def change_group_size(new_group_size: int):
     """Changes the group size value
-     in the hyper_params_file
-      at ./final_project/evaluation/evaluated_text_generator_dict.json"""
+    in the hyper_params_file
+     at ./final_project/evaluation/evaluated_text_generator_dict.json"""
     hyper_params_file = join(curr_dir, "evaluated_text_generator_dict.json")
-    with open(hyper_params_file, 'r+') as f:
+    with open(hyper_params_file, "r+") as f:
         data = json.load(f)
-        data['group_size'] = new_group_size
+        data["group_size"] = new_group_size
         f.seek(0)
         json.dump(data, f, indent=4)
         f.truncate()
