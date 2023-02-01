@@ -40,8 +40,10 @@ def get_db() -> sqlite3.Connection:
 
 # noinspection PyUnusedLocal
 def close_db(e=None):
-    """Closes the database again at the end of the request.
-    sometimes this is called with an argument e, which is ignored."""
+    """
+    Closes the database again at the end of the request.
+    sometimes this is called with an argument e, which is ignored.
+    """
     my_db = g.pop("my_db", None)
 
     if my_db is not None:

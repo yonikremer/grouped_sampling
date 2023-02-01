@@ -12,9 +12,11 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
-    """Register a new user.
+    """
+    Register a new user.
     If the registration is successful, the user is directed to auth/login
-    else, the user is directed to auth/register recursively until a successful registration"""
+    else, the user is directed to auth/register recursively until a successful registration
+    """
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -49,9 +51,11 @@ def register():
 
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
-    """Logs in a user.
+    """
+    Logs in a user.
     If the logging is successful, the user is directed to the main page
-    else, the user is directed to auth/login recursively until a successful registration"""
+    else, the user is directed to auth/login recursively until a successful registration
+    """
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -97,9 +101,11 @@ def logout():
 
 
 def login_required(view):
-    """View decorator that redirects anonymous users to the login page.
+    """
+    View decorator that redirects anonymous users to the login page.
     args: view: function
-    returns: function"""
+    returns: function
+    """
     @functools.wraps(view)
     def wrapped_view(*args, **kwargs):
         """the wrapped function"""
@@ -113,6 +119,8 @@ def login_required(view):
 
 
 def is_logged_in() -> bool:
-    """Checks if the user is logged in
-    returns: bool"""
+    """
+    Checks if the user is logged in
+    returns: bool
+    """
     return g.user is not None

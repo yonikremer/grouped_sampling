@@ -117,9 +117,11 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
 @login_required
 @bp.route('/create', methods=('GET', 'POST'))
 def create():
-    """Creates a new completion
+    """
+    Creates a new completion
     If a completion is created successfully, directs to the main page.
-    else, recursively redirect to this page (completion/create) until a successful completion"""
+    else, recursively redirect to this page (completion/create) until a successful completion
+    """
     if request.method == "POST":
         new_request = preprocess_create_form(request.form)
         text_generator: GroupedGenerationPipeLine = new_request['generation_type_class'](
