@@ -65,6 +65,11 @@ class GroupedGenerationUtils:
             repetition_penalty_strategy)
         self.group_size: int = group_size
         self.max_input_len: int = max_input_len
+        if max_input_len <= group_size:
+            raise ValueError("group size is bigger that max_input_len"
+                             " which is not allowed"
+                             f" max_input_len: {max_input_len}"
+                             f" group_size: {group_size}")
         self.padding_id: int = padding_id
         self.end_of_sentence_stop: bool = end_of_sentence_stop
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -138,8 +143,7 @@ class GroupedGenerationUtils:
             # we now that if a > b and a, b > 1 then a^2 > ab
             # so the complexity is O(n^2 + group_size^2)
         unscaled_relevant_logits: Tensor
-        unscaled_relevant_logits = outputs.logits[
-            0, -self.group_size:, :self.vocab_size]
+        unscaled_relevant_logits = outputs.logits[0, -self.group_size:, :self.vocab_size]
         # The shape of unscaled_relevant_logits is (group_size, vocab_size)
         # So the complexity of this line should be
         # O(group_size) because we are coping group_size * vocab_size
@@ -179,8 +183,7 @@ class GroupedGenerationUtils:
         answer = safe_cat_batch(padded_batch)
         return answer
 
-    def prepare_model_kwargs_batch(
-            self, batch: List[TokenIDS]) -> Dict[str, LongTensor]:
+    def prepare_model_kwargs_batch(self, batch: List[TokenIDS]) -> Dict[str, LongTensor]:
         """preparing the arguments for the model call
         Args:
             batch: the raw batch
@@ -207,18 +210,15 @@ class GroupedGenerationUtils:
         complexity: O(n^2 + group_size^2) where n is the target_length of the batch
         notice that the logits are not divided by the temperature in this function."""
         # define n as the number of batch in batch
-        # assert len(batch) > 0, "batch is empty"
-        # assert len(batch) > 1, "use get_logit_mat instead"
         model_kwargs = self.prepare_model_kwargs_batch(batch)
         with no_grad():
             all_logits: Tensor = self.model(**model_kwargs).logits
         unscaled_relevant_logits: List[Tensor] = []
         for i, sequence in enumerate(batch):
             # chose stop_index such that the target_length of the sequence is group_size
-            curr_relevant_logits = all_logits[
-                i,
-                len(sequence) - 1:len(sequence) +
-                self.group_size, :self.vocab_size, ]
+            start_index = len(sequence) - 1
+            end_index = len(sequence) + self.group_size - 1
+            curr_relevant_logits = all_logits[i, start_index:end_index, :self.vocab_size, ]
             un_squeezed_logits = curr_relevant_logits.unsqueeze(0)
             unscaled_relevant_logits.append(un_squeezed_logits)
 
