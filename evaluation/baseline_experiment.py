@@ -29,8 +29,6 @@ def process_sub_set_half(
     output_lang_name = lang_code_to_name(out_lang_code)
     prefix = f"Translate {input_lang_name} to {output_lang_name}: \n {input_lang_name}: "
     postfix = f"\n {output_lang_name}: "
-
-    pipeline: TextGenerationPipeline
     inputs = [prefix + x["translation"][in_lang_code] + postfix for x in sub_set_half]
     references: List[str] = [x["translation"][out_lang_code] for x in sub_set_half]
     return inputs, references

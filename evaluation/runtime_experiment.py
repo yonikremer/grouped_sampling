@@ -3,7 +3,7 @@ import time
 from os.path import abspath, dirname, join
 from typing import List, Iterable, Dict
 
-from datasets import get_dataset_config_names, Dataset
+from datasets import get_dataset_config_names
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 
@@ -21,12 +21,10 @@ def prompt_engineering(prompts: Iterable[str], input_language_code: str, output_
 
 def get_prompts(debug: bool) -> List[str]:
     """Gets a list of all the examples in the dataset with name DATASET_NAME"""
-    sub_set_names = get_dataset_config_names(DATASET_NAME)
+    sub_set_names: List[str] = get_dataset_config_names(DATASET_NAME)
     if debug:
         sub_set_names = sub_set_names[:1]
     prompts: List[str] = []
-    subset_part1: Dataset
-    subset_part2: Dataset
     language_code1: str
     language_code2: str
     for sub_set_name in sub_set_names:
