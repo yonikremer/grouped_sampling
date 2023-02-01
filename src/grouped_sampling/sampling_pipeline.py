@@ -8,8 +8,13 @@ from torch import Tensor, manual_seed
 
 from .base_pipeline import GroupedGenerationPipeLine
 from .generation_type import GenerationType
-from .sampling_stradegy import TopPSamplingStrategy, TopKSamplingStrategy, SamplingStrategy, GreedySamplingStrategy, \
-    PureSamplingStrategy
+from .sampling_stradegy import (
+    GreedySamplingStrategy,
+    PureSamplingStrategy,
+    SamplingStrategy,
+    TopKSamplingStrategy,
+    TopPSamplingStrategy,
+)
 
 
 class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
@@ -25,11 +30,11 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
     unique_attrs = "top_k", "top_p"
 
     def __init__(
-            self,
-            *args,
-            top_k: Optional[int] = None,
-            top_p: Optional[float] = None,
-            **kwargs,
+        self,
+        *args,
+        top_k: Optional[int] = None,
+        top_p: Optional[float] = None,
+        **kwargs,
     ):
         self.top_p: Optional[float] = top_p
         self.top_k: Optional[int] = top_k
@@ -77,7 +82,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         Generates a group of tokens
          using the choice_function.
          Complexity: O(group_size)
-         """
+        """
         prob_mat.cpu()
         # coping a tensor of size (group_size, vocab_size)
         # so the complexity is O(group_size)
@@ -111,9 +116,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         return new_tokens
 
     def _forward(
-            self,
-            tokenized_prompt: Tensor,
-            num_new_tokens: int,
+        self,
+        tokenized_prompt: Tensor,
+        num_new_tokens: int,
     ) -> List[List[int]]:
         """
         Complexity:
@@ -160,9 +165,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         return curr_token_list
 
     def forward_batch(
-            self,
-            tokenized_prompts: List[Tensor],
-            num_new_tokens: List[int],
+        self,
+        tokenized_prompts: List[Tensor],
+        num_new_tokens: List[int],
     ) -> List[List[int]]:
         generation_start_indexes = [
             len(prompt) for prompt in tokenized_prompts

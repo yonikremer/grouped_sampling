@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import List, Tuple
 
 from torch import LongTensor, cat
 from transformers import PreTrainedTokenizer
@@ -80,10 +80,10 @@ class PreProcessor:
             postfix_tokens)
 
     def call_batch(
-            self,
-            prompts: List[str],
-            prefix: str = "",
-            postfix: str = "",
+        self,
+        prompts: List[str],
+        prefix: str = "",
+        postfix: str = "",
     ) -> Tuple[List[LongTensor], int, List[int], int]:
         """
         Args:
@@ -111,5 +111,5 @@ class PreProcessor:
             cat((prefix_tokens, prompt_tokens, postfix_tokens))
             for prompt_tokens in prompt_tokens
         ]
-        return token_tensors, len(prefix_tokens), prompt_lengths, len(postfix_tokens)
-
+        return token_tensors, len(prefix_tokens), prompt_lengths, len(
+            postfix_tokens)

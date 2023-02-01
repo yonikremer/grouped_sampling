@@ -30,7 +30,7 @@ def create_masks(inp: Tensor, pad_int: int) -> Tuple[Tensor, Tensor]:
         Returns:
             tf.Tensor of shape
             (batch_size, 1, 1, seq_len)
-            """
+        """
         bool_mask = tf.math.equal(seq, pad_int)
         mask = tf.cast(bool_mask, floatx())
         # For every item in the sequence, 1 if it is a padding token, 0 if it is not

@@ -5,10 +5,7 @@ from collections.abc import Callable
 from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 from torch import LongTensor
-from transformers import (
-    AutoTokenizer,
-    PreTrainedTokenizer,
-)
+from transformers import AutoTokenizer, PreTrainedTokenizer
 
 from .completion_dict import CompletionDict
 from .generation_type import GenerationType
@@ -331,12 +328,16 @@ class GroupedGenerationPipeLine(Callable, ABC):
         prompts_lengths: List[int]
         prefix_length: int
         postfix_length: int
-        tokenized_prompts, prefix_length, prompts_lengths, postfix_length = self.pre_processing_strategy.call_batch(
-            prompts, prefix, postfix
-        )
+        (
+            tokenized_prompts,
+            prefix_length,
+            prompts_lengths,
+            postfix_length,
+        ) = self.pre_processing_strategy.call_batch(prompts, prefix, postfix)
 
         if max_new_tokens is None:
-            max_new_tokens = int(max(prompts_lengths) * self.answer_length_multiplier)
+            max_new_tokens = int(
+                max(prompts_lengths) * self.answer_length_multiplier)
 
         # generate the sequences
         generated_sequences: List[List[List[int]]] = self.forward_batch(
@@ -355,8 +356,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 return_text=return_text,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-            ) for generated_sequence, prompt_length
-            in zip(
+            ) for generated_sequence, prompt_length in zip(
                 generated_sequences,
                 prompts_lengths,
             )
@@ -376,7 +376,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
          of the pipeline
         such that it can be saved and loaded
          using the from_dict method
-         """
+        """
         return {key: getattr(self, key) for key in self.descriptive_attrs}
 
     @classmethod
@@ -385,7 +385,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         Creates an GroupedGenerationPipeLine from a dictionary
         The dictionary should have the same format
          as the dictionary returned by the as_dict method
-         """
+        """
         if "generation_type" in my_dict.keys():
             my_dict.pop("generation_type")
         wrapped_model: GroupedGenerationUtils = my_dict.pop("wrapped_model")

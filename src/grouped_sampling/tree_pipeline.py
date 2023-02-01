@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from math import ceil
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Iterable
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from torch import LongTensor, Tensor
 
@@ -110,7 +110,7 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         removes every repeated completion
          and every completion that have repeated tokens
          complexity: sum([len(completion) for completion in completions])
-         """
+        """
         filtered_completions: Dict[Tuple[int], float]
         filtered_completions = {}
         for curr_comp, curr_prob in zip(completions, probs):
@@ -312,5 +312,9 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         })
         return super_dict
 
-    def forward_batch(self, tokenized_prompts: Iterable[LongTensor], num_new_tokens: int) -> List[TokenIDS]:
-        return [self._forward(tokenized_prompt, num_new_tokens) for tokenized_prompt in tokenized_prompts]
+    def forward_batch(self, tokenized_prompts: Iterable[LongTensor],
+                      num_new_tokens: int) -> List[TokenIDS]:
+        return [
+            self._forward(tokenized_prompt, num_new_tokens)
+            for tokenized_prompt in tokenized_prompts
+        ]
