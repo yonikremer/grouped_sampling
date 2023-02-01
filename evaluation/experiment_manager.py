@@ -35,14 +35,12 @@ class ExperimentManager:
         )
         self.experiment.log_parameters(parameters)
         self.start_time = datetime.now()
-        self.df = DataFrame(
-            columns=[
-                        "input_text",
-                        "target_text",
-                        "input_language",
-                        "output_language",
-                    ] + list(BERT_SCORES)
-        )
+        self.df = DataFrame(columns=[
+            "input_text",
+            "target_text",
+            "input_language",
+            "output_language",
+        ] + list(BERT_SCORES))
 
     def log_stats(self, scores: DataFrame, title: str) -> None:
         self.experiment.log_dataframe_profile(scores,
