@@ -32,10 +32,12 @@ def test_register(client: FlaskClient, app: Flask) -> None:
     ),
 )
 def test_register_validate_input(client: FlaskClient, username: str, password: str, message: bytes) -> None:
-    """Tests that you:
+    """
+    Tests that you:
     1 can't create a user with existing username
     2 can't create a user with no password
-    3 can't register twice"""
+    3 can't register twice
+    """
     response = client.post(
         "/auth/register", data={"username": username, "password": password}
     )

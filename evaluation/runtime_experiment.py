@@ -58,9 +58,11 @@ def create_df(group_size_to_duration: Dict[int, float]):
 
 
 def change_group_size(new_group_size: int):
-    """Changes the group size value
+    """
+    Changes the group size value
      in the hyper_params_file
-      at ./final_project/evaluation/evaluated_text_generator_dict.json"""
+      at ./grouped_sampling/evaluation/evaluated_text_generator_dict.json
+    """
     hyper_params_file = join(curr_dir, "evaluated_text_generator_dict.json")
     with open(hyper_params_file, 'r+') as f:
         data = json.load(f)

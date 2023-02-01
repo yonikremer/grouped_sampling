@@ -11,10 +11,12 @@ from masks import create_masks
 
 
 class Transformer(Model):
-    """The base architecture
+    """
+    The base architecture
      of my models in the project.
      This is an implementation of the
-     decoder only causal language model."""
+     decoder only causal language model.
+     """
     pad_int: int
     embedding: Embedding
     decoder: Decoder
