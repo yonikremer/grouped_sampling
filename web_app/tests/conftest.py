@@ -10,8 +10,7 @@ from web_app.flaskr import create_app
 
 @pytest.fixture
 def app() -> Flask:
-    """Create and configure a new app instance for each test.
-    return type:"""
+    """Create and configure a new app instance for each test."""
     # create the app with common test config
     app: Flask = create_app({"TESTING": True})
 
