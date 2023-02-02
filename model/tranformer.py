@@ -54,9 +54,11 @@ class Transformer(Model):
             "softmax")
 
     def count_params(self) -> int:
-        """counts parameters
+        """
+        counts parameters
         Raises an error if:
-        called before building the model"""
+        called before building the model
+        """
         sub_layers = (self.encoder,
                       self.decoder,
                       self.embedding)
