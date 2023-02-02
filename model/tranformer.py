@@ -17,7 +17,7 @@ class Transformer(Model):
      This is an implementation of the
      decoder only causal language model.
      """
-    
+
     pad_int: int
     embedding: Embedding
     decoder: Decoder
