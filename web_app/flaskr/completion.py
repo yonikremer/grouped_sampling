@@ -83,7 +83,8 @@ def add_comp_to_db(comp_data: CompletionData):
 
 def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
     """Preprocesses the data from the create form and returns the processed arguments as a dict"""
-    DEFAULTS: Dict[str, Tuple[Any, type]] = {
+    
+        DEFAULTS: Dict[str, Tuple[Any, type]] = {
         "top_p": (None, float),
         "top_k": (None, int),
         "temperature": (1.0, float),
