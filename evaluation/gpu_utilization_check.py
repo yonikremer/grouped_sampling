@@ -39,9 +39,9 @@ def check_gpu_utilization(func: Callable) -> Callable:
 def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event) -> None:
     """
     A thread that checks the GPU utilization every second
-     during the execution of the wrapped function
-     and sends a warning if the gpu utilization is zero for interval seconds
-     """
+    during the execution of the wrapped function
+    and sends a warning if the gpu utilization is zero for interval seconds
+    """
     while not stop_flag.is_set():
         # Get the GPU utilization using nvidia_smi
         utilization = nvmlDeviceGetUtilizationRates(handle)

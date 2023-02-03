@@ -24,13 +24,9 @@ def create_masks(inp: Tensor, pad_int: int) -> Tuple[Tensor, Tensor]:
     def create_padding_mask(seq: Tensor) -> Tensor:
         """
         Returns a padding mask for the given sequence.
-        Input:
-            seq:
-                tf.Tensor of shape (batch_size, seq_len)
-        Returns:
-            tf.Tensor of shape
-            (batch_size, 1, 1, seq_len)
-            """
+        Input: seq: Tensor of shape (batch_size, seq_len)
+        Returns: Tensor of shape: (batch_size, 1, 1, seq_len)
+        """
         bool_mask = tf.math.equal(seq, pad_int)
         mask = tf.cast(bool_mask, floatx())
         # For every item in the sequence, 1 if it is a padding token, 0 if it is not

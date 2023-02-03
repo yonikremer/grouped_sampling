@@ -106,11 +106,11 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
     ) -> Dict[Tuple[int], float]:
         """
         Given a list of tokenized answers
-         and the probability of each completion,
+        and the probability of each completion,
         removes every repeated completion
-         and every completion that have repeated tokens
-         complexity: sum([len(completion) for completion in completions])
-         """
+        and every completion that have repeated tokens
+        complexity: sum([len(completion) for completion in completions])
+        """
         filtered_completions: Dict[Tuple[int], float]
         filtered_completions = {}
         for curr_comp, curr_prob in zip(completions, probs):
@@ -144,7 +144,7 @@ class GroupedTreePipeLine(GroupedGenerationPipeLine):
         and the added probability of all the tokens is
         less than or equal top_p
         returns a list of where every item is
-         a tuple of a sequence and probability
+        a tuple of a sequence and probability
         over all complexity of the function is
         O(group_size)
         the maximum length of the returned list is
