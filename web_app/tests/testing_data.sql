@@ -10,7 +10,15 @@ INSERT INTO user (username, password) VALUES
 ('test2',
 'pbkdf2:sha256:50000$TCI4GzcX$0de171a4f4dac32e3364c7ddc7c14f3e2fa61f2d17574483f7ffbb431b4acb2f');
 
-INSERT INTO completion (user_id, prompt, answer, num_tokens, group_size, model_id, generation_type) VALUES
+INSERT INTO completion (
+user_id,
+prompt,
+answer,
+num_tokens,
+group_size,
+model_id,
+generation_type
+) VALUES
 (1,
 'Is this a test?',
 'Is this a test? Of course it is just a test!',
