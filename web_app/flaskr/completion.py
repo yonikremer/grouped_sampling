@@ -25,6 +25,7 @@ bp = Blueprint('completion', __name__)
 @dataclass
 class CompletionData:
     """Contains all the data for the completion page"""
+
     prompt: str
     answer: str
     num_tokens: int
