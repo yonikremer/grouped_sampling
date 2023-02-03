@@ -75,9 +75,9 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         """
         Gets a probability matrix of shape (group_size, vocab_size)
         Generates a group of tokens
-         using the choice_function.
-         Complexity: O(group_size)
-         """
+        using the choice_function.
+        Complexity: O(group_size)
+        """
         prob_mat.cpu()
         # coping a tensor of size (group_size, vocab_size)
         # so the complexity is O(group_size)
