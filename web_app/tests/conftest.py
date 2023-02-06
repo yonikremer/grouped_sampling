@@ -1,4 +1,5 @@
 """Contains functions that configure the tests"""
+from typing import Generator
 
 import pytest
 from flask import Flask
@@ -9,12 +10,10 @@ from web_app.flaskr import create_app
 
 
 @pytest.fixture
-def app() -> Flask:
+def app() -> Generator[Flask, None, None]:
     """Create and configure a new app instance for each test."""
     # create the app with common test config
-    app: Flask = create_app({"TESTING": True})
-
-    yield app  # Return app but don't exit the function.
+    yield create_app({"TESTING": True})  # Return app but don't exit the function.
 
 
 @pytest.fixture
