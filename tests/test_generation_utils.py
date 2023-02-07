@@ -2,9 +2,13 @@
 from typing import List
 
 import pytest
-from torch import all, isclose, eq, tensor, cat
+from torch import all, cat, eq, isclose, tensor
 
-from src.grouped_sampling import GroupedGenerationUtils, TokenIDS, DEFAULT_REPETITION_PENALTY
+from src.grouped_sampling import (
+    DEFAULT_REPETITION_PENALTY,
+    GroupedGenerationUtils,
+    TokenIDS,
+)
 from src.grouped_sampling.generation_utils import safe_cat_batch
 
 
@@ -29,9 +33,17 @@ def test_get_prob_mat_batch(wrapped_model: GroupedGenerationUtils):
     single_sequence: TokenIDS = [1, 2, 3, 4, 5]
     batch_of_size_two: List[TokenIDS] = [single_sequence, single_sequence]
     un_batched_prob_mat = wrapped_model.get_prob_mat(single_sequence, 0)
-    assert un_batched_prob_mat.shape == (wrapped_model.group_size, wrapped_model.vocab_size)
-    prob_mat_batch = wrapped_model.get_prob_mat_batch(batch_of_size_two, [0, 0])
-    assert prob_mat_batch.shape == (len(batch_of_size_two), wrapped_model.group_size, wrapped_model.vocab_size)
+    assert un_batched_prob_mat.shape == (
+        wrapped_model.group_size,
+        wrapped_model.vocab_size,
+    )
+    prob_mat_batch = wrapped_model.get_prob_mat_batch(
+        batch_of_size_two, [0, 0])
+    assert prob_mat_batch.shape == (
+        len(batch_of_size_two),
+        wrapped_model.group_size,
+        wrapped_model.vocab_size,
+    )
     assert all(isclose(prob_mat_batch[0, :, :], un_batched_prob_mat))
     batch_of_size_two: List[TokenIDS] = [single_sequence, single_sequence]
     prob_mats = wrapped_model.get_prob_mat_batch(batch_of_size_two, [0, 0])
@@ -51,12 +63,17 @@ def test_prepare_model_kwargs_batch(wrapped_model: GroupedGenerationUtils):
     assert (2, len(tokens) + wrapped_model.group_size - 1) == batch_ids.shape
     assert all(eq(non_batch_ids, batch_ids))
     for key in model_kwargs_non_batch.keys():
-        assert all(eq(model_kwargs_batch[key], model_kwargs_non_batch[key])), f"key {key} is not equal"
+        assert all(
+            eq(model_kwargs_batch[key], model_kwargs_non_batch[key])
+        ), f"key {key} is not equal"
     actual_batch = [[1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
     max_len = max(len(seq) for seq in actual_batch)
     model_kwargs = wrapped_model.prepare_model_kwargs_batch(actual_batch)
     input_ids = model_kwargs["input_ids"]
-    assert (len(actual_batch), max_len + wrapped_model.group_size - 1) == input_ids.shape
+    assert (
+        len(actual_batch),
+        max_len + wrapped_model.group_size - 1,
+    ) == input_ids.shape
 
 
 def test_safe_cat_batch():
@@ -88,5 +105,5 @@ def test_str_repr(wrapped_model: GroupedGenerationUtils):
     assert isinstance(str_ans, str)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main()

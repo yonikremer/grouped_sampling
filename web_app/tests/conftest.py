@@ -13,7 +13,8 @@ from web_app.flaskr import create_app
 def app() -> Generator[Flask, None, None]:
     """Create and configure a new app instance for each test."""
     # create the app with common test config
-    yield create_app({"TESTING": True})  # Return app but don't exit the function.
+    # Return app but don't exit the function.
+    yield create_app({"TESTING": True})
 
 
 @pytest.fixture
@@ -34,15 +35,11 @@ class AuthActions:
     def __init__(self, client: FlaskClient):
         self._client: FlaskClient = client
 
-    def login(self,
-              username: str = "test",
-              password: str = "test") -> TestResponse:
+    def login(self, username: str = "test", password: str = "test") -> TestResponse:
         """Login helper function."""
-        return self._client.post("/auth/login",
-                                 data={
-                                     "username": username,
-                                     "password": password
-                                 })
+        return self._client.post(
+            "/auth/login", data={"username": username, "password": password}
+        )
 
     def logout(self) -> TestResponse:
         """Logout helper function."""
