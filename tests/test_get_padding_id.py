@@ -7,11 +7,18 @@ from src.grouped_sampling.base_pipeline import get_padding_id
 
 
 def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:
-
-    yield AutoTokenizer.from_pretrained("gpt2-medium")
-    yield AutoTokenizer.from_pretrained("facebook/bart-large-cnn")
-    yield AutoTokenizer.from_pretrained("t5-small")
-    yield AutoTokenizer.from_pretrained("sshleifer/tiny-mbart")
+    tokenizer_names = [
+        "gpt2",
+        "gpt2-medium",
+        "facebook/bart-large",
+        "facebook/opt-125m",
+        "EleutherAI/gpt-j-6B",
+        "EleutherAI/gpt-neo-125M",
+        "distilgpt2",
+        "sberbank-ai/rugpt3large_based_on_gpt2"
+    ]
+    for tokenizer_name in tokenizer_names:
+        yield AutoTokenizer.from_pretrained(tokenizer_name)
 
 
 @pytest.mark.parametrize("tokenizer", create_tokenizers())
