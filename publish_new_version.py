@@ -2,10 +2,10 @@
 
 import os
 
-import toml
 import build
-from twine.settings import Settings
+import toml
 from twine.commands.upload import upload
+from twine.settings import Settings
 
 TOML_FILE_PATH = "pyproject.toml"
 
@@ -54,7 +54,9 @@ def build_version(new_version: str) -> None:
     """Build the new version."""
     if version_already_exists(new_version):
         return
-    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist", distribution="sdist")
+    build.ProjectBuilder(srcdir=script_dir).build(
+        output_directory="dist", distribution="sdist"
+    )
     # return only when the build is finished
     while not version_already_exists(new_version):
         pass
