@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 dynamic = [ "dependencies",]
 name = "grouped_sampling"
-version = "1.0.3"
+version = "1.0.4"
 description = "A faster algorithm for generating texts with cuasal language models"
 readme = "README.md"
 license = "MIT"
@@ -16,11 +16,8 @@ classifiers = [ "Intended Audience :: Developers", "License :: OSI Approved :: M
 name = "Yoni Kremer"
 email = "yoni.kremer@gmail.com"
 
+[tool.pytest.ini_options]
+filterwarnings = [ "ignore::DeprecationWarning", "ignore:CUDA is not available, using CPU:UserWarning",]
+
 [tool.setuptools.dynamic.dependencies]
 file = [ "requirements.txt",]
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore:CUDA is not available, using CPU:UserWarning"
-]
