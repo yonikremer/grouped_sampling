@@ -1,7 +1,7 @@
 from typing import Generator
 
 import pytest
-from transformers import PreTrainedTokenizer, AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizer
 
 from src.grouped_sampling.base_pipeline import get_padding_id
 
@@ -15,7 +15,7 @@ def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:
         "EleutherAI/gpt-j-6B",
         "EleutherAI/gpt-neo-125M",
         "distilgpt2",
-        "sberbank-ai/rugpt3large_based_on_gpt2"
+        "sberbank-ai/rugpt3large_based_on_gpt2",
     ]
     for tokenizer_name in tokenizer_names:
         yield AutoTokenizer.from_pretrained(tokenizer_name)
