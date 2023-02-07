@@ -248,15 +248,15 @@ def test_max_new_tokens_is_none():
 def test_call_many_prompts():
     """Tests the __call__ method when many prompts are given"""
     pipeline = TEST_PIPELINE
-    PROMPTS: List[str] = [
+    prompts: List[str] = [
         "This is a test prompt", "This is another test prompt"
     ]
-    answers: List[CompletionDict] = pipeline(prompt_s=PROMPTS,
+    answers: List[CompletionDict] = pipeline(prompt_s=prompts,
                                              max_new_tokens=10,
                                              return_text=True,
                                              return_full_text=True)
     assert isinstance(answers, list), f"{answers} is not a list"
-    for prompt, answer in zip(PROMPTS, answers):
+    for prompt, answer in zip(prompts, answers):
         assert isinstance(answer, dict), f"{answer} is not a dict"
         assert ("generated_text" in answer.keys()
                 ), f"{answer} doesn't contain the key 'generated_text'"
@@ -266,7 +266,7 @@ def test_call_many_prompts():
             prompt), f"{answer['generated_text']} doesn't start with {prompt}"
 
     pipeline.max_batch_size = 2
-    prompts = PROMPTS * 2 + [PROMPTS[0]]
+    prompts = prompts * 2 + [prompts[0]]
     answers: List[CompletionDict] = pipeline(
         prompt_s=prompts,
         max_new_tokens=10,
