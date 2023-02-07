@@ -1,10 +1,11 @@
 from torch import tensor
 from transformers import PreTrainedTokenizer
 
-from src.grouped_sampling import TokenIDS
+from .token_ids import TokenIDS
 
 
 class PostProcessor:
+    """The post processor class is used to convert the token ids to text and tensors"""
     def __init__(
             self,
             tokenizer: PreTrainedTokenizer,
