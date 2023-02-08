@@ -2,10 +2,10 @@
 
 import os
 
-import toml
 import build
-from twine.settings import Settings
+import toml
 from twine.commands.upload import upload
+from twine.settings import Settings
 
 TOML_FILE_PATH = "pyproject.toml"
 
@@ -54,7 +54,8 @@ def build_version(new_version: str) -> None:
     """Build the new version."""
     if version_already_exists(new_version):
         return
-    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist", distribution="sdist")
+    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist",
+                                                  distribution="sdist")
     # return only when the build is finished
     while not version_already_exists(new_version):
         pass
@@ -79,9 +80,11 @@ def get_pypi_api_token() -> str:
     pypi_api_token_path = os.path.join(script_dir, "pypi_api_token.txt")
     if not os.path.exists(pypi_api_token_path):
         pypi_api_token = input("Please enter your PyPI API token: ")
-        with open(pypi_api_token_path, "w", encoding="utf-8") as pypi_api_token_file:
+        with open(pypi_api_token_path, "w",
+                  encoding="utf-8") as pypi_api_token_file:
             pypi_api_token_file.write(pypi_api_token)
-    with open(pypi_api_token_path, "r", encoding="utf-8") as pypi_api_token_file:
+    with open(pypi_api_token_path, "r",
+              encoding="utf-8") as pypi_api_token_file:
         pypi_api_token = pypi_api_token_file.read().strip()
     return pypi_api_token
 
