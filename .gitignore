@@ -162,3 +162,4 @@ pypi_api_token.txt
 model/.idea/
 model/.idea/sonarlint/issuestore
 model/.idea/sonarlint/
+/tests/supported_model_names.txt
