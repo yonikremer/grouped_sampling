@@ -1,17 +1,18 @@
 import os
-from typing import Generator, Set, Union, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Generator, List, Set, Union
 
 import pytest
 import requests
-from bs4 import BeautifulSoup, Tag, NavigableString, PageElement
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from transformers import AutoTokenizer, AutoConfig
+from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+from transformers import AutoConfig, AutoTokenizer
 
 from src.grouped_sampling import GroupedSamplingPipeLine
-from src.grouped_sampling.base_pipeline import get_padding_id, get_end_of_text_id
+from src.grouped_sampling.base_pipeline import get_end_of_text_id, get_padding_id
 
-SUPPORTED_MODEL_NAME_PAGES_FORMAT = "https://huggingface.co/models?pipeline_tag=text-generation&library=pytorch"
+SUPPORTED_MODEL_NAME_PAGES_FORMAT = (
+    "https://huggingface.co/models?pipeline_tag=text-generation&library=pytorch"
+)
 MAX_WORKERS = 10
 MIN_NUMBER_OF_DOWNLOADS = 100
 MIN_NUMBER_OF_LIKES = 20
@@ -34,7 +35,7 @@ def requires_additional_library(model_name: str) -> bool:
         "microsoft/BioGPT-Large",
         "microsoft/BioGPT-Large-PubMedQA",
         "rinna/japanese-gpt-1b",
-        "rinna/japanese-gpt2-medium"
+        "rinna/japanese-gpt2-medium",
     }
     return model_name in models_that_requires_libraries
 
@@ -46,7 +47,15 @@ def get_model_name(model_card: Tag) -> str:
 
 
 def is_a_number(s: PageElement) -> bool:
-    s = s.text.strip().lower().replace("k", "").replace("m", "").replace(",", "").replace(".", "").replace("b", "")
+    s = (
+        s.text.strip()
+        .lower()
+        .replace("k", "")
+        .replace("m", "")
+        .replace(",", "")
+        .replace(".", "")
+        .replace("b", "")
+    )
     try:
         float(s)
         return True
@@ -58,11 +67,15 @@ def get_numeric_contents(model_card):
     div: Union[Tag | NavigableString] = model_card.find(
         "div",
         class_="mr-1 flex items-center overflow-hidden whitespace-nowrap text-sm leading-tight text-gray-400",
-        recursive=True
+        recursive=True,
     )
     contents: List[PageElement] = div.contents
-    contents_without_tags: List[PageElement] = [content for content in contents if not isinstance(content, Tag)]
-    number_contents: List[PageElement] = [content for content in contents_without_tags if is_a_number(content)]
+    contents_without_tags: List[PageElement] = [
+        content for content in contents if not isinstance(content, Tag)
+    ]
+    number_contents: List[PageElement] = [
+        content for content in contents_without_tags if is_a_number(content)
+    ]
     return number_contents
 
 
@@ -107,7 +120,9 @@ def card_filter(model_card: Tag, model_name: str) -> bool:
 
 
 def get_model_names(soup: BeautifulSoup):
-    model_cards: List[Tag] = soup.find_all("article", class_="overview-card-wrapper group", recursive=True)
+    model_cards: List[Tag] = soup.find_all(
+        "article", class_="overview-card-wrapper group", recursive=True
+    )
     for model_card in model_cards:
         model_name = get_model_name(model_card)
         if card_filter(model_card, model_name):
@@ -116,7 +131,9 @@ def get_model_names(soup: BeautifulSoup):
 
 def generate_supported_model_names() -> Generator[str, None, None]:
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_index = {executor.submit(get_page, index): index for index in range(100)}
+        future_to_index = {
+            executor.submit(get_page, index): index for index in range(100)
+        }
         for future in as_completed(future_to_index):
             soup = future.result()
             if soup:
@@ -159,7 +176,7 @@ def test_pipeline_creation(model_name: str):
 
 
 def get_tokenizer_name(
-        model_name: str,
+    model_name: str,
 ) -> str:
     if model_name == "NovelAI/genji-jp":
         return "EleutherAI/gpt-j-6B"
