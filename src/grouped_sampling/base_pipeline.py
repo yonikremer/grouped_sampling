@@ -87,6 +87,12 @@ class GroupedGenerationPipeLine(Callable, ABC):
         self.model_name: str = model_name
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         end_of_sentence_id = tokenizer.eos_token_id
+        if end_of_sentence_id is None:
+            end_of_sentence_id = tokenizer.sep_token_id
+        if end_of_sentence_id is None:
+            raise RuntimeError(
+                "The tokenizer doesn't have a end of sentence token"
+            )
         end_of_sentence_stop = end_of_sentence_stop and end_of_sentence_id is not None
         max_input_len = tokenizer.model_max_length
         self.pre_processing_strategy: PreProcessor = PreProcessor(
@@ -253,7 +259,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         if max_new_tokens is None:
             max_new_tokens = int(prompt_len * self.answer_length_multiplier)
             # O(1)
-        tokenized_answers: List[TokenIDS]
+        tokenized_answers: TokenIDS
         tokenized_answers = self._forward(
             tokens,
             max_new_tokens,
@@ -339,7 +345,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             max_new_tokens = int(max(prompts_lengths) * self.answer_length_multiplier)
 
         # generate the sequences
-        generated_sequences: List[List[List[int]]] = self.forward_batch(
+        generated_sequences: List[List[int]] = self.forward_batch(
             tokenized_prompts,
             num_new_tokens=max_new_tokens,
         )

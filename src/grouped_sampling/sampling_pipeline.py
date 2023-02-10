@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from multiprocessing import Pool
 from random import seed
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Generator
 
 from torch import Tensor, manual_seed
 
@@ -98,23 +97,17 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
                 # because it is coping a list with maximum size of group_size
         return new_group
 
-    def generate_group_batch(self, prob_tensor: Tensor) -> Iterable[List[int]]:
+    def generate_group_batch(self, prob_tensor: Tensor) -> Generator[List[int], None, None]:
         """prob_tensor: tensor of shape (batch_size, group_size, vocab_size)"""
-        pool = Pool()
-        # create a list of arguments for each process
-        args = list(prob_tensor)
-        new_tokens = pool.map(self.generate_group, args)
-        # close the pool
-        pool.close()
-        # wait for the processes to finish
-        pool.join()
-        return new_tokens
+        for prob_mat in prob_tensor:
+            yield self.generate_group(prob_mat)
+            # the complexity of the loop is O(batch size * group_size)
 
     def _forward(
             self,
             tokenized_prompt: Tensor,
             num_new_tokens: int,
-    ) -> List[List[int]]:
+    ) -> List[int]:
         """
         Complexity:
             O(
@@ -162,7 +155,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
     def forward_batch(
             self,
             tokenized_prompts: List[Tensor],
-            num_new_tokens: List[int],
+            num_new_tokens: int,
     ) -> List[List[int]]:
         generation_start_indexes = [
             len(prompt) for prompt in tokenized_prompts
@@ -172,13 +165,21 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         ]
         for _ in range(num_new_tokens // self.wrapped_model.group_size):
             prob_tensor = self.wrapped_model.get_prob_mat_batch(
-                tokens=tokenized_prompts,
+                tokens=curr_sequences,
                 generation_start_indexes=generation_start_indexes,
             )  # tensor of shape (batch_size, group_size, vocab_size)
-            new_tokens: List[List[int]] = self.generate_group_batch(
-                prob_tensor)
-            for i, new_token in enumerate(new_tokens):
-                curr_sequences[i].extend(new_token)
+            new_sequences: Iterable[List[int]] = self.generate_group_batch(
+                prob_tensor
+            )
+            for i, new_sequence in enumerate(new_sequences):
+                new_sequence: List[int]
+                if self.wrapped_model.end_of_sentence_id not in new_sequence:
+                    if self.wrapped_model.end_of_sentence_id in new_sequence:
+                        # new tokens id is the tokens before and including the end_of_sentence_id
+                        end_of_sentence_index: int = new_sequence.index(self.wrapped_model.end_of_sentence_id)
+                        new_sequence: List[int] = new_sequence[:end_of_sentence_index + 1]
+                        assert new_sequence[-1] == self.wrapped_model.end_of_sentence_id
+                    curr_sequences[i].extend(new_sequence)
         return curr_sequences
 
     def __repr__(self):
