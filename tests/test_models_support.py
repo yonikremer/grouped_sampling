@@ -180,3 +180,7 @@ def test_supported_tokenizers(model_name: str):
     assert end_of_sentence_id is not None
     assert isinstance(end_of_sentence_id, int)
     assert end_of_sentence_id >= 0
+
+
+if __name__ == "__main__":
+    pytest.main()
