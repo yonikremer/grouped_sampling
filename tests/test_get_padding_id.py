@@ -22,12 +22,23 @@ def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:
 
 
 @pytest.mark.parametrize("tokenizer", create_tokenizers())
-def test_get_padding_id1(tokenizer: PreTrainedTokenizer):
+def test_get_padding_id_on_valid_tokenizer(tokenizer: PreTrainedTokenizer):
     padding_id = get_padding_id(tokenizer)
     assert isinstance(padding_id, int), f"{padding_id} is not an int"
+    assert padding_id >= 0, f"{padding_id} is not a positive int"
+
+
+@pytest.mark.parametrize("tokenizer", create_tokenizers())
+def test_destroy_tokenizer(tokenizer: PreTrainedTokenizer):
     tokenizer.mask_token_id = None
     tokenizer.unk_token_id = None
     tokenizer.pad_token_id = None
+    tokenizer.mask_token_ids = None
+    tokenizer.unk_token_ids = None
+    tokenizer.pad_token_ids = None
+    tokenizer._pad_token_type_id = None
+    tokenizer._mask_token_type_id = None
+    tokenizer._unk_token_type_id = None
     with pytest.raises(RuntimeError):
         get_padding_id(tokenizer)
 
