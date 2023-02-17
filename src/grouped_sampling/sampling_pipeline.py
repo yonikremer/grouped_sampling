@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from math import ceil
 from random import seed
 from typing import Any, Dict, Iterable, List, Optional, Generator
 
@@ -122,7 +123,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         # let's define l = len(tokenized_prompt), n = num_new_tokens
         # coping a tensor of size lso O(l)
         curr_token_list: List[int] = tokenized_prompt.tolist()
-        for _ in range(num_new_tokens // self.wrapped_model.group_size):
+        for _ in range(ceil(num_new_tokens / self.wrapped_model.group_size)):
             # and each iteration is
             # O(n ^ 2 + l ^ 2 + group_size ^ 2 + group_size)
             # so the complexity of the loop is
@@ -163,7 +164,7 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         curr_sequences: List[List[int]] = [
             tokenized_prompt.tolist() for tokenized_prompt in tokenized_prompts
         ]
-        for _ in range(num_new_tokens // self.wrapped_model.group_size):
+        for _ in range(ceil(num_new_tokens / self.wrapped_model.group_size)):
             prob_tensor = self.wrapped_model.get_prob_mat_batch(
                 tokens=curr_sequences,
                 generation_start_indexes=generation_start_indexes,

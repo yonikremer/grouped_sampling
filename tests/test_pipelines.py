@@ -322,6 +322,13 @@ def test_call_batch():
             f"{answer['generated_text']} is too short"
 
 
+def test_single_token_generation():
+    pipeline = TEST_PIPELINE
+    answer = pipeline(TEST_PROMPT, max_new_tokens=1, return_full_text=False)["generated_text"]
+    assert isinstance(answer, str), f"{answer} is not a string"
+    assert len(answer) > 0, "answer is empty"
+
+
 @pytest.mark.parametrize("curr_pipeline", create_pipelines())
 def test_calling_pipelines(curr_pipeline):
     answer = curr_pipeline(
