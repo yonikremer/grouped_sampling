@@ -1,8 +1,9 @@
 """Test the auth blueprint"""
 
 from pytest import mark
-from flask import g, session, Flask, Response
+from flask import g, session, Flask
 from flask.testing import FlaskClient
+from werkzeug.test import TestResponse
 
 from web_app.flaskr.database import get_db
 from web_app.tests.conftest import AuthActions
@@ -50,7 +51,7 @@ def test_login(client: FlaskClient, auth: AuthActions):
     assert client.get("/auth/login").status_code == 200
 
     # test that successful login redirects to the index page
-    response: Response = auth.login()
+    response: TestResponse = auth.login()
     assert response.headers["Location"] == "/"
 
     # login request set the user_id in the session
@@ -67,8 +68,9 @@ def test_login(client: FlaskClient, auth: AuthActions):
 )
 def test_login_validate_input(auth: AuthActions, username: str, password: str, message: bytes) -> None:
     """Tests you can't log in to none existing users or with wrong password"""
-    response: Response = auth.login(username, password)
-    assert message in response.get_data(as_text=True)
+    response: TestResponse = auth.login(username, password)
+    response_data: bytes = response.get_data()
+    assert message in response_data
 
 
 def test_logout(client: FlaskClient, auth: AuthActions):
