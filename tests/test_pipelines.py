@@ -7,10 +7,10 @@ import pytest
 from torch import Tensor, equal
 
 from src.grouped_sampling import (
+    CompletionDict,
     GroupedGenerationPipeLine,
     GroupedSamplingPipeLine,
     GroupedTreePipeLine,
-    CompletionDict,
     NoRepetitionPenalty,
 )
 
@@ -34,8 +34,7 @@ TEST_PIPELINE = GroupedSamplingPipeLine(
 )
 
 
-def create_pipelines(
-) -> Generator[GroupedGenerationPipeLine, None, None]:
+def create_pipelines() -> Generator[GroupedGenerationPipeLine, None, None]:
     top_k_sampling_gen = GroupedSamplingPipeLine(
         model_name=MODEL_NAME,
         group_size=GROUP_SIZES[0],
@@ -100,8 +99,8 @@ def test_edge_cases(curr_pipeline: GroupedGenerationPipeLine,
         return_full_text=True,
     )["generated_text"]
     assert isinstance(
-        answer, str
-    ), f"{answer} is not a string. curr_pipeline: {str(curr_pipeline)}"
+        answer,
+        str), f"{answer} is not a string. curr_pipeline: {str(curr_pipeline)}"
     assert len(answer) > len(
         edge_case_prompt
     ), f"{answer} is not a not longer than {edge_case_prompt}"
@@ -291,40 +290,53 @@ def test_call_batch():
     pipeline = TEST_PIPELINE
     empty_batch = []
     empty_batch_answer = pipeline(empty_batch)
-    assert empty_batch_answer == [], f"{empty_batch_answer} is not an empty list"
+    assert empty_batch_answer == [
+    ], f"{empty_batch_answer} is not an empty list"
     batch_of_size_one = [TEST_PROMPT]
-    batch_of_size_one_answer = pipeline(batch_of_size_one, return_full_text=True)
-    assert isinstance(batch_of_size_one_answer, list), f"{batch_of_size_one_answer} is not a list"
-    assert len(batch_of_size_one_answer) == 1, f"{batch_of_size_one_answer} doesn't have a length of 1"
-    assert isinstance(batch_of_size_one_answer[0], dict), f"{batch_of_size_one_answer[0]} is not a dict"
-    assert "generated_text" in batch_of_size_one_answer[0].keys(), \
-        f"{batch_of_size_one_answer[0]} doesn't contain the key 'generated_text'"
-    assert isinstance(batch_of_size_one_answer[0]["generated_text"], str), \
-        f"{batch_of_size_one_answer[0]['generated_text']} is not a string"
-    assert batch_of_size_one_answer[0]["generated_text"].startswith(TEST_PROMPT), \
-        f"{batch_of_size_one_answer[0]['generated_text']} doesn't start with {TEST_PROMPT}"
-    assert len(batch_of_size_one_answer[0]["generated_text"]) > len(TEST_PROMPT), \
-        f"{batch_of_size_one_answer[0]['generated_text']} is too short"
+    batch_of_size_one_answer = pipeline(batch_of_size_one,
+                                        return_full_text=True)
+    assert isinstance(batch_of_size_one_answer,
+                      list), f"{batch_of_size_one_answer} is not a list"
+    assert (len(batch_of_size_one_answer) == 1
+            ), f"{batch_of_size_one_answer} doesn't have a length of 1"
+    assert isinstance(batch_of_size_one_answer[0],
+                      dict), f"{batch_of_size_one_answer[0]} is not a dict"
+    assert (
+        "generated_text" in batch_of_size_one_answer[0].keys()
+    ), f"{batch_of_size_one_answer[0]} doesn't contain the key 'generated_text'"
+    assert isinstance(
+        batch_of_size_one_answer[0]["generated_text"], str
+    ), f"{batch_of_size_one_answer[0]['generated_text']} is not a string"
+    assert batch_of_size_one_answer[0]["generated_text"].startswith(
+        TEST_PROMPT
+    ), f"{batch_of_size_one_answer[0]['generated_text']} doesn't start with {TEST_PROMPT}"
+    assert len(batch_of_size_one_answer[0]["generated_text"]) > len(
+        TEST_PROMPT
+    ), f"{batch_of_size_one_answer[0]['generated_text']} is too short"
     batch_of_size_two = [TEST_PROMPT, TEST_PROMPT]
-    batch_of_size_two_answer = pipeline(batch_of_size_two, return_full_text=True)
-    assert isinstance(batch_of_size_two_answer, list), f"{batch_of_size_two_answer} is not a list"
-    assert len(batch_of_size_two_answer) == 2, f"{batch_of_size_two_answer} doesn't have a length of 2"
+    batch_of_size_two_answer = pipeline(batch_of_size_two,
+                                        return_full_text=True)
+    assert isinstance(batch_of_size_two_answer,
+                      list), f"{batch_of_size_two_answer} is not a list"
+    assert (len(batch_of_size_two_answer) == 2
+            ), f"{batch_of_size_two_answer} doesn't have a length of 2"
     for answer in batch_of_size_two_answer:
-        assert isinstance(answer, dict), \
-            f"{answer} is not a dict"
-        assert "generated_text" in answer.keys(), \
-            f"{answer} doesn't contain the key 'generated_text'"
-        assert isinstance(answer["generated_text"], str), \
-            f"{answer['generated_text']} is not a string"
-        assert answer["generated_text"].startswith(TEST_PROMPT), \
-            f"{answer['generated_text']} doesn't start with {TEST_PROMPT}"
-        assert len(answer["generated_text"]) > len(TEST_PROMPT), \
-            f"{answer['generated_text']} is too short"
+        assert isinstance(answer, dict), f"{answer} is not a dict"
+        assert ("generated_text" in answer.keys()
+                ), f"{answer} doesn't contain the key 'generated_text'"
+        assert isinstance(answer["generated_text"],
+                          str), f"{answer['generated_text']} is not a string"
+        assert answer["generated_text"].startswith(
+            TEST_PROMPT
+        ), f"{answer['generated_text']} doesn't start with {TEST_PROMPT}"
+        assert len(answer["generated_text"]) > len(
+            TEST_PROMPT), f"{answer['generated_text']} is too short"
 
 
 def test_single_token_generation():
     pipeline = TEST_PIPELINE
-    answer = pipeline(TEST_PROMPT, max_new_tokens=1, return_full_text=False)["generated_text"]
+    answer = pipeline(TEST_PROMPT, max_new_tokens=1,
+                      return_full_text=False)["generated_text"]
     assert isinstance(answer, str), f"{answer} is not a string"
     assert len(answer) > 0, "answer is empty"
 
@@ -336,16 +348,15 @@ def test_calling_pipelines(curr_pipeline):
         max_new_tokens=curr_pipeline.wrapped_model.group_size * 2,
     )["generated_text"]
     assert isinstance(
-        answer, str
-    ), f"{answer} is not a string. curr_pipeline: {str(curr_pipeline)}"
+        answer,
+        str), f"{answer} is not a string. curr_pipeline: {str(curr_pipeline)}"
     assert answer.startswith(PROMPT), f"{answer} doesn't start with {PROMPT}"
     assert len(answer) > len(PROMPT), f"{answer} is too short"
 
 
 @pytest.mark.parametrize("curr_pipeline", create_pipelines())
 def test_dict_conversions(curr_pipeline: GroupedGenerationPipeLine):
-    new_pipeline = type(curr_pipeline).from_dict(
-        curr_pipeline.as_dict())
+    new_pipeline = type(curr_pipeline).from_dict(curr_pipeline.as_dict())
     assert type(curr_pipeline) is type(new_pipeline)
     assert curr_pipeline.model_name == new_pipeline.model_name
     assert (curr_pipeline.wrapped_model.group_size ==
