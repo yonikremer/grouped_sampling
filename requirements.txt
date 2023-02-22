@@ -22,3 +22,5 @@ pathos
 sentencepiece
 bitsandbytes
 pip
+pytest-xdist
+cache-to-disk
