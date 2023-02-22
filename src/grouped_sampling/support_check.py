@@ -79,6 +79,15 @@ def get_page(page_index: int) -> Optional[BeautifulSoup]:
     return None
 
 
+def has_a_model_card(model_name) -> bool:
+    """returns True if the model card exists for the given model name, False otherwise"""
+    model_card_url = f"https://huggingface.co/{model_name}"
+    response = requests.get(model_card_url)
+    if response.status_code == 200:
+        return "no model card" not in response.text.lower()
+    return False
+
+
 def card_filter(
         model_card: Tag,
         model_name: str,
@@ -93,6 +102,8 @@ def card_filter(
         return False
     organization = model_name.split("/")[0]
     if organization in BLACKLISTED_ORGANIZATIONS:
+        return False
+    if not has_a_model_card(model_name):
         return False
     numeric_contents = get_numeric_contents(model_card)
     if len(numeric_contents) < 2:
