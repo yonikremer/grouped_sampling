@@ -146,6 +146,7 @@ def get_model_names(
                 min_number_of_downloads=min_number_of_downloads,
                 min_number_of_likes=min_number_of_likes
         ):
+            print(f"Found supported model: {model_name}")
             yield model_name
 
 
