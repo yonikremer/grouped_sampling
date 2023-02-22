@@ -1,0 +1,16 @@
+ykilcher/gpt-4chan
+bigscience/mt0-xxl
+bigscience/mt0-xl
+bigscience/mt0-large
+bigscience/mt0-base
+bigscience/mt0-small
+openai-gpt
+bigcode/santacoder
+google/reformer-enwik8
+google/reformer-crime-and-punishment
+google/reformer-wikitext2
+CarperAI/openai_summarize_tldr_ppo
+bigscience/distill-bloom-1b3-10x
+bigscience/distill-bloom-1b3
+flyhero/gpt-j-6B
+imone/pangu_2_6B

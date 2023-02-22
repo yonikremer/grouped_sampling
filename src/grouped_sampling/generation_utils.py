@@ -6,6 +6,7 @@ from torch.nn import Softmax
 from transformers import AutoModelForCausalLM
 
 from .repetition_penalty import RepetitionPenaltyStrategy
+from .support_check import check_support
 from .token_ids import TokenIDS
 
 
@@ -60,6 +61,7 @@ class GroupedGenerationUtils:
             **kwargs: the arguments to be passed to the model
         Complexity: O(1)
         """
+        check_support(model_name)
         self.use_softmax: bool = use_softmax
         self.end_of_sentence_id: int = end_of_sentence_id
         self.repetition_penalty_strategy: RepetitionPenaltyStrategy = (
