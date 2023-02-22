@@ -89,6 +89,15 @@ def has_a_model_card(model_name) -> bool:
     return False
 
 
+def has_a_warning(model_name) -> bool:
+    """returns True if the model card for the given model name, has a warning and False otherwise"""
+    model_card_url = f"https://huggingface.co/{model_name}"
+    response = requests.get(model_card_url)
+    if response.status_code == 200:
+        return "warning" in response.text.lower()
+    return False
+
+
 def card_filter(
         model_card: Tag,
         model_name: str,
@@ -105,6 +114,8 @@ def card_filter(
     if organization in BLACKLISTED_ORGANIZATIONS:
         return False
     if not has_a_model_card(model_name):
+        return False
+    if has_a_warning(model_name):
         return False
     numeric_contents = get_numeric_contents(model_card)
     if len(numeric_contents) < 2:
