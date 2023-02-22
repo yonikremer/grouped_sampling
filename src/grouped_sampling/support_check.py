@@ -6,6 +6,8 @@ import requests
 from bs4 import BeautifulSoup, Tag, NavigableString, PageElement
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from cache_to_disk import cache_to_disk
+
 SUPPORTED_MODEL_NAME_PAGES_FORMAT = "https://huggingface.co/models?pipeline_tag=text-generation&library=pytorch"
 BLACKLISTED_ORGANIZATIONS = {
     "huggingtweets",
@@ -152,7 +154,7 @@ def generate_supported_model_names(
                 )
 
 
-@lru_cache
+@cache_to_disk(n_days_to_cache=10)
 def get_supported_model_names(
         min_number_of_downloads: int = DEFAULT_MIN_NUMBER_OF_DOWNLOADS,
         min_number_of_likes: int = DEFAULT_MIN_NUMBER_OF_LIKES,
