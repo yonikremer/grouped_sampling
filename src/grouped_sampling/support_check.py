@@ -194,10 +194,11 @@ class UnsupportedModelNameException(Exception):
     def __init__(self, model_name: str):
         super().__init__(
             f"The model name {model_name} is not supported yet."
-            f"The algorithm only supports models that appears here: {SUPPORTED_MODEL_NAME_PAGES_FORMAT}"
-            f"with at least {DEFAULT_MIN_NUMBER_OF_DOWNLOADS} downloads and {DEFAULT_MIN_NUMBER_OF_LIKES} likes"
-            f"That wasn't created by one of the following organizations: {BLACKLISTED_ORGANIZATIONS}"
-            f"and that aren't one of the following models: {get_unsupported_model_names()}"
+            f"The algorithm only supports models that appears here: {SUPPORTED_MODEL_NAME_PAGES_FORMAT}.\n"
+            f"with at least {DEFAULT_MIN_NUMBER_OF_DOWNLOADS} downloads and {DEFAULT_MIN_NUMBER_OF_LIKES} likes.\n"
+            f"That wasn't created by one of the following organizations: {BLACKLISTED_ORGANIZATIONS}.\n"
+            f"And that aren't one of the following models: {get_unsupported_model_names()}.\n"
+            f"And that have a non empty model card without a waring.\n"
         )
 
 
