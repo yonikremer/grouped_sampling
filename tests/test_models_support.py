@@ -54,10 +54,11 @@ def get_dependency_name(error: ImportError) -> str:
 
 @pytest.mark.parametrize(
     "model_name",
-    get_supported_model_names(
+    generate_supported_model_names(
         min_number_of_downloads=0,
         min_number_of_likes=0,
-    ))
+    )
+)
 def test_supported_tokenizers(model_name: str):
     try:
         tokenizer = AutoTokenizer.from_pretrained(
