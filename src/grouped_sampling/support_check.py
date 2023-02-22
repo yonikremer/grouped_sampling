@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup, Tag, NavigableString, PageElement
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SUPPORTED_MODEL_NAME_PAGES_FORMAT = "https://huggingface.co/models?pipeline_tag=text-generation&library=pytorch"
-MAX_WORKERS = 10
 BLACKLISTED_ORGANIZATIONS = {
     "huggingtweets",
 }
@@ -141,7 +140,7 @@ def generate_supported_model_names(
         min_number_of_downloads: int,
         min_number_of_likes: int,
 ) -> Generator[str, None, None]:
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+    with ThreadPoolExecutor() as executor:
         future_to_index = {executor.submit(get_page, index): index for index in range(300)}
         for future in as_completed(future_to_index):
             soup = future.result()
