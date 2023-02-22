@@ -1,4 +1,5 @@
 """Test the auth blueprint"""
+import os
 
 from pytest import mark
 from flask import g, session, Flask
@@ -64,10 +65,11 @@ def test_login(client: FlaskClient, auth: AuthActions):
 
 @mark.parametrize(
     ("username", "password", "message"),
-    (("a", "test", 'Incorrect username'), ("test", "a", 'Incorrect password')),
+    (("a", "test", b'Incorrect username'), ("test", "a", b'Incorrect password')),
 )
 def test_login_validate_input(auth: AuthActions, username: str, password: str, message: bytes) -> None:
     """Tests you can't log in to none existing users or with wrong password"""
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     response: TestResponse = auth.login(username, password)
     response_data: bytes = response.get_data()
     assert message in response_data
