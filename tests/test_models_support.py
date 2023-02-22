@@ -65,14 +65,9 @@ def test_supported_tokenizers(model_name: str):
             trust_remote_code=True,
         )
         assert tokenizer is not None
-    except ModuleNotFoundError as e:
-        # in case of a missing dependency install it
-        missing_dependency = e.args[0].split("'")[1]
-        pip.main(["install", missing_dependency])
-        return test_supported_tokenizers(model_name)
     except ImportError as e:
         # in case of a missing dependency install it
-        missing_dependency = e.args[0].split("'")[1]
+        missing_dependency = get_dependency_name(e)
         pip.main(["install", missing_dependency])
         return test_supported_tokenizers(model_name)
     assert tokenizer is not None
