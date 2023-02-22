@@ -124,26 +124,26 @@ def create():
     else, recursively redirect to this page (completion/create) until a successful completion
     """
     if request.method == "POST":
-        new_request = preprocess_create_form(request.form)
-        text_generator: GroupedGenerationPipeLine = new_request['generation_type_class'](
-            model_name=new_request['model_name'],
-            group_size=new_request['group_size'],
-            top_p=new_request['top_p'],
-            top_k=new_request['top_k'],
-            temp=new_request['temperature']
+        raw_request = preprocess_create_form(request.form)
+        text_generator: GroupedGenerationPipeLine = raw_request['generation_type_class'](
+            model_name=raw_request['model_name'],
+            group_size=raw_request['group_size'],
+            top_p=raw_request['top_p'],
+            top_k=raw_request['top_k'],
+            temp=raw_request['temperature']
         )
         raw_answer: CompletionDict = text_generator(
-            prompt_s=new_request['prompt'],
-            max_new_tokens=new_request['num_tokens'],
+            prompt_s=raw_request['prompt'],
+            max_new_tokens=raw_request['num_tokens'],
             return_text=True,
             return_tensors=False,
             return_full_text=False,
         )
         answer: str = raw_answer['generated_text']
         completion = CompletionData(
-            prompt=new_request['prompt'],
+            prompt=raw_request['prompt'],
             answer=answer,
-            num_tokens=new_request['num_tokens'],
+            num_tokens=raw_request['num_tokens'],
             generator=text_generator
         )
         add_comp_to_db(completion)
