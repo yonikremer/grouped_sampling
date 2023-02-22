@@ -1,5 +1,5 @@
 import os
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import Generator, Set, Union, List, Optional
 
 import requests
@@ -22,13 +22,6 @@ def get_unsupported_model_names() -> Set[str]:
     this_file_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(this_file_dir, "unsupported_models.txt"), "r") as f:
         return set(f.read().splitlines())
-
-
-def get_model_name(model_card: Tag) -> str:
-    """returns the model name from the model card tag"""
-    h4_class = "text-md truncate font-mono text-black dark:group-hover:text-yellow-500 group-hover:text-indigo-600"
-    h4_tag = model_card.find("h4", class_=h4_class)
-    return h4_tag.text
 
 
 def is_a_number(element: Union[PageElement, Tag]) -> bool:
@@ -135,6 +128,30 @@ def card_filter(
     return True
 
 
+def get_model_name(model_card: Tag) -> str:
+    """returns the model name from the model card tag"""
+    h4_class = "text-md truncate font-mono text-black dark:group-hover:text-yellow-500 group-hover:text-indigo-600"
+    h4_tag = model_card.find("h4", class_=h4_class)
+    return h4_tag.text
+
+
+def filtered_get_model_name(
+        model_card: Tag,
+        min_number_of_downloads: int,
+        min_number_of_likes: int,
+):
+    """returns the model name from the model card tag if it's valid, None otherwise"""
+    model_name = get_model_name(model_card)
+    if card_filter(
+            model_card=model_card,
+            model_name=model_name,
+            min_number_of_downloads=min_number_of_downloads,
+            min_number_of_likes=min_number_of_likes
+    ):
+        return model_name
+    return None
+
+
 def get_model_names(
         soup: BeautifulSoup,
         min_number_of_downloads: int,
@@ -142,36 +159,61 @@ def get_model_names(
 ) -> Generator[str, None, None]:
     """Scrapes the model names from the given soup"""
     model_cards: List[Tag] = soup.find_all("article", class_="overview-card-wrapper group", recursive=True)
-    for model_card in model_cards:
-        model_name = get_model_name(model_card)
-        if card_filter(
-                model_card=model_card,
-                model_name=model_name,
-                min_number_of_downloads=min_number_of_downloads,
-                min_number_of_likes=min_number_of_likes
-        ):
-            print(f"Found supported model: {model_name}")
-            yield model_name
+    executor: ThreadPoolExecutor
+    filtered_get_model_name_partial = partial(
+        filtered_get_model_name,
+        min_number_of_downloads=min_number_of_downloads,
+        min_number_of_likes=min_number_of_likes,
+    )
+    with ThreadPoolExecutor() as executor:
+        model_name_futures = (
+            executor.submit(filtered_get_model_name_partial, model_card) for model_card in model_cards
+        )
+        for future in as_completed(model_name_futures):
+            model_name = future.result()
+            if model_name:
+                print(model_name)
+                yield model_name
+
+
+def scrape_supported_model_names_in_page(
+        page_index: int,
+        min_number_of_downloads: int,
+        min_number_of_likes: int,
+) -> Generator[str, None, None]:
+    """returns the list of supported model names"""
+    page: Optional[BeautifulSoup] = get_page(page_index)
+    if page:
+        page: BeautifulSoup
+        yield from get_model_names(
+            soup=page,
+            min_number_of_downloads=min_number_of_downloads,
+            min_number_of_likes=min_number_of_likes,
+        )
 
 
 def generate_supported_model_names(
         min_number_of_downloads: int,
         min_number_of_likes: int,
 ) -> Generator[str, None, None]:
+    scrape_supported_model_names_in_page_partial = partial(
+        scrape_supported_model_names_in_page,
+        min_number_of_downloads=min_number_of_downloads,
+        min_number_of_likes=min_number_of_likes,
+    )
     with ThreadPoolExecutor() as executor:
-        future_to_index = {executor.submit(get_page, index): index for index in range(300)}
+        future_to_index = {
+            executor.submit(
+                scrape_supported_model_names_in_page_partial,
+                index
+            ): index for index in range(300)
+        }
         for future in as_completed(future_to_index):
-            soup = future.result()
-            if soup:
-                yield from get_model_names(
-                    soup=soup,
-                    min_number_of_downloads=min_number_of_downloads,
-                    min_number_of_likes=min_number_of_likes,
-                )
+            yield from future.result()
 
 
 @cache_to_disk(n_days_to_cache=10)
-def get_supported_model_names(
+def get_all_supported_model_names_set(
         min_number_of_downloads: int = DEFAULT_MIN_NUMBER_OF_DOWNLOADS,
         min_number_of_likes: int = DEFAULT_MIN_NUMBER_OF_LIKES,
 ) -> Set[str]:
@@ -188,10 +230,8 @@ def is_supported(
         min_number_of_downloads: int = DEFAULT_MIN_NUMBER_OF_DOWNLOADS,
         min_number_of_likes: int = DEFAULT_MIN_NUMBER_OF_LIKES,
 ) -> bool:
-    return model_name in get_supported_model_names(
-        min_number_of_downloads=min_number_of_downloads,
-        min_number_of_likes=min_number_of_likes,
-    )
+    return model_name in get_all_supported_model_names_set(min_number_of_downloads=min_number_of_downloads,
+                                                           min_number_of_likes=min_number_of_likes)
 
 
 class UnsupportedModelNameException(Exception):
@@ -211,3 +251,16 @@ def check_support(model_name: str) -> None:
     if not is_supported(model_name):
         raise UnsupportedModelNameException(model_name)
 
+
+def main() -> None:
+    for i, model_name in enumerate(
+            generate_supported_model_names(
+                min_number_of_downloads=0,
+                min_number_of_likes=0,
+            )
+    ):
+        print(f"{i}: {model_name}")
+
+
+if __name__ == "__main__":
+    get_all_supported_model_names_set(min_number_of_downloads=0, min_number_of_likes=0)
