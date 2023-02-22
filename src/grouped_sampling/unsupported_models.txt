@@ -8,9 +8,11 @@ openai-gpt
 bigcode/santacoder
 google/reformer-enwik8
 google/reformer-crime-and-punishment
-google/reformer-wikitext2
 CarperAI/openai_summarize_tldr_ppo
 bigscience/distill-bloom-1b3-10x
 bigscience/distill-bloom-1b3
 flyhero/gpt-j-6B
 imone/pangu_2_6B
+architext/gptj-162M
+enryu43/anifusion_augmenter
+jon-tow/pythia-6.9b-summarize-sft
