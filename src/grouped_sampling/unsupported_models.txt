@@ -1,9 +1,5 @@
 ykilcher/gpt-4chan
-bigscience/mt0-xxl
-bigscience/mt0-xl
-bigscience/mt0-large
-bigscience/mt0-base
-bigscience/mt0-small
+
 openai-gpt
 bigcode/santacoder
 google/reformer-enwik8
