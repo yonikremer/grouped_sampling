@@ -3,11 +3,12 @@ import pip
 
 import pytest
 
-from transformers import AutoTokenizer, AutoConfig
+from transformers import AutoConfig
 
-from src.grouped_sampling import GroupedSamplingPipeLine
+from src.grouped_sampling.sampling_pipeline import GroupedSamplingPipeLine
 from src.grouped_sampling.base_pipeline import get_padding_id, get_end_of_text_id
-from src.grouped_sampling.support_check import get_supported_model_names
+from src.grouped_sampling.support_check import generate_supported_model_names, is_supported
+from src.grouped_sampling.tokenizer import get_tokenizer
 
 
 def get_tested_model_names() -> Set[str]:
@@ -24,6 +25,11 @@ def get_tested_model_names() -> Set[str]:
 
 
 @pytest.mark.parametrize("model_name", get_tested_model_names())
+def test_is_supported_method(model_name: str):
+    assert is_supported(model_name)
+
+
+@pytest.mark.parametrize("model_name", get_tested_model_names())
 def test_pipeline_creation(model_name: str):
     pipeline: GroupedSamplingPipeLine = GroupedSamplingPipeLine(
         model_name=model_name, group_size=5
@@ -32,16 +38,6 @@ def test_pipeline_creation(model_name: str):
     assert pipeline.model_name == model_name
     assert pipeline.wrapped_model.group_size == 5
     assert pipeline.wrapped_model.end_of_sentence_stop is True
-
-
-def get_tokenizer_name(
-        model_name: str,
-) -> str:
-    if model_name == "NovelAI/genji-jp":
-        return "EleutherAI/gpt-j-6B"
-    if model_name == "NovelAI/genji-python-6B":
-        return "EleutherAI/gpt-neo-2.7B"
-    return model_name
 
 
 def get_dependency_name(error: ImportError) -> str:
@@ -61,10 +57,7 @@ def get_dependency_name(error: ImportError) -> str:
 )
 def test_supported_tokenizers(model_name: str):
     try:
-        tokenizer = AutoTokenizer.from_pretrained(
-            get_tokenizer_name(model_name),
-            trust_remote_code=True,
-        )
+        tokenizer = get_tokenizer(model_name)
         assert tokenizer is not None
     except ImportError as e:
         # in case of a missing dependency install it
