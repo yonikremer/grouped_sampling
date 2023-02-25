@@ -1,11 +1,10 @@
 import os
 from functools import lru_cache, partial
 from typing import Generator, Set, Union, List, Optional
-
-import requests
-from bs4 import BeautifulSoup, Tag, NavigableString, PageElement
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import requests
 
+from bs4 import BeautifulSoup, Tag, NavigableString, PageElement
 from cache_to_disk import cache_to_disk
 
 SUPPORTED_MODEL_NAME_PAGES_FORMAT = "https://huggingface.co/models?pipeline_tag=text-generation&library=pytorch"
