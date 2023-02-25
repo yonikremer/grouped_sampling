@@ -101,8 +101,11 @@ def card_filter(
         # 8bit models are not supported, U should use load_in_8bit=True instead
         return False
     if "mt0" in model_name:
-        # mt0 models are not supported, U they are sequence to sequence models and not causal language models
+        # mt0 models are not supported, they are sequence to sequence models and not causal language models
         # even though they are labeled as causal language models in the model card
+        return False
+    if "santacoder" in model_name:
+        # santacoder models are not supported, they require a special tokenizer
         return False
     if model_name in get_unsupported_model_names():
         return False
@@ -231,7 +234,7 @@ def unsupported_model_name_error_message(model_name: str) -> str:
         That wasn't created by one of the following organizations: {BLACKLISTED_ORGANIZATIONS}.
         And that aren't one of the following models: {get_unsupported_model_names()}.
         And that have a non empty model card without a waring.
-        And they are not ab mt0 model or an 8bit model."""
+        And they are not a santacoder mt0 or an 8bit model."""
 
 
 def is_supported(
