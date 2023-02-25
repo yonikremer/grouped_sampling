@@ -75,6 +75,8 @@ def get_tokenizer_name(
         return "EleutherAI/gpt-j-6B"
     if model_name in {"NovelAI/genji-python-6B", "luke-thorburn/suggest-conclusion-full-finetune"}:
         return "EleutherAI/gpt-neo-2.7B"
+    if model_name in {"mustapha/distilgpt2-finetuned-wikitext2"}:
+        return "distilgpt2"
     return model_name
 
 
