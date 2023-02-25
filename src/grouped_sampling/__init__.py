@@ -5,6 +5,7 @@ from .support_check import (
     is_supported,
     check_support,
     UnsupportedModelNameException,
+    unsupported_model_name_error_message,
 )
 from .completion_dict import CompletionDict
 from .token_ids import TokenIDS
