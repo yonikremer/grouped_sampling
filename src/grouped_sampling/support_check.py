@@ -224,6 +224,17 @@ def get_all_supported_model_names_set(
     )
 
 
+def unsupported_model_name_error_message(model_name: str) -> str:
+    return \
+        f"""{model_name} is not supported yet.
+        The algorithm only supports models that appear here: {SUPPORTED_MODEL_NAME_PAGES_FORMAT}.
+        with at least {DEFAULT_MIN_NUMBER_OF_DOWNLOADS} downloads and {DEFAULT_MIN_NUMBER_OF_LIKES} likes.
+        That wasn't created by one of the following organizations: {BLACKLISTED_ORGANIZATIONS}.
+        And that aren't one of the following models: {get_unsupported_model_names()}.
+        And that have a non empty model card without a waring.
+        And they are not ab mt0 model or an 8bit model."""
+
+
 def is_supported(
         model_name: str,
         min_number_of_downloads: int = DEFAULT_MIN_NUMBER_OF_DOWNLOADS,
@@ -236,13 +247,7 @@ def is_supported(
 class UnsupportedModelNameException(Exception):
     def __init__(self, model_name: str):
         super().__init__(
-            f"The model name {model_name} is not supported yet."
-            f"The algorithm only supports models that appears here: {SUPPORTED_MODEL_NAME_PAGES_FORMAT}.\n"
-            f"with at least {DEFAULT_MIN_NUMBER_OF_DOWNLOADS} downloads and {DEFAULT_MIN_NUMBER_OF_LIKES} likes.\n"
-            f"That wasn't created by one of the following organizations: {BLACKLISTED_ORGANIZATIONS}.\n"
-            f"And that aren't one of the following models: {get_unsupported_model_names()}.\n"
-            f"And that have a non empty model card without a waring.\n"
-            "And they are not ab mt0 model or an 8bit model."
+            unsupported_model_name_error_message(model_name)
         )
 
 
@@ -262,4 +267,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    get_all_supported_model_names_set(min_number_of_downloads=0, min_number_of_likes=0)
+    print(unsupported_model_name_error_message("test"))
