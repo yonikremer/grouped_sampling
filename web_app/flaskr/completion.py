@@ -12,8 +12,10 @@ import pandas as pd
 from src.grouped_sampling import (
     GroupedGenerationPipeLine,
     GroupedSamplingPipeLine,
-    GroupedTreePipeLine, CompletionDict,
-
+    GroupedTreePipeLine,
+    CompletionDict,
+    is_supported,
+    unsupported_model_name_error_message,
 )
 from .auth import login_required
 from .database import get_db
@@ -125,6 +127,10 @@ def create():
     """
     if request.method == "POST":
         raw_request = preprocess_create_form(request.form)
+        print("Checking if model is supported")
+        if not is_supported(raw_request['model_name']):
+            error = unsupported_model_name_error_message(raw_request['model_name'])
+            return render_template("completion/create.html", error=error)
         text_generator: GroupedGenerationPipeLine = raw_request['generation_type_class'](
             model_name=raw_request['model_name'],
             group_size=raw_request['group_size'],
