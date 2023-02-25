@@ -10,12 +10,17 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 
 def main() -> bool:
     """Run all tests and return True if all tests passed, False otherwise."""
-    cov = Coverage(omit=["*/tests/*", "*/__init__.py", os.path.join(script_dir, "web_app", "*"), "*raise*"])
+    excluded = ["*/tests/*", "*/__init__.py", os.path.join(script_dir, "web_app", "*"), "*raise*"]
+    included = os.path.join(script_dir, "src", "*")
+    cov = Coverage(
+        omit=excluded,
+        include=included,
+    )
     cov.start()
 
     exitcode: ExitCode = pytest.main(
         [
-            script_dir,
+            os.path.join(script_dir, "tests"),
             "--verbose",
             "--color=yes",
             "--tb=short"
