@@ -171,7 +171,6 @@ def get_model_names(
         for future in as_completed(model_name_futures):
             model_name = future.result()
             if model_name:
-                print(model_name)
                 yield model_name
 
 
