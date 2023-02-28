@@ -31,10 +31,10 @@ def get_end_of_text_id(tokenizer: PreTrainedTokenizer, config: AutoConfig):
         return config.eos_token_id
     if hasattr(config, "eos_token_ids") and config.eos_token_ids is not None:
         raise RuntimeError("Could not find end of text id")
-    if hasattr(tokenizer, "_eos_token_type_id") and tokenizer._eos_token_type_id is not None:
-        return tokenizer._eos_token_type_id
-    if hasattr(tokenizer, "_eos_token") and tokenizer._eos_token is not None:
-        return int(tokenizer._eos_token)
+    if hasattr(tokenizer, "_eos_token_type_id") and tokenizer.eos_token_type_id is not None:
+        return tokenizer.eos_token_type_id
+    if hasattr(tokenizer, "_eos_token") and tokenizer.eos_token is not None:
+        return int(tokenizer.eos_token)
     raise RuntimeError(
         "Could not find end of text id in a tokenizer with the following attributes: "
         f"{tokenizer.__dict__.keys()}"
