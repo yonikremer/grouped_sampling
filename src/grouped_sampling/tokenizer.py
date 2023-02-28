@@ -10,10 +10,10 @@ def get_padding_id(tokenizer: PreTrainedTokenizer):
         return tokenizer.mask_token_id
     if hasattr(tokenizer, "mask_token_ids") and tokenizer.mask_token_ids is not None:
         return tokenizer.mask_token_ids[0]
-    if hasattr(tokenizer, "_pad_token_type_id") and tokenizer._pad_token_type_id is not None:
-        return tokenizer._pad_token_type_id
-    if hasattr(tokenizer, "_pad_token") and tokenizer._pad_token is not None:
-        return int(tokenizer._pad_token)
+    if hasattr(tokenizer, "pad_token_type_id") and tokenizer.pad_token_type_id is not None:
+        return tokenizer.pad_token_type_id
+    if hasattr(tokenizer, "_pad_token") and tokenizer.pad_token is not None:
+        return int(tokenizer.pad_token)
     raise RuntimeError(
         "Could not find padding id in a tokenizer with the following attributes: "
         f"{tokenizer.__dict__.keys()}"
