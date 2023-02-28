@@ -1,7 +1,7 @@
 from .support_check import (
     DEFAULT_MIN_NUMBER_OF_DOWNLOADS,
     DEFAULT_MIN_NUMBER_OF_LIKES,
-    get_all_supported_model_names_set,
+    get_full_models_list,
     is_supported,
     check_support,
     UnsupportedModelNameException,
