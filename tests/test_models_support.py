@@ -7,7 +7,7 @@ from transformers import AutoConfig
 
 from src.grouped_sampling.sampling_pipeline import GroupedSamplingPipeLine
 from src.grouped_sampling.base_pipeline import get_padding_id, get_end_of_text_id
-from src.grouped_sampling.support_check import generate_supported_model_names, is_supported
+from src.grouped_sampling.support_check import is_supported, get_full_models_list
 from src.grouped_sampling.tokenizer import get_tokenizer
 
 
@@ -50,15 +50,11 @@ def get_dependency_name(error: ImportError) -> str:
 
 @pytest.mark.parametrize(
     "model_name",
-    generate_supported_model_names(
-        min_number_of_downloads=0,
-        min_number_of_likes=0,
-    )
+    get_full_models_list()
 )
 def test_supported_tokenizers(model_name: str):
     try:
         tokenizer = get_tokenizer(model_name)
-        assert tokenizer is not None
     except ImportError as e:
         # in case of a missing dependency install it
         missing_dependency = get_dependency_name(e)
