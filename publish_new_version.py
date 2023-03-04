@@ -7,9 +7,10 @@ import build
 from twine.settings import Settings
 from twine.commands.upload import upload
 
-TOML_FILE_PATH = "pyproject.toml"
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
+PROJECT_DIR = os.path.dirname(os.path.realpath(__file__))
+SOURCE_DIR = os.path.abspath(os.path.join(PROJECT_DIR, "src"))
+TOML_FILE_PATH = os.path.join(SOURCE_DIR, "pyproject.toml")
 
 
 def version_file_name(version: str) -> str:
@@ -19,7 +20,7 @@ def version_file_name(version: str) -> str:
 
 def version_file_path(version: str) -> str:
     """Return the path of the file that contains the version number."""
-    return os.path.join(script_dir, "dist", version_file_name(version))
+    return os.path.join(PROJECT_DIR, "dist", version_file_name(version))
 
 
 def increase_version():
@@ -37,7 +38,7 @@ def increase_version():
 
 def decrease_version():
     """Decrease the version number by one."""
-    pyproject = toml.load("pyproject.toml")
+    pyproject = toml.load("src/pyproject.toml")
     old_version = pyproject["project"]["version"]
     major, minor, patch = old_version.split(".")
     patch = int(patch) - 1
@@ -54,7 +55,11 @@ def build_version(new_version: str) -> None:
     """Build the new version."""
     if version_already_exists(new_version):
         return
-    build.ProjectBuilder(srcdir=script_dir).build(output_directory="dist", distribution="sdist")
+    output_directory = os.path.join(PROJECT_DIR, "dist")
+    builder = build.ProjectBuilder(
+        srcdir=SOURCE_DIR,
+    )
+    builder.build(output_directory=output_directory, distribution="sdist")
     # return only when the build is finished
     while not version_already_exists(new_version):
         pass
@@ -76,7 +81,7 @@ def publish_version(new_version: str):
 
 def get_pypi_api_token() -> str:
     """Return the PyPI API token."""
-    pypi_api_token_path = os.path.join(script_dir, "pypi_api_token.txt")
+    pypi_api_token_path = os.path.join(PROJECT_DIR, "pypi_api_token.txt")
     if not os.path.exists(pypi_api_token_path):
         pypi_api_token = input("Please enter your PyPI API token: ")
         with open(pypi_api_token_path, "w", encoding="utf-8") as pypi_api_token_file:
