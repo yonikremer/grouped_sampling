@@ -13,13 +13,6 @@ DEFAULT_MIN_NUMBER_OF_DOWNLOADS = 0
 DEFAULT_MIN_NUMBER_OF_LIKES = 0
 
 
-def get_huggingface_token():
-    secrets_path = os.path.join(os.path.dirname(__file__), "../../secrets.toml")
-    with open(secrets_path) as f:
-        config = toml.load(f)
-    return config["hugging_face_api_key"]
-
-
 @lru_cache(maxsize=1)
 def get_unsupported_model_names() -> Set[str]:
     """returns the set of unsupported model names"""
@@ -58,7 +51,6 @@ def get_full_models_list(
             task="text-generation",
             library="pytorch",
         ),
-        token=get_huggingface_token(),
     )
     with multiprocessing.Pool() as pool:
         supported_model_names = pool.map(
