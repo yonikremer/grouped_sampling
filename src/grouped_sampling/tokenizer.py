@@ -48,14 +48,21 @@ def get_end_of_text_id(tokenizer: PreTrainedTokenizer, config: AutoConfig):
 def get_tokenizer_name(
         model_name: str,
 ) -> str:
+    """Returns a tokenizer name based on the model name"""
+    config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+    if hasattr(config, "tokenizer_class") and config.tokenizer_class is not None:
+        print(f"Using tokenizer class {config.tokenizer_class} for model {model_name}")
+        return config.tokenizer_class
     if model_name == "NovelAI/genji-jp":
         return "EleutherAI/gpt-j-6B"
     if model_name in {"NovelAI/genji-python-6B", "luke-thorburn/suggest-conclusion-full-finetune"}:
         return "EleutherAI/gpt-neo-2.7B"
-    if model_name in {"mustapha/distilgpt2-finetuned-wikitext2"}:
+    if model_name in {"mustapha/distilgpt2-finetuned-wikitext2", "Aleksandar1932/distilgpt2-rock", "AntonClaesson/movie-plot-generator"}:
         return "distilgpt2"
     if model_name in {"mymusise/CPM-Generate-distill"}:
         return "TsinghuaAI/CPM-Generate"
+    if model_name.startswith("Aleksandar1932/gpt2") or model_name.startswith("Azaghast/GPT2"):
+        return "gpt2"
     return model_name
 
 
