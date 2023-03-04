@@ -3,7 +3,6 @@ import os
 from functools import lru_cache
 from typing import Set, List, Optional, Iterable
 
-import toml
 from cache_to_disk import cache_to_disk, delete_disk_caches_for_function
 from huggingface_hub import hf_api, ModelFilter
 from huggingface_hub.hf_api import ModelInfo
