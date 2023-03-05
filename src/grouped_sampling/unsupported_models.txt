@@ -10,3 +10,6 @@ imone/pangu_2_6B
 architext/gptj-162M
 enryu43/anifusion_augmenter
 jon-tow/pythia-6.9b-summarize-sft
+ItelAi/Chatbot
+MilaBromm/TNGMain
+PhilSad/GPT-J6B-Guided-SCP
