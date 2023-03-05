@@ -1,0 +1,13 @@
+{
+  "DHBaek/gpt2-stackoverflow-question-contents-generator": "gpt2",
+  "JerryQu/v2-distilgpt2": "distilgpt2",
+  "MYX4567/gpt2-wikitext2": "gpt2",
+  "MrBananaHuman/kogpt_6b_fp16": "kakaobrain/kogpt",
+  "NovelAI/genji-jp": "EleutherAI/gpt-j-6B",
+  "NovelAI/genji-python-6B": "EleutherAI/gpt-neo-2.7B",
+  "OscarNav/dialoGPT_translate": "microsoft/DialoGPT-small",
+  "Rei/DialoGPT-medium-kurisu": "microsoft/DialoGPT-medium",
+  "citadel": "Nicki/citadel",
+  "mymusise/CPM-Generate-distill": "TsinghuaAI/CPM-Generate",
+  "scarlet-choir": "Nicki/scarlet-choir"
+}
