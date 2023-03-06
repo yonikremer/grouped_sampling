@@ -79,6 +79,8 @@ class GroupedGenerationUtils:
             pretrained_model_name_or_path=model_name,
             load_in_8bit=load_in_8bit and cuda.is_available(),
             device_map='auto',
+            offload_folder="offload",
+            offload_state_dict=True,
             **kwargs
         )
         self.temp: float = temp
