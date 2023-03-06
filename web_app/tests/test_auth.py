@@ -1,9 +1,9 @@
 """Test the auth blueprint"""
 import os
 
-from pytest import mark
-from flask import g, session, Flask
+from flask import Flask, g, session
 from flask.testing import FlaskClient
+from pytest import mark
 from werkzeug.test import TestResponse
 
 from web_app.flaskr.database import get_db
@@ -15,34 +15,42 @@ def test_register(client: FlaskClient, app: Flask) -> None:
     assert client.get("/auth/register").status_code == 200
 
     # test that successful registration redirects to the login page
-    response = client.post("/auth/register", data={"username": "a", "password": "a"})
+    response = client.post("/auth/register",
+                           data={
+                               "username": "a",
+                               "password": "a"
+                           })
     assert response.headers["Location"] == "/"
 
     # test that the user was inserted into the database
     with app.app_context():
         my_db = get_db()
-        row = my_db.execute("SELECT * FROM user WHERE username = 'a'").fetchone()
+        row = my_db.execute(
+            "SELECT * FROM user WHERE username = 'a'").fetchone()
         assert row is not None
 
 
 @mark.parametrize(
     ("username", "password", "message"),
     (
-        ("", "", b'Username is required.'),
-        ("a", "", b'Password is required.'),
-        ("test", "test", b'already registered'),
+        ("", "", b"Username is required."),
+        ("a", "", b"Password is required."),
+        ("test", "test", b"already registered"),
     ),
 )
-def test_register_validate_input(client: FlaskClient, username: str, password: str, message: bytes) -> None:
+def test_register_validate_input(client: FlaskClient, username: str,
+                                 password: str, message: bytes) -> None:
     """
     Tests that you:
     1 can't create a user with existing username
     2 can't create a user with no password
     3 can't register twice
     """
-    response = client.post(
-        "/auth/register", data={"username": username, "password": password}
-    )
+    response = client.post("/auth/register",
+                           data={
+                               "username": username,
+                               "password": password
+                           })
     assert message in response.data
 
 
@@ -65,9 +73,11 @@ def test_login(client: FlaskClient, auth: AuthActions):
 
 @mark.parametrize(
     ("username", "password", "message"),
-    (("a", "test", b'Incorrect username'), ("test", "a", b'Incorrect password')),
+    (("a", "test", b"Incorrect username"),
+     ("test", "a", b"Incorrect password")),
 )
-def test_login_validate_input(auth: AuthActions, username: str, password: str, message: bytes) -> None:
+def test_login_validate_input(auth: AuthActions, username: str, password: str,
+                              message: bytes) -> None:
     """Tests you can't log in to none existing users or with wrong password"""
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     response: TestResponse = auth.login(username, password)
@@ -88,14 +98,23 @@ def test_logout(client: FlaskClient, auth: AuthActions):
     ("valid_username", "valid_password"),
     (("a", "a"), ("this_is_a_test", "this_is_also_a_test")),
 )
-def test_register_logout_login(client: FlaskClient, auth: AuthActions, valid_username, valid_password):
+def test_register_logout_login(client: FlaskClient, auth: AuthActions,
+                               valid_username, valid_password):
     """Tests that you can register, logout and login again with the same username and password."""
     assert client.get("/").status_code == 200
-    client.post("/auth/register", data={"username": valid_username, "password": valid_password})
+    client.post("/auth/register",
+                data={
+                    "username": valid_username,
+                    "password": valid_password
+                })
     assert client.get("/").status_code == 200
     auth.logout()
     assert client.get("/").status_code == 200
-    client.post("/auth/login", data={"username": valid_username, "password": valid_password})
+    client.post("/auth/login",
+                data={
+                    "username": valid_username,
+                    "password": valid_password
+                })
     assert client.get("/").status_code == 200
     with client:
         client.get("/")
