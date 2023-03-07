@@ -1,4 +1,5 @@
-from typing import Set
+import os.path
+from typing import Set, List
 import pip
 
 import pytest
@@ -53,6 +54,7 @@ def get_dependency_name(error: ImportError) -> str:
     get_full_models_list()
 )
 def test_supported_tokenizers(model_name: str):
+    print("testing model name: ", model_name)
     try:
         tokenizer = get_tokenizer(model_name)
     except ImportError as e:
@@ -76,6 +78,49 @@ def test_supported_tokenizers(model_name: str):
     assert end_of_sentence_id is not None
     assert isinstance(end_of_sentence_id, int)
     assert end_of_sentence_id >= 0
+    print("Finished testing model name: ", model_name)
+
+
+def get_unsupported_tokenizers() -> List[str]:
+    unsupported_tokenizers_file = os.path.join(
+        os.path.dirname(
+            os.path.dirname(__file__)
+        ),
+        "src/grouped_sampling/unsupported_models.txt"
+    )
+    with open(unsupported_tokenizers_file, "r") as f:
+        return f.read().splitlines()
+
+
+def remove_from_unsupported_tokenizers(tokenizer_name: str):
+    unsupported_tokenizers_file = os.path.join(
+        os.path.dirname(
+            os.path.dirname(__file__)
+        ),
+        "src/grouped_sampling/unsupported_models.txt"
+    )
+    with open(unsupported_tokenizers_file, "r") as f:
+        lines = f.read().splitlines()
+    with open(unsupported_tokenizers_file, "w") as f:
+        for line in lines:
+            if line != tokenizer_name:
+                f.write(line + "\n")
+
+
+@pytest.mark.parametrize(
+    "tokenizer_name",
+    get_unsupported_tokenizers()
+)
+def test_unsupported_tokenizers(tokenizer_name: str):
+    try:
+        test_supported_tokenizers(tokenizer_name)
+    except Exception as e:
+        print(tokenizer_name + " is still not supported")
+        print(f"Error: {e}")
+    else:
+        print(tokenizer_name + " is now supported")
+        remove_from_unsupported_tokenizers(tokenizer_name)
+
 
 
 if __name__ == "__main__":
