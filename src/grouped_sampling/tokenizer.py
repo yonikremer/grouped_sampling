@@ -138,7 +138,9 @@ def get_tokenizer_name(
     special_cases = get_special_cases()
     if model_name in special_cases.keys():
         return special_cases[model_name]
-    if model_name.startswith("Aleksandar1932/gpt2") or model_name.startswith("Azaghast/GPT2"):
+    if model_name.startswith("Aleksandar1932/gpt2") \
+            or model_name.startswith("Azaghast/GPT2")\
+            or model_name.startswith("SteveC/sdc_bot"):
         return "gpt2"
     tokenizer_name_from_repo = get_tokenizer_name_from_repo(model_name)
     if tokenizer_name_from_repo != model_name:
