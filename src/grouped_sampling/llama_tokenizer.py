@@ -216,9 +216,3 @@ class LLaMATokenizer(PreTrainedTokenizer):
         if token_ids_1 is None:
             return len(token_ids_0 + eos) * [0]
         return len(token_ids_0 + eos + token_ids_1 + eos) * [0]
-
-
-if __name__ == '__main__':
-    tokenizer = LLaMATokenizer.from_pretrained('decapoda-research/llama-13b-hf')
-    print(tokenizer.tokenize('Hello world!'))
-    print(tokenizer.convert_tokens_to_string(tokenizer.tokenize('Hello world!')))
