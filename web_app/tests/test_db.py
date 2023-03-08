@@ -24,7 +24,7 @@ def test_tables_are_not_empty(app: Flask, table_name: str):
     with app.app_context():
         my_db: Connection = get_db()
         my_cursor = my_db.cursor()
-        my_cursor.execute(f"SELECT * FROM {table_name}")
+        my_cursor.execute("SELECT * FROM ?", (table_name,))
         assert my_cursor.fetchone()
 
 
