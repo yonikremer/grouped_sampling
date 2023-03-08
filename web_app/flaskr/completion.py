@@ -40,10 +40,11 @@ def index():
     """The page with all the completions"""
     my_db: Connection = get_db()
     # Execute a SQL query and return the results
-    columns = (" username, c.created, prompt, answer, num_tokens, model_name,"
-               " group_size, generation_type, top_p, top_k, temperature ")
-    join_statement = " completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id "
-    query = "SELECT " f" {columns} " f" FROM {join_statement} ORDER BY c.created"
+    query = "SELECT " \
+            "username, c.created, prompt, answer, num_tokens, model_name," \
+            " group_size, generation_type, top_p, top_k, temperature " \
+            "FROM " \
+            "completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id  ORDER BY c.created"
     df = pd.read_sql_query(query, my_db)
     html_table = df.to_html(classes="data",
                             header="true",
@@ -55,9 +56,10 @@ def index():
 @login_required
 def add_comp_to_db(comp_data: CompletionData):
     """Adds an answer to the database"""
-    columns = "user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature"
     query_structure: str = (
-        f"INSERT INTO completion ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+        "INSERT INTO completion ("
+        "user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
     )
     connection = get_db()
     generator: GroupedGenerationPipeLine = comp_data.generator
@@ -117,7 +119,8 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
     if new_request["generation_type"] in generation_type_names_to_classes:
         new_request[
             "generation_type_class"] = generation_type_names_to_classes[
-                new_request["generation_type"]]
+                new_request["generation_type"]
+        ]
     else:
         raise ValueError(f"generation_type must be either one of"
                          f" {generation_type_names_to_classes.keys()}, "
