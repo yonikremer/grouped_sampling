@@ -5,8 +5,8 @@ import pip
 import pytest
 from tqdm import tqdm
 
-from transformers import AutoConfig
 
+from src.grouped_sampling.config import get_config
 from src.grouped_sampling.sampling_pipeline import GroupedSamplingPipeLine
 from src.grouped_sampling.base_pipeline import get_padding_id, get_end_of_text_id
 from src.grouped_sampling.support_check import is_supported, get_full_models_list
@@ -70,13 +70,7 @@ def test_supported_tokenizers(model_name: str):
     assert padding_id is not None
     assert isinstance(padding_id, int)
     assert padding_id >= 0
-    try:
-        config = AutoConfig.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-        )
-    except KeyError:
-        config = None
+    config = get_config(model_name)
     end_of_sentence_id = get_end_of_text_id(tokenizer, config)
     assert end_of_sentence_id is not None
     assert isinstance(end_of_sentence_id, int)
