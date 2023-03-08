@@ -22,6 +22,7 @@ def get_tested_model_names() -> Set[str]:
         "bigscience/bloomz-560m",
         "microsoft/CodeGPT-small-py",
         "microsoft/DialoGPT-small",
+        "decapoda-research/llama-7b-hf",
     }
 
 
@@ -120,7 +121,6 @@ def test_unsupported_tokenizers(tokenizer_name: str):
     else:
         print(tokenizer_name + " is now supported")
         remove_from_unsupported_tokenizers(tokenizer_name)
-
 
 
 if __name__ == "__main__":
