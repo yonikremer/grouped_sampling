@@ -10,6 +10,7 @@
       <excludeFolder url="file://$MODULE_DIR$/coverage_html_report" />
       <excludeFolder url="file://$MODULE_DIR$/evaluation/plots" />
       <excludeFolder url="file://$MODULE_DIR$/evaluation/tables" />
+      <excludeFolder url="file://$MODULE_DIR$/tests/offload" />
     </content>
     <orderEntry type="jdk" jdkName="grouped_sampling" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -35,7 +35,8 @@ def test_is_supported_method(model_name: str):
 @pytest.mark.parametrize("model_name", get_tested_model_names())
 def test_pipeline_creation(model_name: str):
     pipeline: GroupedSamplingPipeLine = GroupedSamplingPipeLine(
-        model_name=model_name, group_size=5
+        model_name=model_name, group_size=5,
+        load_in_8bit=False,
     )
     assert pipeline is not None
     assert pipeline.model_name == model_name
