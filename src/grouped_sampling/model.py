@@ -12,7 +12,6 @@ def get_model(
         load_in_8bit: bool = True,
         **kwargs,
 ) -> PreTrainedModel:
-    print("load in 8bit: " + str(load_in_8bit))
     try:
         model = AutoModelForCausalLM.from_pretrained(
             pretrained_model_name_or_path=model_name,
