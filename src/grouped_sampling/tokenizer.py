@@ -1,11 +1,14 @@
 import json
 import os
+import re
 from functools import lru_cache
 from typing import Optional, Dict
 
 import requests
 from huggingface_hub.utils import validate_repo_id, HFValidationError
 from transformers import PreTrainedTokenizer, AutoTokenizer, AutoConfig
+
+from src.grouped_sampling.llama.llama_tokenizer import LLaMATokenizer
 
 
 def get_padding_id(tokenizer: PreTrainedTokenizer):
@@ -155,7 +158,13 @@ def get_tokenizer(
         model_name: str,
 ) -> PreTrainedTokenizer:
     """Returns a tokenizer based on the model name"""
+    tokenizer_name = get_tokenizer_name(model_name)
+    if re.match(r"decapoda-research/llama-\d+b-hf", tokenizer_name):
+        return LLaMATokenizer.from_pretrained(
+            "decapoda-research/llama-13b-hf",
+            trust_remote_code=True,
+        )
     return AutoTokenizer.from_pretrained(
-        get_tokenizer_name(model_name),
+        tokenizer_name,
         trust_remote_code=True,
     )
