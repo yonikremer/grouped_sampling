@@ -8,7 +8,7 @@ import requests
 from huggingface_hub.utils import validate_repo_id, HFValidationError
 from transformers import PreTrainedTokenizer, AutoTokenizer, AutoConfig
 
-from src.grouped_sampling.llama.llama_tokenizer import LLaMATokenizer
+from src.grouped_sampling.llama_tokenizer import LLaMATokenizer
 
 
 def get_padding_id(tokenizer: PreTrainedTokenizer):
