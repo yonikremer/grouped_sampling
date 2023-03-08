@@ -6,9 +6,9 @@ from typing import Optional, Dict
 
 import requests
 from huggingface_hub.utils import validate_repo_id, HFValidationError
-from transformers import PreTrainedTokenizer, AutoTokenizer, AutoConfig
+from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig
 
-from src.grouped_sampling.llama_tokenizer import LLaMATokenizer
+from src.grouped_sampling.llama.tokenization_llama import LLaMATokenizer
 
 
 def get_padding_id(tokenizer: PreTrainedTokenizer):
@@ -32,7 +32,7 @@ def get_padding_id(tokenizer: PreTrainedTokenizer):
     )
 
 
-def get_end_of_text_id(tokenizer: PreTrainedTokenizer, config: AutoConfig):
+def get_end_of_text_id(tokenizer: PreTrainedTokenizer, config: PretrainedConfig):
     if tokenizer.eos_token_id is not None:
         return tokenizer.eos_token_id
     if hasattr(tokenizer, "eos_token_ids") and tokenizer.eos_token_ids is not None:
