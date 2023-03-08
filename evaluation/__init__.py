@@ -35,10 +35,10 @@ DATASET_NAME = "ted_talks_iwslt"
 
 def lang_code_to_name(language_code: str) -> str:
     """
-    Converts language's ISO_639_1 code to language name
+    Converts language's iso_639_1 code to language name
     Raises KeyError if language code is not one of the languages in the ted_talks_iwslt dataset
     """
-    ISO_639_1 = {
+    iso_639_1 = {
         "de": "German",
         "en": "English",
         "nl": "Dutch",
@@ -48,7 +48,7 @@ def lang_code_to_name(language_code: str) -> str:
         "fr-ca": "Canadian French",
         "hi": "Hindi",
     }
-    return ISO_639_1[language_code]
+    return iso_639_1[language_code]
 
 
 def get_comet_api_key() -> str:
