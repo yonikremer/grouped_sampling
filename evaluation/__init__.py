@@ -5,7 +5,6 @@ from typing import Callable, Tuple, Dict, Any
 from warnings import warn
 
 from datasets import Dataset, load_dataset
-from pandas import Series
 
 from src.grouped_sampling import GroupedGenerationPipeLine, GroupedSamplingPipeLine
 
