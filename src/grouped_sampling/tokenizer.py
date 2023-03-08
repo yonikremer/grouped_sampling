@@ -5,6 +5,7 @@ from functools import lru_cache
 from typing import Optional, Dict
 
 import requests
+from cache_to_disk.cache_to_disk import cache_to_disk
 from huggingface_hub.utils import validate_repo_id, HFValidationError
 from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig
 
@@ -134,6 +135,7 @@ def get_special_cases() -> Dict[str, str]:
 
 
 # noinspection PyProtectedMember
+@cache_to_disk(n_days_to_cache=100)
 def get_tokenizer_name(
         model_name: str,
 ) -> str:
@@ -142,7 +144,7 @@ def get_tokenizer_name(
     if model_name in special_cases.keys():
         return special_cases[model_name]
     if model_name.startswith("Aleksandar1932/gpt2") \
-            or model_name.startswith("Azaghast/GPT2")\
+            or model_name.startswith("Azaghast/GPT2") \
             or model_name.startswith("SteveC/sdc_bot"):
         return "gpt2"
     tokenizer_name_from_repo = get_tokenizer_name_from_repo(model_name)
