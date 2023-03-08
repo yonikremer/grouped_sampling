@@ -3,6 +3,7 @@ from typing import Set, List
 import pip
 
 import pytest
+from tqdm import tqdm
 
 from transformers import AutoConfig
 
@@ -52,7 +53,7 @@ def get_dependency_name(error: ImportError) -> str:
 
 @pytest.mark.parametrize(
     "model_name",
-    get_full_models_list()
+    tqdm(get_full_models_list())
 )
 def test_supported_tokenizers(model_name: str):
     print("testing model name: ", model_name)
