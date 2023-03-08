@@ -1,4 +1,7 @@
+from warnings import warn
+
 from torch import cuda
+from torch.cuda import OutOfMemoryError
 from transformers import PreTrainedModel, AutoModelForCausalLM
 
 from .llama.modeling_llama import LLaMAModel
@@ -11,7 +14,7 @@ def get_model(
 ) -> PreTrainedModel:
     print("load in 8bit: " + str(load_in_8bit))
     try:
-        return AutoModelForCausalLM.from_pretrained(
+        model = AutoModelForCausalLM.from_pretrained(
             pretrained_model_name_or_path=model_name,
             load_in_8bit=load_in_8bit and cuda.is_available(),
             device_map="auto",
@@ -21,7 +24,7 @@ def get_model(
         )
     except KeyError as e:
         if "llama" in model_name.lower():
-            return LLaMAModel.from_pretrained(
+            model = LLaMAModel.from_pretrained(
                 pretrained_model_name_or_path=model_name,
                 load_in_8bit=load_in_8bit and cuda.is_available(),
                 device_map="auto",
@@ -29,4 +32,13 @@ def get_model(
                 offload_state_dict=True,
                 **kwargs,
             )
-        raise e
+        else:
+            raise e
+    if cuda.is_available():
+        try:
+            model = model.cuda()
+        except OutOfMemoryError:
+            warn("The model is too large for your GPU, using the CPU instead.")
+    else:
+        warn("CUDA is not avilable, using the CPU instead")
+    return model
