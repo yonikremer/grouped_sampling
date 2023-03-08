@@ -43,8 +43,8 @@ def index():
     columns = (" username, c.created, prompt, answer, num_tokens, model_name,"
                " group_size, generation_type, top_p, top_k, temperature ")
     join_statement = " completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id "
-    QUERY = "SELECT " f" {columns} " f" FROM {join_statement} ORDER BY c.created"
-    df = pd.read_sql_query(QUERY, my_db)
+    query = "SELECT " f" {columns} " f" FROM {join_statement} ORDER BY c.created"
+    df = pd.read_sql_query(query, my_db)
     html_table = df.to_html(classes="data",
                             header="true",
                             border=0,
@@ -56,7 +56,7 @@ def index():
 def add_comp_to_db(comp_data: CompletionData):
     """Adds an answer to the database"""
     columns = "user_id, prompt, answer, num_tokens, model_id, group_size, generation_type, top_p, top_k, temperature"
-    QUERY_STRUCTURE: str = (
+    query_structure: str = (
         f"INSERT INTO completion ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
     )
     connection = get_db()
@@ -84,13 +84,13 @@ def add_comp_to_db(comp_data: CompletionData):
         top_k,
         generator.wrapped_model.temp,
     )
-    connection.execute(QUERY_STRUCTURE, arguments)
+    connection.execute(query_structure, arguments)
     connection.commit()
 
 
 def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
     """Preprocesses the data from the create form and returns the processed arguments as a dict"""
-    DEFAULTS: Dict[str, Tuple[Any, type]] = {
+    defaults: Dict[str, Tuple[Any, type]] = {
         "top_p": (None, float),
         "top_k": (None, int),
         "temperature": (1.0, float),
@@ -103,7 +103,7 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
 
     new_request: dict = {}
 
-    for input_name, (default_value, wanted_type) in DEFAULTS.items():
+    for input_name, (default_value, wanted_type) in defaults.items():
         if old_request[input_name] == "":
             new_request[input_name] = default_value
         else:

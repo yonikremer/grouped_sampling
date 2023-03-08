@@ -61,8 +61,8 @@ def run_experiment(
 
 def create_evaluator() -> TranslationEvaluator:
     """Creates a translation evaluator"""
-    METRIC_NAME = "bertscore"
-    my_evaluator = TranslationEvaluator(default_metric_name=METRIC_NAME)
+    metric_name = "bertscore"
+    my_evaluator = TranslationEvaluator(default_metric_name=metric_name)
     my_evaluator.PREDICTION_PREFIX = "generated"
     return my_evaluator
 
