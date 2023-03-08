@@ -5,8 +5,8 @@ from collections.abc import Callable
 from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 from torch import LongTensor
-from transformers import AutoConfig
 
+from .config import get_config
 from .completion_dict import CompletionDict
 from .generation_type import GenerationType
 from .generation_utils import GroupedGenerationUtils
@@ -51,6 +51,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         RepetitionPenaltyStrategy = DEFAULT_REPETITION_PENALTY,
         answer_length_multiplier: float = 16,
         max_batch_size: int = 32,
+        load_in_8bit: bool = True,
     ):
         """
         Model name: the name of the model
@@ -72,7 +73,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         self.max_batch_size: int = max_batch_size
         self.model_name: str = model_name
         tokenizer = get_tokenizer(model_name)
-        config = AutoConfig.from_pretrained(model_name)
+        config = get_config(model_name)
         end_of_sentence_id = get_end_of_text_id(tokenizer, config)
         end_of_sentence_stop = end_of_sentence_stop and end_of_sentence_id is not None
         max_input_len = tokenizer.model_max_length
@@ -93,6 +94,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             "temp": temp,
             "use_softmax": self.generation_type.requires_softmax(),
             "vocab_size": tokenizer.vocab_size,
+            "load_in_8bit": load_in_8bit,
         }
         self.wrapped_model: GroupedGenerationUtils = GroupedGenerationUtils(
             **remove_nones(wrapped_model_kwargs))
