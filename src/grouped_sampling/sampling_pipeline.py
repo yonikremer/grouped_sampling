@@ -37,6 +37,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
+        if (key == "top_k" or key == "top_p") and hasattr(self, "wrapped_model"):
+            self.wrapped_model.use_softmax = True
         if key == "default_seed":
             seed(value)  # pragma: no cover
             manual_seed(value)  # pragma: no cover
