@@ -24,6 +24,8 @@ class GroupedGenerationUtils:
         "end_of_sentence_stop",
         "temp",
         "repetition_penalty_strategy",
+        "use_cuda",
+        "load_in_8bit",
     )
 
     def __init__(
@@ -39,6 +41,7 @@ class GroupedGenerationUtils:
             temp: float = 1.0,
             use_softmax: bool = True,
             load_in_8bit: bool = True,
+            use_cuda: bool = True,
             **kwargs,
     ):
         """
@@ -58,6 +61,7 @@ class GroupedGenerationUtils:
             use_softmax:
             true if the model should use softmax,
             false if it should return the logits
+            use_cuda: whether to use cuda
             **kwargs: the arguments to be passed to the model
         Complexity: O(1)
         """
@@ -78,16 +82,19 @@ class GroupedGenerationUtils:
         self.model = get_model(
             model_name,
             load_in_8bit=load_in_8bit,
+            use_cuda=use_cuda,
             **kwargs,
         )
         self.temp: float = temp
         self.vocab_size: int = vocab_size
+        self.use_cuda: bool = use_cuda
+        self.load_in_8bit: bool = load_in_8bit
 
     @property
     def padding_tokens(self) -> LongTensor:
         cpu_tokens = (ones(self.group_size - 1, dtype=long) * self.padding_id
                       )  # O(group_size)
-        if cuda.is_available():
+        if cuda.is_available() and self.use_cuda:
             return cpu_tokens.cuda()  # pragma: no cover
         return cpu_tokens
 
@@ -102,7 +109,7 @@ class GroupedGenerationUtils:
         """
         if not isinstance(tokens, Tensor):
             tokens = LongTensor(tokens)  # O(n)
-        if cuda.is_available():
+        if cuda.is_available() and self.use_cuda:
             tokens = tokens.cuda()  # pragma: no cover
         padded_tokens: LongTensor = cat(
             (tokens, self.padding_tokens),
@@ -117,7 +124,7 @@ class GroupedGenerationUtils:
             attention_len = self.max_input_len
         attention_mask: Tensor = ones([1, attention_len], dtype=long)
         # O(attention_len) so O(n + group_size)
-        if cuda.is_available():
+        if cuda.is_available() and self.use_cuda:
             padded_tokens = padded_tokens.cuda()  # pragma: no cover
             # O(n + group_size)
             attention_mask = attention_mask.cuda()  # pragma: no cover
@@ -206,7 +213,7 @@ class GroupedGenerationUtils:
                                self.group_size - 1)
         cpu_padded_tokens = self.pad_batch(batch, padding_length)
         cpu_attention_mask = ones([len(batch), padding_length], dtype=long)
-        if cuda.is_available():
+        if cuda.is_available() and self.use_cuda:
             padded_tokens = cpu_padded_tokens.cuda()  # pragma: no cover
             attention_mask = cpu_attention_mask.cuda()  # pragma: no cover
         else:

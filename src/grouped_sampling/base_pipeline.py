@@ -52,6 +52,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         answer_length_multiplier: float = 16,
         max_batch_size: int = 32,
         load_in_8bit: bool = True,
+        use_cuda: bool = True,
     ):
         """
         Model name: the name of the model
@@ -68,6 +69,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
             The strategy for the repetition penalty
         max_batch_size: int
             The maximum batch size to be used
+        use_cuda: bool
+            Whether to use cuda
         """
         self.answer_length_multiplier: float = answer_length_multiplier
         self.max_batch_size: int = max_batch_size
@@ -95,6 +98,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             "use_softmax": self.generation_type.requires_softmax(),
             "vocab_size": tokenizer.vocab_size,
             "load_in_8bit": load_in_8bit,
+            "use_cuda": use_cuda,
         }
         self.wrapped_model: GroupedGenerationUtils = GroupedGenerationUtils(
             **remove_nones(wrapped_model_kwargs))
