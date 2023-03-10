@@ -2,14 +2,19 @@ from __future__ import annotations
 
 from math import ceil
 from random import seed
-from typing import Any, Dict, Iterable, List, Optional, Generator
+from typing import Any, Dict, Generator, Iterable, List, Optional
 
 from torch import Tensor, manual_seed
 
 from .base_pipeline import GroupedGenerationPipeLine
 from .generation_type import GenerationType
-from .sampling_stradegy import TopPSamplingStrategy, TopKSamplingStrategy, SamplingStrategy, GreedySamplingStrategy, \
-    PureSamplingStrategy
+from .sampling_stradegy import (
+    GreedySamplingStrategy,
+    PureSamplingStrategy,
+    SamplingStrategy,
+    TopKSamplingStrategy,
+    TopPSamplingStrategy,
+)
 
 
 class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
@@ -25,11 +30,11 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
     unique_attrs = "top_k", "top_p"
 
     def __init__(
-            self,
-            *args,
-            top_k: Optional[int] = None,
-            top_p: Optional[float] = None,
-            **kwargs,
+        self,
+        *args,
+        top_k: Optional[int] = None,
+        top_p: Optional[float] = None,
+        **kwargs,
     ):
         self.top_p: Optional[float] = top_p
         self.top_k: Optional[int] = top_k
@@ -84,9 +89,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         # coping a tensor of size (group_size, vocab_size)
         # so the complexity is O(group_size)
         # (vocab_size is constant)
-        new_group: List[int] = [
-            self.sampling_func(prob_vec) for prob_vec in prob_mat
-        ]
+        new_group: List[int] = [self.sampling_func(
+            prob_vec) for prob_vec in prob_mat]
         # the complexity of the loop is O(group_size)
         # because self.sampling_func gets a tensor
         # of constant size (vocab_size,)
@@ -94,22 +98,24 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         # and the loop has group_size iterations.
         for i, token_id in enumerate(new_group):
             if token_id == self.wrapped_model.end_of_sentence_id:
-                return new_group[:i + 1]
+                return new_group[: i + 1]
                 # return the group until the end of sentence token included
                 # the complexity of this line is O(group_size)
                 # because it is coping a list with maximum size of group_size
         return new_group
 
-    def generate_group_batch(self, prob_tensor: Tensor) -> Generator[List[int], None, None]:
+    def generate_group_batch(
+        self, prob_tensor: Tensor
+    ) -> Generator[List[int], None, None]:
         """prob_tensor: tensor of shape (batch_size, group_size, vocab_size)"""
         for prob_mat in prob_tensor:
             yield self.generate_group(prob_mat)
             # the complexity of the loop is O(batch size * group_size)
 
     def _forward(
-            self,
-            tokenized_prompt: Tensor,
-            num_new_tokens: int,
+        self,
+        tokenized_prompt: Tensor,
+        num_new_tokens: int,
     ) -> List[int]:
         """
         Complexity:
@@ -131,7 +137,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
             # so the complexity of the loop is
             # O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
             prob_mat: Tensor = self.wrapped_model.get_prob_mat(
-                curr_token_list, len(tokenized_prompt))
+                curr_token_list, len(tokenized_prompt)
+            )
             # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
             # len(curr_token_list) <= n + l
             # so the complexity is
@@ -147,7 +154,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
             if self.wrapped_model.end_of_sentence_id in new_tokens:
                 # the check is O(group_size)
                 end_of_sentence_index = new_tokens.index(
-                    self.wrapped_model.end_of_sentence_id)
+                    self.wrapped_model.end_of_sentence_id
+                )
                 # O(group_size) because len(new_tokens) <= group_size
                 new_tokens = new_tokens[:end_of_sentence_index]
                 # O(group_size) because end_of_sentence_index < group_size
@@ -156,13 +164,12 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         return curr_token_list
 
     def forward_batch(
-            self,
-            tokenized_prompts: List[Tensor],
-            num_new_tokens: int,
+        self,
+        tokenized_prompts: List[Tensor],
+        num_new_tokens: int,
     ) -> List[List[int]]:
-        generation_start_indexes = [
-            len(prompt) for prompt in tokenized_prompts
-        ]
+        generation_start_indexes = [len(prompt)
+                                    for prompt in tokenized_prompts]
         curr_sequences: List[List[int]] = [
             tokenized_prompt.tolist() for tokenized_prompt in tokenized_prompts
         ]
@@ -171,16 +178,19 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
                 tokens=curr_sequences,
                 generation_start_indexes=generation_start_indexes,
             )  # tensor of shape (batch_size, group_size, vocab_size)
-            new_sequences: Iterable[List[int]] = self.generate_group_batch(
-                prob_tensor
-            )
+            new_sequences: Iterable[List[int]
+                                    ] = self.generate_group_batch(prob_tensor)
             for i, new_sequence in enumerate(new_sequences):
                 new_sequence: List[int]
                 if self.wrapped_model.end_of_sentence_id not in new_sequence:
                     if self.wrapped_model.end_of_sentence_id in new_sequence:
                         # new tokens id is the tokens before and including the end_of_sentence_id
-                        end_of_sentence_index: int = new_sequence.index(self.wrapped_model.end_of_sentence_id)
-                        new_sequence: List[int] = new_sequence[:end_of_sentence_index + 1]
+                        end_of_sentence_index: int = new_sequence.index(
+                            self.wrapped_model.end_of_sentence_id
+                        )
+                        new_sequence: List[int] = new_sequence[
+                            : end_of_sentence_index + 1
+                        ]
                     curr_sequences[i].extend(new_sequence)
         return curr_sequences
 
@@ -188,13 +198,16 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
         super_representation = super().__repr__()
         unique_representation = "/n".join(
             f"{unique_attr_name}={getattr(self, unique_attr_name)}"
-            for unique_attr_name in self.unique_attrs)
+            for unique_attr_name in self.unique_attrs
+        )
         return super_representation + unique_representation
 
     def as_dict(self) -> Dict[str, Any]:
         super_dict = super(GroupedSamplingPipeLine, self).as_dict()
-        super_dict.update({
-            unique_attr: self.__getattribute__(unique_attr)
-            for unique_attr in self.unique_attrs
-        })
+        super_dict.update(
+            {
+                unique_attr: self.__getattribute__(unique_attr)
+                for unique_attr in self.unique_attrs
+            }
+        )
         return super_dict

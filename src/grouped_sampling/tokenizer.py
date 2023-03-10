@@ -1,11 +1,11 @@
 import json
 import os
 from functools import lru_cache
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import requests
-from huggingface_hub.utils import validate_repo_id, HFValidationError
-from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig
+from huggingface_hub.utils import HFValidationError, validate_repo_id
+from transformers import AutoTokenizer, PretrainedConfig, PreTrainedTokenizer
 
 from .llama.tokenization_llama import LLaMATokenizer
 
@@ -19,7 +19,10 @@ def get_padding_id(tokenizer: PreTrainedTokenizer):
         return tokenizer.mask_token_id
     if hasattr(tokenizer, "mask_token_ids") and tokenizer.mask_token_ids is not None:
         return tokenizer.mask_token_ids[0]
-    if hasattr(tokenizer, "pad_token_type_id") and tokenizer.pad_token_type_id is not None:
+    if (
+        hasattr(tokenizer, "pad_token_type_id")
+        and tokenizer.pad_token_type_id is not None
+    ):
         return tokenizer.pad_token_type_id
     if hasattr(tokenizer, "_pad_token") and tokenizer.pad_token is not None:
         return int(tokenizer.pad_token)
@@ -40,7 +43,10 @@ def get_end_of_text_id(tokenizer: PreTrainedTokenizer, config: PretrainedConfig)
         return config.eos_token_id
     if hasattr(config, "eos_token_ids") and config.eos_token_ids is not None:
         raise RuntimeError("Could not find end of text id")
-    if hasattr(tokenizer, "_eos_token_type_id") and tokenizer.eos_token_type_id is not None:
+    if (
+        hasattr(tokenizer, "_eos_token_type_id")
+        and tokenizer.eos_token_type_id is not None
+    ):
         return tokenizer.eos_token_type_id
     if hasattr(tokenizer, "_eos_token") and tokenizer.eos_token is not None:
         return int(tokenizer.eos_token)
@@ -87,7 +93,7 @@ def is_valid_model_name(model_name: str) -> bool:
         "emo-bot",
         "sberbank-ai/rugpt3_medium_gpt2_based",
         "Grossmend/rudialogpt3_medium_based_on_gpt2",
-        "workflow"
+        "workflow",
     }:
         return False
     try:
@@ -107,7 +113,10 @@ def get_model_name_from_repo(repo_id: str) -> str:
     repo_id_no_org = repo_id.split("/")[-1]
     if model_config is not None and "_name_or_path" in model_config.keys():
         config_model_name = model_config["_name_or_path"]
-        if is_valid_model_name(config_model_name) and config_model_name != repo_id_no_org:
+        if (
+            is_valid_model_name(config_model_name)
+            and config_model_name != repo_id_no_org
+        ):
             return config_model_name
     return repo_id
 
@@ -120,30 +129,37 @@ def get_tokenizer_name_from_repo(repo_id: str) -> str:
     repo_id_no_org = repo_id.split("/")[-1]
     if tokenizer_config is not None and "name_or_path" in tokenizer_config.keys():
         config_model_name = tokenizer_config["name_or_path"]
-        if is_valid_model_name(config_model_name) and config_model_name != repo_id_no_org:
+        if (
+            is_valid_model_name(config_model_name)
+            and config_model_name != repo_id_no_org
+        ):
             return config_model_name
     return repo_id
 
 
 @lru_cache(maxsize=1)
 def get_special_cases() -> Dict[str, str]:
-    special_cases_file = os.path.join(os.path.dirname(__file__), "model_to_tokenizer.json")
+    special_cases_file = os.path.join(
+        os.path.dirname(__file__), "model_to_tokenizer.json"
+    )
     with open(special_cases_file) as f:
         return json.loads(f.read())
 
 
 # noinspection PyProtectedMember
 def get_tokenizer_name(
-        model_name: str,
+    model_name: str,
 ) -> str:
     """Returns a tokenizer name based on the model name"""
     special_cases = get_special_cases()
     if model_name in special_cases.keys():
         return special_cases[model_name]
-    if model_name.startswith("Aleksandar1932/gpt2") \
-            or model_name.startswith("Azaghast/GPT2") \
-            or model_name.startswith("SteveC/sdc_bot") \
-            or model_name.startswith("benjamin/gpt2-wechsel-"):
+    if (
+        model_name.startswith("Aleksandar1932/gpt2")
+        or model_name.startswith("Azaghast/GPT2")
+        or model_name.startswith("SteveC/sdc_bot")
+        or model_name.startswith("benjamin/gpt2-wechsel-")
+    ):
         return "gpt2"
     tokenizer_name_from_repo = get_tokenizer_name_from_repo(model_name)
     if tokenizer_name_from_repo != model_name:
@@ -155,7 +171,7 @@ def get_tokenizer_name(
 
 
 def get_tokenizer(
-        model_name: str,
+    model_name: str,
 ) -> PreTrainedTokenizer:
     """Returns a tokenizer based on the model name"""
     tokenizer_name = get_tokenizer_name(model_name)

@@ -6,8 +6,8 @@ from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 from torch import LongTensor
 
-from .config import get_config
 from .completion_dict import CompletionDict
+from .config import get_config
 from .generation_type import GenerationType
 from .generation_utils import GroupedGenerationUtils
 from .postprocessor import PostProcessor
@@ -47,8 +47,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         group_size: int,
         temp: Optional[float] = None,
         end_of_sentence_stop: Optional[bool] = None,
-        repetition_penalty_strategy:
-        RepetitionPenaltyStrategy = DEFAULT_REPETITION_PENALTY,
+        repetition_penalty_strategy: RepetitionPenaltyStrategy = DEFAULT_REPETITION_PENALTY,
         answer_length_multiplier: float = 16,
         max_batch_size: int = 32,
         load_in_8bit: bool = True,
@@ -85,7 +84,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
             max_input_len=max_input_len,
         )
         self.post_processing_strategy: PostProcessor = PostProcessor(
-            tokenizer=tokenizer, )
+            tokenizer=tokenizer,
+        )
         wrapped_model_kwargs: Dict[str, Any] = {
             "model_name": model_name,
             "group_size": group_size,
@@ -101,7 +101,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
             "use_cuda": use_cuda,
         }
         self.wrapped_model: GroupedGenerationUtils = GroupedGenerationUtils(
-            **remove_nones(wrapped_model_kwargs))
+            **remove_nones(wrapped_model_kwargs)
+        )
 
     @property
     @abstractmethod
@@ -193,8 +194,9 @@ class GroupedGenerationPipeLine(Callable, ABC):
             )
 
         # split the prompts into batches
-        prompts_batches: Iterable[List[str], None,
-                                  None] = self.split_to_batches(prompt_s)
+        prompts_batches: Iterable[List[str], None, None] = self.split_to_batches(
+            prompt_s
+        )
         answers: List[CompletionDict] = []
         # generate the batches
         for prompts_batch in prompts_batches:
@@ -210,7 +212,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
                         clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                         prefix=prefix,
                         postfix=postfix,
-                    ))
+                    )
+                )
             else:
                 answers.extend(
                     self.call_batch(
@@ -222,7 +225,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
                         clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                         prefix=prefix,
                         postfix=postfix,
-                    ))
+                    )
+                )
         return answers
 
     def call_single_prompt(
@@ -241,7 +245,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
         postfix_len: int
         prompt_len: int
         tokens, prefix_len, prompt_len, postfix_len = self.pre_processing_strategy(
-            prompt=prompt, prefix=prefix, postfix=postfix)
+            prompt=prompt, prefix=prefix, postfix=postfix
+        )
         # O(len(prompt) + len(prefix) + len(postfix))
         if max_new_tokens is None:
             max_new_tokens = int(prompt_len * self.answer_length_multiplier)
@@ -332,8 +337,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
         ) = self.pre_processing_strategy.call_batch(prompts, prefix, postfix)
 
         if max_new_tokens is None:
-            max_new_tokens = int(
-                max(prompts_lengths) * self.answer_length_multiplier)
+            max_new_tokens = int(max(prompts_lengths) *
+                                 self.answer_length_multiplier)
 
         # generate the sequences
         generated_sequences: List[List[int]] = self.forward_batch(
@@ -352,15 +357,17 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 return_text=return_text,
                 return_full_text=return_full_text,
                 clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-            ) for generated_sequence, prompt_length in zip(
+            )
+            for generated_sequence, prompt_length in zip(
                 generated_sequences,
                 prompts_lengths,
             )
         ]
 
     def __repr__(self):
-        attrs_description = ", ".join(f"{attr}={getattr(self, attr)}"
-                                      for attr in self.descriptive_attrs)
+        attrs_description = ", ".join(
+            f"{attr}={getattr(self, attr)}" for attr in self.descriptive_attrs
+        )
         return f"{self.__class__.__name__}: " + attrs_description
 
     def __str__(self):
@@ -390,8 +397,9 @@ class GroupedGenerationPipeLine(Callable, ABC):
         return cls(**my_dict)
 
     @abstractmethod
-    def forward_batch(self, tokenized_prompts: List[LongTensor],
-                      num_new_tokens: int) -> List[TokenIDS]:
+    def forward_batch(
+        self, tokenized_prompts: List[LongTensor], num_new_tokens: int
+    ) -> List[TokenIDS]:
         """Generates a batch of sequences"""
         return [
             self._forward(tokenized_prompt, num_new_tokens)
@@ -399,7 +407,8 @@ class GroupedGenerationPipeLine(Callable, ABC):
         ]
 
     def split_to_batches(
-            self, prompts: Iterable[str]) -> Generator[List[str], None, None]:
+        self, prompts: Iterable[str]
+    ) -> Generator[List[str], None, None]:
         """Splits the prompts into batches"""
         curr_batch = []
         for prompt in prompts:

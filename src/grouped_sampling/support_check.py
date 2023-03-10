@@ -25,12 +25,13 @@ def get_unsupported_model_names() -> Set[str]:
 def get_unsupported_organization_names() -> Set[str]:
     """returns the set of unsupported organization names"""
     this_file_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(this_file_dir, "unsupported_organizations.txt"),
-              "r") as f:
+    with open(os.path.join(this_file_dir, "unsupported_organizations.txt"), "r") as f:
         return set(f.read().splitlines())
 
 
-def model_info_filter(model_info: ModelInfo, ) -> Optional[str]:
+def model_info_filter(
+    model_info: ModelInfo,
+) -> Optional[str]:
     """returns True if the model is supported, False otherwise"""
     model_id = model_info.modelId
     if model_id in get_unsupported_model_names():
@@ -54,8 +55,7 @@ def get_full_models_list() -> List[str]:
             func=model_info_filter,
         )
     return [
-        model_name for model_name in supported_model_names
-        if model_name is not None
+        model_name for model_name in supported_model_names if model_name is not None
     ]
 
 
@@ -69,12 +69,13 @@ def unsupported_model_name_error_message(model_name: str) -> str:
         And they are not a santacoder mt0 or an 8bit model."""
 
 
-def is_supported(model_name: str, ) -> bool:
+def is_supported(
+    model_name: str,
+) -> bool:
     return model_name in get_full_models_list()
 
 
 class UnsupportedModelNameException(Exception):
-
     def __init__(self, model_name: str):
         super().__init__(unsupported_model_name_error_message(model_name))
 
