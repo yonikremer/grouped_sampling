@@ -9,7 +9,7 @@ from twine.settings import Settings
 
 PROJECT_DIR = os.path.dirname(os.path.realpath(__file__))
 SOURCE_DIR = os.path.abspath(os.path.join(PROJECT_DIR, "src"))
-TOML_FILE_PATH = os.path.join(SOURCE_DIR, "src/pyproject.toml")
+TOML_FILE_PATH = os.path.join(SOURCE_DIR, "pyproject.toml")
 
 
 def version_file_name(version: str) -> str:
