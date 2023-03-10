@@ -31,19 +31,14 @@ TEST_PIPELINE = GroupedSamplingPipeLine(
     top_p=None,
     temp=TEMPERATURES[0],
     answer_length_multiplier=1.0,
+    load_in_8bit=False,
+    use_cuda=False,
 )
 
 
 def create_pipelines(
 ) -> Generator[GroupedGenerationPipeLine, None, None]:
-    top_k_sampling_gen = GroupedSamplingPipeLine(
-        model_name=MODEL_NAME,
-        group_size=GROUP_SIZES[0],
-        top_k=TOP_KS[0],
-        top_p=None,
-        temp=TEMPERATURES[0],
-        answer_length_multiplier=1.0,
-    )
+    top_k_sampling_gen = TEST_PIPELINE
     for top_k in TOP_KS:
         top_k_sampling_gen.top_k = top_k
         yield top_k_sampling_gen
@@ -55,6 +50,8 @@ def create_pipelines(
         top_p=TOP_PS[1],
         temp=TEMPERATURES[0],
         answer_length_multiplier=1.0,
+        load_in_8bit=False,
+        use_cuda=False,
     )
     for top_p in TOP_PS:
         top_p_sampling_gen.top_p = top_p
@@ -68,6 +65,8 @@ def create_pipelines(
         temp=TEMPERATURES[1],
         answer_length_multiplier=1.0,
         repetition_penalty_strategy=NoRepetitionPenalty(),
+        load_in_8bit=False,
+        use_cuda=False,
     )
 
     for top_k in TOP_KS:

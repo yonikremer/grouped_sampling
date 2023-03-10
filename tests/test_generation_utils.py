@@ -19,6 +19,7 @@ def create_wrapped_models() -> List[GroupedGenerationUtils]:
         repetition_penalty_strategy=DEFAULT_REPETITION_PENALTY,
         end_of_sentence_id=50256,
         padding_id=0,
+        load_in_8bit=False,
     )
     return [wrapped_model_example1]
 
