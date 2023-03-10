@@ -1,9 +1,10 @@
 from typing import Generator
 
 import pytest
-from transformers import AutoTokenizer, PreTrainedTokenizer
+from transformers import PreTrainedTokenizer
 
 from src.grouped_sampling.base_pipeline import get_padding_id
+from src.grouped_sampling.tokenizer import get_tokenizer
 
 
 def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:
@@ -18,7 +19,7 @@ def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:
         "sberbank-ai/rugpt3large_based_on_gpt2",
     ]
     for tokenizer_name in tokenizer_names:
-        yield AutoTokenizer.from_pretrained(tokenizer_name)
+        yield get_tokenizer(tokenizer_name)
 
 
 @pytest.mark.parametrize("tokenizer", create_tokenizers())
