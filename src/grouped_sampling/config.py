@@ -1,6 +1,6 @@
 from transformers import AutoConfig, PretrainedConfig
 
-from src.grouped_sampling.llama.configuration_llama import LLaMAConfig
+from .llama.configuration_llama import LLaMAConfig
 
 
 def get_config(

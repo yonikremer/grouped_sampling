@@ -8,7 +8,7 @@ from cache_to_disk import cache_to_disk, delete_disk_caches_for_function
 from huggingface_hub.utils import validate_repo_id, HFValidationError
 from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig
 
-from src.grouped_sampling.llama.tokenization_llama import LLaMATokenizer
+from .llama.tokenization_llama import LLaMATokenizer
 
 
 def get_padding_id(tokenizer: PreTrainedTokenizer):
