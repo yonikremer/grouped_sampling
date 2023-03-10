@@ -181,7 +181,6 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
                         # new tokens id is the tokens before and including the end_of_sentence_id
                         end_of_sentence_index: int = new_sequence.index(self.wrapped_model.end_of_sentence_id)
                         new_sequence: List[int] = new_sequence[:end_of_sentence_index + 1]
-                        assert new_sequence[-1] == self.wrapped_model.end_of_sentence_id
                     curr_sequences[i].extend(new_sequence)
         return curr_sequences
 
