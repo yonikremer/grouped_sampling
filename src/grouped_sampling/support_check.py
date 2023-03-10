@@ -3,7 +3,6 @@ import os
 from functools import lru_cache
 from typing import Iterable, List, Optional, Set
 
-from cache_to_disk import cache_to_disk, delete_disk_caches_for_function
 from huggingface_hub import ModelFilter, hf_api
 from huggingface_hub.hf_api import ModelInfo
 
@@ -43,12 +42,12 @@ def model_info_filter(model_info: ModelInfo, ) -> Optional[str]:
     return model_id
 
 
-@cache_to_disk(n_days_to_cache=30)
 def get_full_models_list() -> List[str]:
-    models: Iterable[ModelInfo] = hf_api.list_models(filter=ModelFilter(
+    model_filter = ModelFilter(
         task="text-generation",
         library="pytorch",
-    ), )
+    )
+    models: Iterable[ModelInfo] = hf_api.list_models(filter=model_filter)
     with multiprocessing.Pool() as pool:
         supported_model_names = pool.map(
             iterable=models,
@@ -70,7 +69,6 @@ def unsupported_model_name_error_message(model_name: str) -> str:
         And they are not a santacoder mt0 or an 8bit model."""
 
 
-@cache_to_disk(n_days_to_cache=30)
 def is_supported(model_name: str, ) -> bool:
     return model_name in get_full_models_list()
 

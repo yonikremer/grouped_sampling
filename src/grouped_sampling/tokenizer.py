@@ -4,7 +4,6 @@ from functools import lru_cache
 from typing import Optional, Dict
 
 import requests
-from cache_to_disk import cache_to_disk, delete_disk_caches_for_function
 from huggingface_hub.utils import validate_repo_id, HFValidationError
 from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig
 
@@ -134,7 +133,6 @@ def get_special_cases() -> Dict[str, str]:
 
 
 # noinspection PyProtectedMember
-@cache_to_disk(n_days_to_cache=100)
 def get_tokenizer_name(
         model_name: str,
 ) -> str:
@@ -170,8 +168,3 @@ def get_tokenizer(
         tokenizer_name,
         trust_remote_code=True,
     )
-
-
-def clear_disk_cache():
-    """Clears all cache"""
-    delete_disk_caches_for_function("get_tokenizer_name")
