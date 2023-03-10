@@ -1,11 +1,10 @@
 import json
 import os
-import re
 from functools import lru_cache
 from typing import Optional, Dict
 
 import requests
-from cache_to_disk.cache_to_disk import cache_to_disk
+from cache_to_disk import cache_to_disk, delete_disk_caches_for_function
 from huggingface_hub.utils import validate_repo_id, HFValidationError
 from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig
 
@@ -145,7 +144,8 @@ def get_tokenizer_name(
         return special_cases[model_name]
     if model_name.startswith("Aleksandar1932/gpt2") \
             or model_name.startswith("Azaghast/GPT2") \
-            or model_name.startswith("SteveC/sdc_bot"):
+            or model_name.startswith("SteveC/sdc_bot") \
+            or model_name.startswith("benjamin/gpt2-wechsel-"):
         return "gpt2"
     tokenizer_name_from_repo = get_tokenizer_name_from_repo(model_name)
     if tokenizer_name_from_repo != model_name:
@@ -161,7 +161,7 @@ def get_tokenizer(
 ) -> PreTrainedTokenizer:
     """Returns a tokenizer based on the model name"""
     tokenizer_name = get_tokenizer_name(model_name)
-    if re.match(r"decapoda-research/llama-\d+b-hf", tokenizer_name):
+    if "llama" in tokenizer_name.lower():
         return LLaMATokenizer.from_pretrained(
             "decapoda-research/llama-13b-hf",
             trust_remote_code=True,
@@ -170,3 +170,8 @@ def get_tokenizer(
         tokenizer_name,
         trust_remote_code=True,
     )
+
+
+def clear_disk_cache():
+    """Clears all cache"""
+    delete_disk_caches_for_function("get_tokenizer_name")

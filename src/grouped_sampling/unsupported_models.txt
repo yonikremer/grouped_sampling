@@ -1,7 +1,6 @@
 ykilcher/gpt-4chan
 openai-gpt
 google/reformer-enwik8
-google/reformer-crime-and-punishment
 CarperAI/openai_summarize_tldr_ppo
 bigscience/distill-bloom-1b3-10x
 bigscience/distill-bloom-1b3
