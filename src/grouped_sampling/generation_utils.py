@@ -101,11 +101,13 @@ class GroupedGenerationUtils:
         Complexity: O(group_size + n) where n is the number of batch
         """
         if not isinstance(tokens, Tensor):
-            tokens = Tensor(tokens)  # O(n)
+            tokens = LongTensor(tokens)  # O(n)
         if cuda.is_available():
             tokens = tokens.cuda()  # pragma: no cover
-        padded_tokens: Tensor = cat((tokens, self.padding_tokens),
-                                    dim=0).unsqueeze(0)
+        padded_tokens: LongTensor = cat(
+            (tokens, self.padding_tokens),
+            dim=0
+        ).unsqueeze(0)
         # the target_length of padded_tokens is n + group_size - 1
         # so creating it is O(n + group_size)
         attention_len = padded_tokens.shape[1]  # n + group_size - 1
