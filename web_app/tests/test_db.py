@@ -1,10 +1,10 @@
 """This file contains all the tests for the database."""
 from sqlite3 import Connection
 
+from flask import Flask, g
 from pytest import mark
 
-from web_app.flaskr.database import get_db, close_db
-from flask import Flask, g
+from web_app.flaskr.database import close_db, get_db
 
 
 def test_and_get_close_db(app: Flask):

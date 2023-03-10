@@ -16,10 +16,8 @@ def view_all():
     my_db: Connection = get_db()
     query = "SELECT created, model_name, username FROM model m JOIN user u ON m.user_id = u.id ORDER BY created DESC"
     df = pd.read_sql_query(query, my_db)
-    html_table = df.to_html(classes="data",
-                            header="true",
-                            border=0,
-                            index=False)
+    html_table = df.to_html(
+        classes="data", header="true", border=0, index=False)
     return render_template("model/view_all.html", table=html_table)
 
 
@@ -37,15 +35,16 @@ def get_model_id(my_model_name: str) -> int:
     """Adds a model to the database if it doesn't exist already and returns the id of the model"""
     my_db = get_db()
     # Check if the model already exists
-    model_row: Row = my_db.execute("SELECT id FROM model WHERE model_name=?",
-                                   (my_model_name, )).fetchone()
+    model_row: Row = my_db.execute(
+        "SELECT id FROM model WHERE model_name=?", (my_model_name,)
+    ).fetchone()
     model_id = model_row["id"] if model_row else None
     my_db.commit()
     if model_id is None:
         add_model_to_db(my_model_name, my_db)
         model_row: Row = my_db.execute(
-            "SELECT id FROM model WHERE model_name=?",
-            (my_model_name, )).fetchone()
+            "SELECT id FROM model WHERE model_name=?", (my_model_name,)
+        ).fetchone()
         model_id = model_row["id"] if model_row else None
     if not isinstance(model_id, int):
         raise TypeError("model_id is not an int")

@@ -2,15 +2,15 @@ from warnings import warn
 
 from torch import cuda
 from torch.cuda import OutOfMemoryError
-from transformers import PreTrainedModel, AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, PreTrainedModel
 
 from .llama.modeling_llama import LLaMAModel
 
 
 def get_model(
-        model_name: str,
-        load_in_8bit: bool = True,
-        **kwargs,
+    model_name: str,
+    load_in_8bit: bool = True,
+    **kwargs,
 ) -> PreTrainedModel:
     try:
         model = AutoModelForCausalLM.from_pretrained(

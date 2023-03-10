@@ -17,10 +17,9 @@ from typing import TYPE_CHECKING
 from transformers.utils import (
     OptionalDependencyNotAvailable,
     _LazyModule,
-    is_torch_available,
     is_sentencepiece_available,
+    is_torch_available,
 )
-
 
 _import_structure = {
     "configuration_llama": ["LLAMA_PRETRAINED_CONFIG_ARCHIVE_MAP", "LLaMAConfig"],
@@ -46,7 +45,6 @@ else:
         "LLaMAPreTrainedModel",
     ]
 
-
 if TYPE_CHECKING:
     from .configuration_llama import LLAMA_PRETRAINED_CONFIG_ARCHIVE_MAP, LLaMAConfig
 
@@ -64,14 +62,12 @@ if TYPE_CHECKING:
     except OptionalDependencyNotAvailable:
         pass
     else:
-        from .modeling_llama import (
-            LLaMAForCausalLM,
-            LLaMAModel,
-            LLaMAPreTrainedModel,
-        )
-
+        from .modeling_llama import LLaMAForCausalLM, LLaMAModel, LLaMAPreTrainedModel
 
 else:
     import sys
 
-    sys.modules[__name__] = _LazyModule(__name__, globals()["__file__"], _import_structure, module_spec=__spec__)
+    sys.modules[__name__] = _LazyModule(
+        __name__, globals()[
+            "__file__"], _import_structure, module_spec=__spec__
+    )

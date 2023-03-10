@@ -1,15 +1,14 @@
 import os.path
-from typing import Set, List
-import pip
+from typing import List, Set
 
+import pip
 import pytest
 from tqdm import tqdm
 
-
+from src.grouped_sampling.base_pipeline import get_end_of_text_id, get_padding_id
 from src.grouped_sampling.config import get_config
 from src.grouped_sampling.sampling_pipeline import GroupedSamplingPipeLine
-from src.grouped_sampling.base_pipeline import get_padding_id, get_end_of_text_id
-from src.grouped_sampling.support_check import is_supported, get_full_models_list
+from src.grouped_sampling.support_check import get_full_models_list, is_supported
 from src.grouped_sampling.tokenizer import get_tokenizer
 
 
@@ -35,7 +34,8 @@ def test_is_supported_method(model_name: str):
 @pytest.mark.parametrize("model_name", get_tested_model_names())
 def test_pipeline_creation(model_name: str):
     pipeline: GroupedSamplingPipeLine = GroupedSamplingPipeLine(
-        model_name=model_name, group_size=5,
+        model_name=model_name,
+        group_size=5,
         load_in_8bit=False,
     )
     assert pipeline is not None
@@ -47,15 +47,13 @@ def test_pipeline_creation(model_name: str):
 def get_dependency_name(error: ImportError) -> str:
     """Gets the error and returns the name of the missing dependency.
     The error format is usually:
-     ModuleNotFoundError/ImportError: You need to install dependency_name to use x or x"""
+     ModuleNotFoundError/ImportError: You need to install dependency_name to use x or x
+    """
     string_error = str(error)
     return string_error.split("You need to install ")[1].split(" to use")[0]
 
 
-@pytest.mark.parametrize(
-    "model_name",
-    tqdm(get_full_models_list())
-)
+@pytest.mark.parametrize("model_name", tqdm(get_full_models_list()))
 def test_supported_tokenizers(model_name: str):
     print("testing model name: ", model_name)
     try:
@@ -80,10 +78,8 @@ def test_supported_tokenizers(model_name: str):
 
 def get_unsupported_tokenizers() -> List[str]:
     unsupported_tokenizers_file = os.path.join(
-        os.path.dirname(
-            os.path.dirname(__file__)
-        ),
-        "src/grouped_sampling/unsupported_models.txt"
+        os.path.dirname(os.path.dirname(__file__)),
+        "src/grouped_sampling/unsupported_models.txt",
     )
     with open(unsupported_tokenizers_file, "r") as f:
         return f.read().splitlines()
@@ -91,10 +87,8 @@ def get_unsupported_tokenizers() -> List[str]:
 
 def remove_from_unsupported_tokenizers(tokenizer_name: str):
     unsupported_tokenizers_file = os.path.join(
-        os.path.dirname(
-            os.path.dirname(__file__)
-        ),
-        "src/grouped_sampling/unsupported_models.txt"
+        os.path.dirname(os.path.dirname(__file__)),
+        "src/grouped_sampling/unsupported_models.txt",
     )
     with open(unsupported_tokenizers_file, "r") as f:
         lines = f.read().splitlines()
@@ -104,10 +98,7 @@ def remove_from_unsupported_tokenizers(tokenizer_name: str):
                 f.write(line + "\n")
 
 
-@pytest.mark.parametrize(
-    "tokenizer_name",
-    get_unsupported_tokenizers()
-)
+@pytest.mark.parametrize("tokenizer_name", get_unsupported_tokenizers())
 def test_unsupported_tokenizers(tokenizer_name: str):
     try:
         test_supported_tokenizers(tokenizer_name)
