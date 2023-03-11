@@ -29,20 +29,20 @@ class GroupedGenerationUtils:
     )
 
     def __init__(
-            self,
-            model_name: str,
-            group_size: int,
-            max_input_len: int,
-            end_of_sentence_id: int,
-            padding_id: int,
-            vocab_size: int,
-            repetition_penalty_strategy: RepetitionPenaltyStrategy,
-            end_of_sentence_stop: bool = True,
-            temp: float = 1.0,
-            use_softmax: bool = True,
-            load_in_8bit: bool = True,
-            use_cuda: bool = True,
-            **kwargs,
+        self,
+        model_name: str,
+        group_size: int,
+        max_input_len: int,
+        end_of_sentence_id: int,
+        padding_id: int,
+        vocab_size: int,
+        repetition_penalty_strategy: RepetitionPenaltyStrategy,
+        end_of_sentence_stop: bool = True,
+        temp: float = 1.0,
+        use_softmax: bool = True,
+        load_in_8bit: bool = True,
+        use_cuda: bool = True,
+        **kwargs,
     ):
         """
         initializes the model wrapper
@@ -111,10 +111,8 @@ class GroupedGenerationUtils:
             tokens = LongTensor(tokens)  # O(n)
         if cuda.is_available() and self.use_cuda:
             tokens = tokens.cuda()  # pragma: no cover
-        padded_tokens: LongTensor = cat(
-            (tokens, self.padding_tokens),
-            dim=0
-        ).unsqueeze(0)
+        padded_tokens: LongTensor = cat((tokens, self.padding_tokens),
+                                        dim=0).unsqueeze(0)
         # the target_length of padded_tokens is n + group_size - 1
         # so creating it is O(n + group_size)
         attention_len = padded_tokens.shape[1]  # n + group_size - 1
@@ -157,9 +155,11 @@ class GroupedGenerationUtils:
             # so the complexity is O(n^2 + group_size^2)
         unscaled_relevant_logits: Tensor
         if hasattr(outputs, "logits"):
-            unscaled_relevant_logits = outputs.logits[0, -self.group_size:, :self.vocab_size]
+            unscaled_relevant_logits = outputs.logits[
+                0, -self.group_size:, :self.vocab_size]
         elif hasattr(outputs, "last_hidden_state"):
-            unscaled_relevant_logits = outputs.last_hidden_state[0, -self.group_size:, :self.vocab_size]
+            unscaled_relevant_logits = outputs.last_hidden_state[
+                0, -self.group_size:, :self.vocab_size]
         else:
             raise ValueError(
                 f"model output does not contain logits or last_hidden_state\noutputs: {outputs}"
@@ -170,8 +170,7 @@ class GroupedGenerationUtils:
         # elements from one tensor to the another
         return unscaled_relevant_logits
 
-    def pad_sequence(self, sequence: TokenIDS,
-                     target_length: int) -> Tensor:
+    def pad_sequence(self, sequence: TokenIDS, target_length: int) -> Tensor:
         """
         pads the sequence with the padding token
         Args:
@@ -182,7 +181,7 @@ class GroupedGenerationUtils:
         Complexity: O(n) where n is the length of the sequence
         """
         padding_tensor: Tensor = full(
-            (target_length - len(sequence),),
+            (target_length - len(sequence), ),
             self.padding_id,
         )
         return cat((LongTensor(sequence), padding_tensor), dim=0)
@@ -246,7 +245,7 @@ class GroupedGenerationUtils:
             start_index = len(sequence) - 1
             end_index = len(sequence) + self.group_size - 1
             curr_relevant_logits = all_logits[
-                                   i, start_index:end_index, :self.vocab_size, ]
+                i, start_index:end_index, :self.vocab_size, ]
             un_squeezed_logits = curr_relevant_logits.unsqueeze(0)
             unscaled_relevant_logits.append(un_squeezed_logits)
 
@@ -265,7 +264,8 @@ class GroupedGenerationUtils:
         unscaled_relevant_logits = self.get_logit_mat_batch(tokens)
         if not self.end_of_sentence_stop:
             try:
-                unscaled_relevant_logits[:, :, self.end_of_sentence_id] = -float("inf")
+                unscaled_relevant_logits[:, :, self.
+                                         end_of_sentence_id] = -float("inf")
             except IndexError as e:
                 print("unscaled_relevant_logits", unscaled_relevant_logits)
                 print("self.end_of_sentence_id", self.end_of_sentence_id)
@@ -285,7 +285,8 @@ class GroupedGenerationUtils:
         # O(n^2 + group_size^2)
         # unscaled_relevant_logits is a tensor of shape (group_size, vocab_size)
         if not self.end_of_sentence_stop:
-            unscaled_relevant_logits[:, self.end_of_sentence_id] = -float("inf")
+            unscaled_relevant_logits[:,
+                                     self.end_of_sentence_id] = -float("inf")
             # setting a vector of size vocab_size
             # so the complexity is O(group_size)
             # setting the logits to -inf so the probability will be 0
