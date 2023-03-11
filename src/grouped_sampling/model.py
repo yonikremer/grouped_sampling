@@ -19,6 +19,7 @@ def get_model(
             "pretrained_model_name_or_path": model_name,
             "load_in_8bit": using_8bit,
             "device_map": "auto",
+            "resume_download": True,
             ** kwargs,
         }
     else:
