@@ -156,8 +156,14 @@ class GroupedGenerationUtils:
             # we now that if a > b and a, b > 1 then a^2 > ab
             # so the complexity is O(n^2 + group_size^2)
         unscaled_relevant_logits: Tensor
-        unscaled_relevant_logits = outputs.logits[
-                                   0, -self.group_size:, :self.vocab_size]
+        if hasattr(outputs, "logits"):
+            unscaled_relevant_logits = outputs.logits[0, -self.group_size:, :self.vocab_size]
+        elif hasattr(outputs, "last_hidden_state"):
+            unscaled_relevant_logits = outputs.last_hidden_state[0, -self.group_size:, :self.vocab_size]
+        else:
+            raise ValueError(
+                f"model output does not contain logits or last_hidden_state\noutputs: {outputs}"
+            )
         # The shape of unscaled_relevant_logits is (group_size, vocab_size)
         # So the complexity of this line should be
         # O(group_size) because we are coping group_size * vocab_size
