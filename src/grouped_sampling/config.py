@@ -16,6 +16,5 @@ def get_config(
         if "llama" in model_name.lower():
             return LLaMAConfig.from_pretrained(
                 model_name,
-                trust_remote_code=True,
             )
         raise e

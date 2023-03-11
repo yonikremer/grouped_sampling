@@ -162,7 +162,6 @@ def get_tokenizer(
     if "llama" in tokenizer_name.lower():
         return LLaMATokenizer.from_pretrained(
             "decapoda-research/llama-13b-hf",
-            trust_remote_code=True,
         )
     return AutoTokenizer.from_pretrained(
         tokenizer_name,
