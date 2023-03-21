@@ -40,16 +40,16 @@ def index():
     """The page with all the completions"""
     my_db: Connection = get_db()
     # Execute a SQL query and return the results
-    query = "SELECT " \
-            "username, c.created, prompt, answer, num_tokens, model_name," \
-            " group_size, generation_type, top_p, top_k, temperature " \
-            "FROM " \
-            "completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id  ORDER BY c.created"
+    query = (
+        "SELECT "
+        "username, c.created, prompt, answer, num_tokens, model_name,"
+        " group_size, generation_type, top_p, top_k, temperature "
+        "FROM "
+        "completion c JOIN user u ON c.user_id = u.id JOIN model m ON c.model_id = m.id  ORDER BY c.created"
+    )
     df = pd.read_sql_query(query, my_db)
-    html_table = df.to_html(classes="data",
-                            header="true",
-                            border=0,
-                            index=False)
+    html_table = df.to_html(
+        classes="data", header="true", border=0, index=False)
     return render_template("completion/index.html", table=html_table)
 
 
@@ -117,15 +117,16 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
     }
 
     if new_request["generation_type"] in generation_type_names_to_classes:
-        new_request[
-            "generation_type_class"] = generation_type_names_to_classes[
+        new_request["generation_type_class"] = generation_type_names_to_classes[
             new_request["generation_type"]
         ]
     else:
-        raise ValueError(f"generation_type must be either one of"
-                         f" {generation_type_names_to_classes.keys()}, "
-                         f"got: {new_request['generation_type']}"
-                         f"the full request is {old_request}")
+        raise ValueError(
+            f"generation_type must be either one of"
+            f" {generation_type_names_to_classes.keys()}, "
+            f"got: {new_request['generation_type']}"
+            f"the full request is {old_request}"
+        )
     return new_request
 
 
@@ -144,9 +145,7 @@ def create():
             error = unsupported_model_name_error_message(
                 raw_request["model_name"])
             return render_template("completion/create.html", error=error)
-        pipeline: GroupedGenerationPipeLine = raw_request[
-            "generation_type_class"
-        ](
+        pipeline: GroupedGenerationPipeLine = raw_request["generation_type_class"](
             load_in_8bit=False,
             model_name=raw_request["model_name"],
             group_size=raw_request["group_size"],
