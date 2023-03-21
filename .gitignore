@@ -166,3 +166,6 @@ model/.idea/sonarlint/
 
 #offload
 /tests/offload/
+
+# ISEF 2023
+/documents/ISEF2023/
