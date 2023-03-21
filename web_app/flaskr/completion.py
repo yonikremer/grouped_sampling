@@ -119,7 +119,7 @@ def preprocess_create_form(old_request: ImmutableMultiDict) -> Dict[str, Any]:
     if new_request["generation_type"] in generation_type_names_to_classes:
         new_request[
             "generation_type_class"] = generation_type_names_to_classes[
-                new_request["generation_type"]
+            new_request["generation_type"]
         ]
     else:
         raise ValueError(f"generation_type must be either one of"
@@ -144,15 +144,17 @@ def create():
             error = unsupported_model_name_error_message(
                 raw_request["model_name"])
             return render_template("completion/create.html", error=error)
-        text_generator: GroupedGenerationPipeLine = raw_request[
-            "generation_type_class"](
-                model_name=raw_request["model_name"],
-                group_size=raw_request["group_size"],
-                top_p=raw_request["top_p"],
-                top_k=raw_request["top_k"],
-                temp=raw_request["temperature"],
+        pipeline: GroupedGenerationPipeLine = raw_request[
+            "generation_type_class"
+        ](
+            load_in_8bit=False,
+            model_name=raw_request["model_name"],
+            group_size=raw_request["group_size"],
+            top_p=raw_request["top_p"],
+            top_k=raw_request["top_k"],
+            temp=raw_request["temperature"],
         )
-        raw_answer: CompletionDict = text_generator(
+        raw_answer: CompletionDict = pipeline(
             prompt_s=raw_request["prompt"],
             max_new_tokens=raw_request["num_tokens"],
             return_text=True,
@@ -164,7 +166,7 @@ def create():
             prompt=raw_request["prompt"],
             answer=answer,
             num_tokens=raw_request["num_tokens"],
-            generator=text_generator,
+            generator=pipeline,
         )
         add_comp_to_db(completion)
         return redirect(url_for("completion.index"))
