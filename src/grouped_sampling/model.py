@@ -9,7 +9,7 @@ from .llama.modeling_llama import LLaMAForCausalLM
 
 def get_model(
         model_name: str,
-        load_in_8bit: bool = True,
+        load_in_8bit: bool = False,
         use_cuda: bool = True,
         **kwargs,
 ) -> PreTrainedModel:
