@@ -19,4 +19,3 @@ from .support_check import (
     unsupported_model_name_error_message,
 )
 from .token_ids import TokenIDS
-from .tree_pipeline import GroupedTreePipeLine
