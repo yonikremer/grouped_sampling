@@ -1,12 +1,17 @@
-# Grouped Sampling - Efficient Use Of Causal Language Models
+# A Single Usage Is All You Need
 
-## My high school research project in computer science.
+## Awards:
+
+### [Israeli Young Scientist and Developer Contest 2023](https://www.youngscientistsisrael.com/projects/dgymh-bqbvtsvt-shymvsh-y-yl-bmvdly-shph-sybtyym-causal-language-models) - 1st place
+
+### The project will compete in [Regeneron ISEF 2023](https://www.societyforscience.org/isef/) in May
+
+### 5 credit points of high school credit in computer science
 
 # The research question:
 > Can we use generate n tokens using less than n calls to a Causal Language model?
 > If yes, How? 
 > How the text generated in this way differs from the text generated using n calls?
-> If no, Why?
 
 
 # The Answer:
@@ -21,7 +26,7 @@ The algorithm succeeded more than the existing alternative in the experiments.
 
 # Using Grouped Sampling:
 
-1. Make sure You have python 3 (3.9+ is recommended).
+1. Make sure You have python 3 (3.10+ is recommended).
 2. Make sure You have a fast internet connection
 3. Run: `python -m pip install -q grouped-sampling`
 4. `from grouped_sampling.sampling_generator import GroupedSamplingPipeLine`
@@ -54,8 +59,3 @@ All are available in the documents folder
 ### The Algorithm Itself:
 You can install it using `python -m pip install -q grouped-sampling`
 All of the code is under the src/grouped_sampling
-
-### The Demo
-Are a simple user interfaces for the algorithm.
-To run the demo on colab:
-enter [This Link](https://colab.research.google.com/github/yonikremer/final_project/blob/master/colab_demo.ipynb) and run all the cells.
