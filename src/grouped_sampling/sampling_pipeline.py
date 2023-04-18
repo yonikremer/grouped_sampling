@@ -131,7 +131,8 @@ class GroupedSamplingPipeLine(GroupedGenerationPipeLine):
             # so the complexity of the loop is
             # O((n ^ 3) / group_size + (n * l ^ 2) / group_size + group_size + n)
             prob_mat: Tensor = self.wrapped_model.get_prob_mat(
-                curr_token_list, len(tokenized_prompt))
+                curr_token_list, len(tokenized_prompt)
+            )
             # complexity: O(group_size ^ 2 + len(curr_token_list) ^ 2)
             # len(curr_token_list) <= n + l
             # so the complexity is
