@@ -21,7 +21,6 @@ Code Analysis:
 - If `use_cuda` is False or CUDA is not available, the function issues a warning and uses the CPU. 
 - The function returns the loaded model.
 """
-
 """
 Test Plan:
 - test_load_default_model(): tests loading a pre-trained language model with default arguments. Tags: [happy path]
@@ -37,6 +36,7 @@ Additional instructions:
 
 
 class TestGetModel:
+
     def test_load_default_model(self):
         model = get_model("gpt2")
         assert isinstance(model, PreTrainedModel)
