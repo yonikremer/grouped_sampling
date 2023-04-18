@@ -9,9 +9,7 @@ from torch import Tensor, equal
 from src.grouped_sampling import (
     GroupedGenerationPipeLine,
     GroupedSamplingPipeLine,
-    GroupedTreePipeLine,
     CompletionDict,
-    NoRepetitionPenalty,
 )
 
 MODEL_NAME = "gpt2"
@@ -56,24 +54,6 @@ def create_pipelines(
     for top_p in TOP_PS:
         top_p_sampling_gen.top_p = top_p
         yield top_p_sampling_gen
-
-    curr_tree_gen = GroupedTreePipeLine(
-        model_name=MODEL_NAME,
-        group_size=GROUP_SIZES[0],
-        top_k=TOP_KS[1],
-        top_p=TOP_PS[1],
-        temp=TEMPERATURES[1],
-        answer_length_multiplier=1.0,
-        repetition_penalty_strategy=NoRepetitionPenalty(),
-        load_in_8bit=False,
-        use_cuda=False,
-    )
-
-    for top_k in TOP_KS:
-        curr_tree_gen.top_k = top_k
-        for top_p in TOP_PS:
-            curr_tree_gen.top_p = top_p
-            yield curr_tree_gen
 
 
 def test_initialization():
