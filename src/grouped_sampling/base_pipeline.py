@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 from torch import LongTensor
+from transformers import AutoConfig
 
 from .completion_dict import CompletionDict
 from .generation_type import GenerationType
