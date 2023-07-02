@@ -10,6 +10,7 @@ from transformers import AutoConfig
 from .completion_dict import CompletionDict
 from .generation_type import GenerationType
 from .generation_utils import GroupedGenerationUtils
+from .model import get_model
 from .postprocessor import PostProcessor
 from .preprocessor import PreProcessor
 from .repetition_penalty import DEFAULT_REPETITION_PENALTY, RepetitionPenaltyStrategy
@@ -90,7 +91,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         self.post_processing_strategy: PostProcessor = PostProcessor(
             tokenizer=tokenizer, )
         wrapped_model_kwargs: Dict[str, Any] = {
-            "model_name": model_name,
+            "model": get_model(model_name),
             "group_size": group_size,
             "max_input_len": max_input_len,
             "end_of_sentence_id": end_of_sentence_id,

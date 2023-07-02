@@ -3,10 +3,9 @@ from warnings import warn
 
 from torch import LongTensor, Tensor, cat, cuda, full, long, no_grad, ones
 from torch.nn import Softmax
+from transformers import AutoModelForCausalLM
 
-from .model import get_model
 from .repetition_penalty import RepetitionPenaltyStrategy
-from .support_check import check_support
 from .token_ids import TokenIDS
 
 
@@ -30,7 +29,7 @@ class GroupedGenerationUtils:
 
     def __init__(
             self,
-            model_name: str,
+            model: AutoModelForCausalLM,
             group_size: int,
             max_input_len: int,
             end_of_sentence_id: int,
@@ -65,11 +64,11 @@ class GroupedGenerationUtils:
             **kwargs: the arguments to be passed to the model
         Complexity: O(1)
         """
-        check_support(model_name)
         self.use_softmax: bool = use_softmax
         self.end_of_sentence_id: int = end_of_sentence_id
         self.repetition_penalty_strategy: RepetitionPenaltyStrategy = (
-            repetition_penalty_strategy)
+            repetition_penalty_strategy
+        )
         self.group_size: int = group_size
         self.max_input_len: int = max_input_len
         if max_input_len <= group_size:
@@ -79,12 +78,7 @@ class GroupedGenerationUtils:
                              f" group_size: {group_size}")
         self.padding_id: int = padding_id
         self.end_of_sentence_stop: bool = end_of_sentence_stop
-        self.model = get_model(
-            model_name,
-            load_in_8bit=load_in_8bit,
-            use_cuda=use_cuda,
-            **kwargs,
-        )
+        self.model = model
         self.temp: float = temp
         self.vocab_size: int = vocab_size
         self.use_cuda: bool = use_cuda
@@ -156,8 +150,7 @@ class GroupedGenerationUtils:
             # we now that if a > b and a, b > 1 then a^2 > ab
             # so the complexity is O(n^2 + group_size^2)
         unscaled_relevant_logits: Tensor
-        unscaled_relevant_logits = outputs.logits[
-                                   0, -self.group_size:, :self.vocab_size]
+        unscaled_relevant_logits = outputs.logits[0, -self.group_size:, :self.vocab_size]
         # The shape of unscaled_relevant_logits is (group_size, vocab_size)
         # So the complexity of this line should be
         # O(group_size) because we are coping group_size * vocab_size
