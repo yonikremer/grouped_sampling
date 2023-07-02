@@ -2,8 +2,8 @@ from typing import Dict, Iterable, List
 from warnings import warn
 
 from torch import LongTensor, Tensor, cat, cuda, full, long, no_grad, ones
+from torch._dynamo import OptimizedModule
 from torch.nn import Softmax
-from transformers import PreTrainedModel
 
 from .repetition_penalty import RepetitionPenaltyStrategy
 from .token_ids import TokenIDS
@@ -25,9 +25,14 @@ class GroupedGenerationUtils:
         "use_cuda",
     )
 
+    base_model_args = {
+        "output_attentions": False,
+        "output_hidden_states": False,
+    }
+
     def __init__(
             self,
-            model: PreTrainedModel,
+            model: OptimizedModule,
             max_input_len: int,
             end_of_sentence_id: int,
             padding_id: int,
@@ -79,7 +84,7 @@ class GroupedGenerationUtils:
             return cpu_tokens.cuda()  # pragma: no cover
         return cpu_tokens
 
-    def prepare_model_kwargs(self, tokens: TokenIDS, output_length: int) -> Dict[str, Tensor]:
+    def prepare_model_kwargs(self, tokens: TokenIDS, output_length: int) -> Dict[str, Tensor | bool]:
         """
         preparing the arguments for the model call
         Args:
@@ -113,10 +118,10 @@ class GroupedGenerationUtils:
             # O(n + output_length)
         else:
             warn("CUDA is not available, using CPU")
-        return {
-            "input_ids": padded_tokens,
-            "attention_mask": attention_mask,
-        }
+        final_kwargs = self.base_model_args
+        final_kwargs["input_ids"] = padded_tokens
+        final_kwargs["attention_mask"] = attention_mask
+        return final_kwargs
 
     def get_logits_matrix(self, tokens: TokenIDS, output_length: int) -> Tensor:
         """
@@ -137,7 +142,6 @@ class GroupedGenerationUtils:
             # which is O(n^2 + output_length^2 + output_length * n)
             # we now that if a > b and a, b > 1 then a^2 > ab
             # so the complexity is O(n^2 + output_length^2)
-        unscaled_relevant_logits: Tensor
         unscaled_relevant_logits = outputs.logits[0, -output_length:, :self.vocab_size]
         # The shape of unscaled_relevant_logits is (output_length, vocab_size)
         # So the complexity of this line should be
@@ -182,7 +186,7 @@ class GroupedGenerationUtils:
     def prepare_model_kwargs_batch(
             self, batch: List[TokenIDS],
             output_length: int
-    ) -> Dict[str, LongTensor]:
+    ) -> Dict[str, LongTensor | bool]:
         """
         preparing the arguments for the model call
         Args:
@@ -203,7 +207,10 @@ class GroupedGenerationUtils:
             warn("CUDA is not available, using CPU")
             padded_tokens = cpu_padded_tokens
             attention_mask = cpu_attention_mask
-        return {"input_ids": padded_tokens, "attention_mask": attention_mask}
+        final_kwargs = self.base_model_args
+        final_kwargs["input_ids"] = padded_tokens
+        final_kwargs["attention_mask"] = attention_mask
+        return final_kwargs
 
     def get_logit_mat_batch(self, batch: List[TokenIDS], output_length: int) -> Tensor:
         """
@@ -217,17 +224,7 @@ class GroupedGenerationUtils:
         model_kwargs = self.prepare_model_kwargs_batch(batch, output_length)
         with no_grad():
             all_logits: Tensor = self.model(**model_kwargs).logits
-        unscaled_relevant_logits: List[Tensor] = []
-        for i, sequence in enumerate(batch):
-            # chose stop_index such that the target_length of the sequence is output_length
-            start_index = len(sequence) - 1
-            end_index = len(sequence) + output_length - 1
-            curr_relevant_logits = all_logits[i, start_index:end_index, :self.vocab_size, ]
-            un_squeezed_logits = curr_relevant_logits.unsqueeze(0)
-            unscaled_relevant_logits.append(un_squeezed_logits)
-
-        answer = cat(unscaled_relevant_logits)
-        return answer
+        return all_logits[:, -output_length:, :self.vocab_size]
 
     def get_prob_mat_batch(
             self,
@@ -245,14 +242,10 @@ class GroupedGenerationUtils:
         """
         unscaled_relevant_logits = self.get_logit_mat_batch(tokens, output_length)
         if not self.end_of_sentence_stop:
-            try:
-                unscaled_relevant_logits[:, :, self.end_of_sentence_id] = -float("inf")
-            except IndexError as e:
-                print("unscaled_relevant_logits", unscaled_relevant_logits)
-                print("self.end_of_sentence_id", self.end_of_sentence_id)
-                raise e
+            unscaled_relevant_logits[:, :, self.end_of_sentence_id] = -float("inf")
         penalized_logits = self.repetition_penalty_strategy.call_batch(
-            unscaled_relevant_logits, tokens, generation_start_indexes)
+            unscaled_relevant_logits, tokens, generation_start_indexes
+        )
         return self.logits_to_probs(penalized_logits)
 
     def get_prob_mat(self, tokens: TokenIDS, generation_start: int, output_length: int) -> Tensor:
