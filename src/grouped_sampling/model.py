@@ -4,8 +4,6 @@ from torch import cuda
 from torch.cuda import OutOfMemoryError
 from transformers import PreTrainedModel, AutoModelForCausalLM
 
-from .llama.modeling_llama import LLaMAForCausalLM
-
 
 def get_model(
         model_name: str,
@@ -28,13 +26,7 @@ def get_model(
             "load_in_8bit": using_8bit,
             ** kwargs,
         }
-    try:
-        model = AutoModelForCausalLM.from_pretrained(**full_model_kwargs)
-    except KeyError as e:
-        if "llama" in model_name.lower():
-            model = LLaMAForCausalLM.from_pretrained(**full_model_kwargs)
-        else:
-            raise e
+    model = AutoModelForCausalLM.from_pretrained(**full_model_kwargs)
     if use_cuda and cuda.is_available():
         try:
             model = model.cuda()

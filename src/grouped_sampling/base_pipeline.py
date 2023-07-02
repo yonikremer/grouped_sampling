@@ -6,7 +6,6 @@ from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 from torch import LongTensor
 
-from .config import get_config
 from .completion_dict import CompletionDict
 from .generation_type import GenerationType
 from .generation_utils import GroupedGenerationUtils
@@ -76,7 +75,10 @@ class GroupedGenerationPipeLine(Callable, ABC):
         self.max_batch_size: int = max_batch_size
         self.model_name: str = model_name
         tokenizer = get_tokenizer(model_name)
-        config = get_config(model_name)
+        config = AutoConfig.from_pretrained(
+            model_name,
+            trust_remote_code=True,
+        )
         end_of_sentence_id = get_end_of_text_id(tokenizer, config)
         end_of_sentence_stop = end_of_sentence_stop and end_of_sentence_id is not None
         max_input_len = tokenizer.model_max_length

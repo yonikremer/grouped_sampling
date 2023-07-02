@@ -7,8 +7,6 @@ import requests
 from huggingface_hub.utils import validate_repo_id, HFValidationError
 from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig
 
-from .llama.tokenization_llama import LLaMATokenizer
-
 
 def get_padding_id(tokenizer: PreTrainedTokenizer):
     if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None:
@@ -159,10 +157,6 @@ def get_tokenizer(
 ) -> PreTrainedTokenizer:
     """Returns a tokenizer based on the model name"""
     tokenizer_name = get_tokenizer_name(model_name)
-    if "llama" in tokenizer_name.lower():
-        return LLaMATokenizer.from_pretrained(
-            "decapoda-research/llama-13b-hf",
-        )
     return AutoTokenizer.from_pretrained(
         tokenizer_name,
         trust_remote_code=True,
