@@ -45,7 +45,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
     def __init__(
         self,
         model_name: str,
-        group_size: int,
         temp: Optional[float] = None,
         end_of_sentence_stop: Optional[bool] = None,
         repetition_penalty_strategy:
@@ -92,7 +91,6 @@ class GroupedGenerationPipeLine(Callable, ABC):
             tokenizer=tokenizer, )
         wrapped_model_kwargs: Dict[str, Any] = {
             "model": get_model(model_name),
-            "group_size": group_size,
             "max_input_len": max_input_len,
             "end_of_sentence_id": end_of_sentence_id,
             "end_of_sentence_stop": end_of_sentence_stop,
@@ -120,7 +118,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
     def _forward(
         self,
         tokenized_prompt: LongTensor,
-        num_new_tokens: int,
+        output_length: int,
     ) -> TokenIDS:
         """
         A helper method for __call__ that generates the new tokens
@@ -128,7 +126,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         Args:
             tokenized_prompt: List[int]
                 the tokenized prompt from the preprocess method
-            num_new_tokens: int - the number of new tokens to generate
+            output_length: int - the number of new tokens to generate
                 from the __call__ method
         Returns:
             the prompt + generated text as a list/tuple of ints
@@ -219,7 +217,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
                 answers.extend(
                     self.call_batch(
                         prompts_batch,
-                        max_new_tokens=max_new_tokens,
+                        output_length=max_new_tokens,
                         return_tensors=return_tensors,
                         return_text=return_text,
                         return_full_text=return_full_text,
@@ -271,7 +269,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
     def call_batch(
         self,
         prompts: List[str],
-        max_new_tokens: Optional[int] = None,
+        output_length: int,
         return_tensors: bool = False,
         return_text: bool = True,
         return_full_text: bool = True,
@@ -284,7 +282,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
         Args:
             prompts: List of strings - the prompts to start the generation from (the text given by the user)
             should satisfy: self.max_batch_size >= len(prompts) >= 0
-            max_new_tokens: Optional[int] > 0 - the number of tokens to generate
+            output_length: Optional[int] > 0 - the number of tokens to generate
              if None, the function will generate tokens until one of them is the end of sentence token
             return_tensors: bool - whether to return the generated token ids
             return_text: bool - whether to return the generated string
@@ -312,7 +310,7 @@ class GroupedGenerationPipeLine(Callable, ABC):
             return [
                 self(
                     prompts[0],
-                    max_new_tokens=max_new_tokens,
+                    max_new_tokens=output_length,
                     return_tensors=return_tensors,
                     return_text=return_text,
                     return_full_text=return_full_text,
@@ -335,20 +333,20 @@ class GroupedGenerationPipeLine(Callable, ABC):
             postfix_length,
         ) = self.pre_processing_strategy.call_batch(prompts, prefix, postfix)
 
-        if max_new_tokens is None:
-            max_new_tokens = int(
+        if output_length is None:
+            output_length = int(
                 max(prompts_lengths) * self.answer_length_multiplier)
 
         # generate the sequences
         generated_sequences: List[List[int]] = self.forward_batch(
             tokenized_prompts,
-            num_new_tokens=max_new_tokens,
+            output_length=output_length,
         )
         # post process the sequences
         return [
             self.post_processing_strategy(
                 token_ids=generated_sequence,
-                num_new_tokens=max_new_tokens,
+                num_new_tokens=output_length,
                 prefix_len=prefix_length,
                 prompt_len=prompt_length,
                 postfix_len=postfix_length,
@@ -394,11 +392,14 @@ class GroupedGenerationPipeLine(Callable, ABC):
         return cls(**my_dict)
 
     @abstractmethod
-    def forward_batch(self, tokenized_prompts: List[LongTensor],
-                      num_new_tokens: int) -> List[TokenIDS]:
+    def forward_batch(
+            self,
+            tokenized_prompts: List[LongTensor],
+            output_length: int,
+    ) -> List[TokenIDS]:
         """Generates a batch of sequences"""
         return [
-            self._forward(tokenized_prompt, num_new_tokens)
+            self._forward(tokenized_prompt, output_length)
             for tokenized_prompt in tokenized_prompts
         ]
 
