@@ -20,3 +20,5 @@ tqdm~=4.64.1
 datasets~=2.10.0
 matplotlib~=3.7.0
 evaluate~=0.4.0
+accelerate
+scipy
