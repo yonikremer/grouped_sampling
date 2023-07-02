@@ -1,4 +1,4 @@
-torch>1.12.1
+torch>=2.0.0
 transformers
 pytest~=7.2.1
 coverage~=7.1.0
