@@ -2,7 +2,7 @@
 
 import pytest
 import torch
-from torch import LongTensor, FloatTensor
+from torch import LongTensor, FloatTensor, long, Tensor
 from transformers import GenerationConfig
 
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
@@ -43,7 +43,7 @@ class TestLogitVectorToTokenPipeLine:
     def test_logit_vectors_to_token_valid_input(self):
         generation_config = GenerationConfig()
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
         assert all([r in [0, 1, 2] for r in result])
 
@@ -69,7 +69,7 @@ class TestLogitVectorToTokenPipeLine:
         pipeline = LogitVectorToTokenPipeLine(generation_config)
         input_ids = LongTensor([]).cuda()
         with pytest.raises(ValueError):
-            pipeline.logit_vectors_to_token(input_ids, self.example_logits_vectors)
+            pipeline.logit_matrix_to_tokens(input_ids, self.example_logits_vectors)
 
     #  Tests that logit_vectors_to_token raises an error when given empty logit_vectors
     def test_logit_vectors_to_token_empty_logit_vectors(self):
@@ -77,47 +77,47 @@ class TestLogitVectorToTokenPipeLine:
         pipeline = LogitVectorToTokenPipeLine(generation_config)
         logit_vectors = FloatTensor([]).cuda()
         with pytest.raises(ValueError):
-            pipeline.logit_vectors_to_token(self.exapmle_input_ids, logit_vectors)
+            pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, logit_vectors)
 
     def test_logit_vectors_to_token_valid_input_do_sample(self):
         generation_config = GenerationConfig(do_sample=True)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
         assert all([r in [0, 1, 2] for r in result])
 
     def test_logit_vectors_to_token_valid_input_do_sample_temperature(self):
         generation_config = GenerationConfig(do_sample=True, temperature=0.5)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
         assert all([r in [0, 1, 2] for r in result])
 
     def test_logit_vectors_to_token_valid_input_do_sample_top_k(self):
         generation_config = GenerationConfig(do_sample=True, top_k=2)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
         assert all([r in [0, 1, 2] for r in result])
 
     def test_logit_vectors_to_token_valid_input_do_sample_top_p(self):
         generation_config = GenerationConfig(do_sample=True, top_p=0.9)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
         assert all([r in [0, 1, 2] for r in result])
 
     def test_logit_vectors_to_token_valid_input_do_sample_top_k_top_p(self):
         generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.9)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
         assert all([r in [0, 1, 2] for r in result])
 
     def test_logit_vectors_to_token_valid_input_do_sample_top_k_top_p_temperature(self):
         generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.9, temperature=0.5)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
         assert all([r in [0, 1, 2] for r in result])
 
@@ -125,18 +125,85 @@ class TestLogitVectorToTokenPipeLine:
         generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.9, temperature=0.5,
                                              repetition_penalty=0.9)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
         assert all([r in [0, 1, 2] for r in result])
 
     def test_logit_vectors_to_token_valid_input_do_sample_false(self):
         generation_config = GenerationConfig(do_sample=False)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
 
     def test_logit_vectors_to_token_valid_input_do_sample_false_max_length(self):
         generation_config = GenerationConfig(do_sample=False, max_length=3)
         pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.logit_vectors_to_token(self.exapmle_input_ids, self.example_logits_vectors)
+        result = pipeline.logit_matrix_to_tokens(self.exapmle_input_ids, self.example_logits_vectors)
         assert result.shape == (3,), f"Expected shape (3,), got {result.shape}. Result: {result}"
+
+    #  Tests that logit_matrix_to_tokens returns valid token ids with valid input_ids and logit_vectors
+    def test_logit_matrix_to_tokens_valid_input(self):
+        input_ids = torch.tensor([1, 2, 3])
+        logit_vectors = torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3]])
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        tokens = pipeline.logit_matrix_to_tokens(input_ids, logit_vectors)
+        assert isinstance(tokens, Tensor)
+        assert tokens.shape == (2,)
+        assert tokens[0].dtype == long
+        assert tokens[1].dtype == long
+
+    #  Tests that batch_to_tokens returns valid token ids with valid input_ids and batch
+    def test_batch_to_tokens_valid_input(self):
+        input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
+        batch = torch.tensor([
+            [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3]],
+            [[0.5, 0.2, 0.3], [0.1, 0.8, 0.1]]]
+        )
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        tokens = pipeline.batch_to_tokens(input_ids, batch)
+        assert isinstance(tokens, Tensor)
+        assert tokens.shape == (2, 2)
+        assert tokens[0][0].dtype == long
+        assert tokens[0][1].dtype == long
+        assert tokens[1][0].dtype == long
+        assert tokens[1][1].dtype == long
+
+    #  Tests that single_logit_vector_to_token raises a ValueError with empty input_ids
+    def test_single_logit_vector_to_token_empty_input_ids(self):
+        input_ids = torch.tensor([])
+        logits = torch.tensor([0.1, 0.2, 0.7])
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        with pytest.raises(ValueError):
+            pipeline.single_logit_vector_to_token(input_ids, logits)
+
+    #  Tests that logit_matrix_to_tokens raises a ValueError with empty logit_vectors
+    def test_logit_matrix_to_tokens_empty_logit_vectors(self):
+        input_ids = torch.tensor([1, 2, 3])
+        logit_vectors = torch.tensor([])
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        with pytest.raises(ValueError):
+            pipeline.logit_matrix_to_tokens(input_ids, logit_vectors)
+
+    #  Tests that logit_matrix_to_tokens raises a ValueError with invalid input_ids
+    def test_logit_matrix_to_tokens_invalid_input_ids(self):
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        input_ids = torch.tensor([])
+        logit_vectors = torch.randn(3, 5)
+        with pytest.raises(ValueError):
+            pipeline.logit_matrix_to_tokens(input_ids, logit_vectors)
+
+    #  Tests that batch_to_tokens raises a ValueError with invalid input_ids
+    def test_batch_to_tokens_invalid_input_ids(self):
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        input_ids = torch.tensor([])
+        batch = torch.randn(3, 4, 5)
+        with pytest.raises(ValueError):
+            pipeline.batch_to_tokens(input_ids, batch)
+
+    #  Tests that batch_to_tokens raises a ValueError with invalid batch
+    def test_batch_to_tokens_invalid_batch(self):
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        input_ids = torch.randn(3, 4)
+        batch = torch.tensor([])
+        with pytest.raises(ValueError):
+            pipeline.batch_to_tokens(input_ids, batch)
