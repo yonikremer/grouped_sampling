@@ -70,7 +70,7 @@ class LogitVectorToTokenPipeLine:
     def logit_matrix_to_tokens(
             self,
             input_ids: LongTensor,
-            logit_vectors: FloatTensor,
+            logit_vectors: Tensor,
             **kwargs
     ) -> Tensor:
         """
