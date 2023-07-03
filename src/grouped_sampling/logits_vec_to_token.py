@@ -72,7 +72,7 @@ class LogitVectorToTokenPipeLine:
             input_ids: LongTensor,
             logit_vectors: FloatTensor,
             **kwargs
-    ) -> Tensor:
+    ) -> LongTensor:
         """
         Convert multipule logit vectors to token ids in parallel.
         args:
