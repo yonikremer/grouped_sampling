@@ -72,7 +72,7 @@ class LogitVectorToTokenPipeLine:
             input_ids: LongTensor,
             logit_vectors: FloatTensor,
             **kwargs
-    ) -> LongTensor:
+    ) -> Tensor:
         """
         Convert multipule logit vectors to token ids in parallel.
         args:
@@ -98,7 +98,7 @@ class LogitVectorToTokenPipeLine:
             self,
             input_ids: LongTensor,
             batch: FloatTensor,
-    ):
+    ) -> Tensor:
         """
         Convert a batch of logit matrices to tokens.
         args:
@@ -107,9 +107,9 @@ class LogitVectorToTokenPipeLine:
         Returns:
             A torch.LongTensor of shape (batch_size, output_seq_len) with the tokens.
         """
-        if not isinstance(input_ids, LongTensor):
+        if not isinstance(input_ids, Tensor) or input_ids.dtype not in [torch.long, torch.int]:
             raise ValueError(f"input_ids should be a LongTensor, got {type(input_ids)}")
-        if not isinstance(batch, FloatTensor):
+        if not isinstance(batch, Tensor) or batch.dtype not in [torch.float, torch.double, torch.half]:
             raise ValueError(f"batch should be a FloatTensor, got {type(batch)}")
         if input_ids.dim() != 2 or min(input_ids.shape) == 0:
             raise ValueError(f"input_ids should be a 2D long tensor"
