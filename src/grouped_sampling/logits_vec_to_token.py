@@ -26,13 +26,17 @@ class LogitVectorToTokenPipeLine:
     ):
         generation_config_copy = copy.deepcopy(generation_config)
         generation_config_copy.renormalize_logits = True
+        generation_config_copy.num_beams = 1
         mixin = GenerationMixin()
         mixin.generation_config = generation_config_copy
         self.logit_wrapper: LogitsProcessorList = mixin._get_logits_warper(generation_config_copy)
 
         self.do_sample = generation_config_copy.do_sample
-        if self.do_sample and isinstance(self.logit_wrapper[-1], LogitNormalization):
-            self.logit_wrapper[-1] = SoftmaxLogitNormalization(generation_config_copy.temperature)
+        if isinstance(self.logit_wrapper[-1], LogitNormalization):
+            self.logit_wrapper.pop(-1)
+        if self.do_sample:
+            softmax = SoftmaxLogitNormalization(temperature=generation_config_copy.temperature)
+            self.logit_wrapper.append(softmax)
 
     def single_logit_vector_to_token(
             self,
