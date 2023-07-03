@@ -22,4 +22,4 @@ matplotlib~=3.7.0
 evaluate~=0.4.0
 accelerate
 scipy
-pytest-mocker
+pytest-mock
