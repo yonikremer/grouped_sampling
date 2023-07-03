@@ -1,7 +1,7 @@
 from typing import Dict, Iterable, List
 from warnings import warn
 
-from torch import LongTensor, Tensor, cat, cuda, full, long, no_grad, ones
+from torch import LongTensor, Tensor, cat, cuda, full, long, no_grad, ones, FloatTensor
 from torch._dynamo import OptimizedModule
 from torch.nn import Softmax
 
@@ -84,7 +84,7 @@ class GroupedGenerationUtils:
             return cpu_tokens.cuda()  # pragma: no cover
         return cpu_tokens
 
-    def prepare_model_kwargs(self, tokens: TokenIDS, output_length: int) -> Dict[str, Tensor | bool]:
+    def prepare_model_kwargs(self, tokens: LongTensor, output_length: int) -> Dict[str, Tensor | bool]:
         """
         preparing the arguments for the model call
         Args:
@@ -94,8 +94,6 @@ class GroupedGenerationUtils:
             a dictionary of the arguments for the model call
         Complexity: O(output_length + n) where n is the number of batches.
         """
-        if not isinstance(tokens, Tensor):
-            tokens = LongTensor(tokens)  # O(n)
         if cuda.is_available() and self.use_cuda:
             tokens = tokens.cuda()  # pragma: no cover
         padded_tokens: LongTensor = cat(
@@ -123,7 +121,7 @@ class GroupedGenerationUtils:
         final_kwargs["attention_mask"] = attention_mask
         return final_kwargs
 
-    def get_logits_matrix(self, tokens: TokenIDS, output_length: int) -> Tensor:
+    def get_logits_matrix(self, tokens: LongTensor, output_length: int) -> FloatTensor:
         """
         Given a sequence of batch,
         returns the logits matrix of shape (output_length, vocab_size)
@@ -165,7 +163,7 @@ class GroupedGenerationUtils:
         )
         return cat((LongTensor(sequence), padding_tensor), dim=0)
 
-    def pad_batch(self, batch: List[TokenIDS], length: int) -> Tensor:
+    def pad_batch(self, batch: LongTensor, length: int) -> Tensor:
         """
         pads a batch of batch
         Args:
@@ -184,7 +182,7 @@ class GroupedGenerationUtils:
         return answer
 
     def prepare_model_kwargs_batch(
-            self, batch: List[TokenIDS],
+            self, batch: LongTensor,
             output_length: int
     ) -> Dict[str, LongTensor | bool]:
         """
@@ -212,7 +210,7 @@ class GroupedGenerationUtils:
         final_kwargs["attention_mask"] = attention_mask
         return final_kwargs
 
-    def get_logit_mat_batch(self, batch: List[TokenIDS], output_length: int) -> Tensor:
+    def get_logit_mat_batch(self, batch: LongTensor, output_length: int) -> FloatTensor:
         """
         Given a batch of sequences of tokens,
         returns the logits matrix of shape (output_length, vocab_size)
@@ -248,7 +246,7 @@ class GroupedGenerationUtils:
         )
         return self.logits_to_probs(penalized_logits)
 
-    def get_prob_mat(self, tokens: TokenIDS, generation_start: int, output_length: int) -> Tensor:
+    def get_prob_mat(self, tokens: LongTensor, generation_start: int, output_length: int) -> Tensor:
         """
         Returns the probability matrix of shape (output_length, vocab_size)
         Time complexity: O(n^2 + output_length^2)
