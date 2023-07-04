@@ -1,4 +1,5 @@
 import copy
+from typing import List
 
 import torch
 from torch import Tensor, long, FloatTensor, multinomial, argmax, exp
@@ -29,6 +30,7 @@ class LogitVectorToTokenPipeLine:
         generation_config_copy.num_beams = 1
         mixin = GenerationMixin()
         mixin.generation_config = generation_config_copy
+        # noinspection PyProtectedMember
         self.logit_wrapper: LogitsProcessorList = mixin._get_logits_warper(generation_config_copy)
 
         self.do_sample = generation_config_copy.do_sample
@@ -97,34 +99,38 @@ class LogitVectorToTokenPipeLine:
     def batch_to_tokens(
             self,
             input_ids: Tensor,
-            batch: FloatTensor,
-    ) -> Tensor:
+            batch: List[Tensor],
+    ) -> List[Tensor]:
         """
         Convert a batch of logit matrices to tokens.
         args:
             input_ids: Tensor of shape (batch_size, input_seq_len) with the input sequences.
-            batch: FloatTensor of shape (batch_size, output_seq_len, vocab_size) with the logits for the next token.
+            batch: list of Tensors with shape (output_seq_len, vocab_size) with the logits for every sequence in the
+                    batch.
         Returns:
-            A Tensor of shape (batch_size, output_seq_len) with the tokens.
+            A list of Tensors with length output_seq_len with the output tokens for every sequence in the batch.
         """
         if not isinstance(input_ids, Tensor) or input_ids.dtype not in [torch.long, torch.int]:
             raise ValueError(f"input_ids should be a Tensor of dtype int or long, got {input_ids}")
-        if not isinstance(batch, Tensor) or batch.dtype not in [torch.float, torch.double, torch.half]:
-            raise ValueError(f"batch should be a FloatTensor, got {type(batch)}")
+        if not isinstance(batch, list):
+            raise ValueError(f"batch should be a a list, got {type(batch)}")
+        if not all(isinstance(logit_matrix, Tensor) for logit_matrix in batch):
+            raise ValueError(f"batch should be a a list of Tensors, got a list of {type(batch[0])}")
+        if not all(logit_matrix.dtype == torch.float for logit_matrix in batch):
+            raise ValueError(f"batch should be a a list of Tensors of dtype float, got a list of {batch[0].dtype}")
         if input_ids.dim() != 2 or min(input_ids.shape) == 0:
             raise ValueError(f"input_ids should be a 2D long tensor"
                              f"Got input ids with shape {input_ids.shape} and dimention {input_ids.dim()}")
-        if batch.dim() != 3 or min(batch.shape) == 0:
-            raise ValueError(f"batch should be a 3D float tensor"
-                             f"Got batch with shape {batch.shape} and dimention {batch.dim()}")
-        if batch.shape[0] != input_ids.shape[0]:
+        if any(logit_matrix.dim() != 2 or min(logit_matrix.shape) == 0 for logit_matrix in batch):
+            raise ValueError(f"each logit matrix in batch should be a 2D float tensor"
+                             f"Got batch: {batch}")
+        if len(batch) != input_ids.shape[0]:
             raise ValueError(f"batch and input_ids should have the same batch size"
-                             f"Got batch with shape {batch.shape} and input_ids with shape {input_ids.shape}")
+                             f"Got batch with size {len(batch)} and input_ids with shape {input_ids.shape}")
         all_output_seqs = []
         for logit_matrix, curr_sequence in zip(batch, input_ids):
             curr_output_seq = torch.stack(
                 [self.single_logit_vector_to_token(curr_sequence, logit_vector) for logit_vector in logit_matrix],
             ).squeeze()
             all_output_seqs.append(curr_output_seq)
-
-        return torch.stack(all_output_seqs, dim=0)
+        return all_output_seqs

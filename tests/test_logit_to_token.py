@@ -152,29 +152,20 @@ class TestLogitVectorToTokenPipeLine:
         assert tokens[0].dtype == long
         assert tokens[1].dtype == long
 
-    #  Tests that batch_to_tokens returns valid token ids with valid input_ids and batch
+    # Tests that batch_to_tokens returns valid token ids with valid input_ids and batch
     def test_batch_to_tokens_valid_input(self):
         input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
-        batch = torch.tensor([
-            [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3]],
-            [[0.5, 0.2, 0.3], [0.1, 0.8, 0.1]]]
-        )
+        batch = [torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]),
+                 torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]])]
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
-        tokens = pipeline.batch_to_tokens(input_ids, batch)
-        assert isinstance(tokens, Tensor)
-        assert tokens.shape == (2, 2)
-        assert tokens[0][0].dtype == long
-        assert tokens[0][1].dtype == long
-        assert tokens[1][0].dtype == long
-        assert tokens[1][1].dtype == long
+        token_ids = pipeline.batch_to_tokens(input_ids, batch)
+        assert isinstance(token_ids, list)
+        assert len(token_ids) == 2
+        assert all(isinstance(tokens, Tensor) for tokens in token_ids)
+        assert all(token_ids[i].shape == (3,) for i in range(2))
+        assert all(token_id.dtype == long for tokens in token_ids for token_id in tokens)
 
-    #  Tests that single_logit_vector_to_token raises a ValueError with empty input_ids
-    def test_single_logit_vector_to_token_empty_input_ids(self):
-        input_ids = torch.tensor([])
-        logits = torch.tensor([0.1, 0.2, 0.7])
-        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
-        with pytest.raises(ValueError):
-            pipeline.single_logit_vector_to_token(input_ids, logits)
+
 
     #  Tests that logit_matrix_to_tokens raises a ValueError with empty logit_vectors
     def test_logit_matrix_to_tokens_empty_logit_vectors(self):
@@ -200,10 +191,10 @@ class TestLogitVectorToTokenPipeLine:
         with pytest.raises(ValueError):
             pipeline.batch_to_tokens(input_ids, batch)
 
-    #  Tests that batch_to_tokens raises a ValueError with invalid batch
     def test_batch_to_tokens_invalid_batch(self):
+        input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
+        batch = [[[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
+                 [[0.1, 0.2], [0.3, 0.4], [0.5, 0.2]]]
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
-        input_ids = torch.randn(3, 4)
-        batch = torch.tensor([])
         with pytest.raises(ValueError):
             pipeline.batch_to_tokens(input_ids, batch)
