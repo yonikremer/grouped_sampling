@@ -157,7 +157,10 @@ def get_tokenizer(
 ) -> PreTrainedTokenizer:
     """Returns a tokenizer based on the model name"""
     tokenizer_name = get_tokenizer_name(model_name)
-    return AutoTokenizer.from_pretrained(
+    raw_tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         trust_remote_code=True,
     )
+    if not hasattr(raw_tokenizer, "pad_token_id") or raw_tokenizer.pad_token_id is None:
+        raw_tokenizer.pad_token_id = get_padding_id(raw_tokenizer)
+    return raw_tokenizer
