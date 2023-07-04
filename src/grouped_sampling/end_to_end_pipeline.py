@@ -4,7 +4,7 @@ from transformers import GenerationConfig
 
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 from src.grouped_sampling.model import get_model
-from src.grouped_sampling.tokenizer import get_padding_id, get_tokenizer
+from src.grouped_sampling.tokenizer import get_tokenizer
 
 
 class EndToEndSingleSequencePipeLine:
@@ -74,8 +74,7 @@ class EndToEndSingleSequencePipeLine:
                              f"got {tokens.shape[0] + output_length}")
         if tokens.shape[0] == 0:
             raise ValueError("tokens should not be empty")
-        padding_token_id: int = get_padding_id(tokenizer=self.tokenizer)
-        padding_tokens: Tensor = full((output_length,), padding_token_id, dtype=long, device=self.device)
+        padding_tokens: Tensor = full((output_length,), self.tokenizer.pad_token_id, dtype=long, device=self.device)
         padded_tokens: Tensor = cat(
             (tokens, padding_tokens),
             dim=0
