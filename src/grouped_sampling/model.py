@@ -1,10 +1,11 @@
 from warnings import warn
 
-from torch import cuda, compile
+from torch import cuda, compile, inference_mode
 from torch.cuda import OutOfMemoryError
 from transformers import AutoModelForCausalLM
 
 
+@inference_mode()
 def get_model(
         model_name: str,
         load_in_8bit: bool = False,
