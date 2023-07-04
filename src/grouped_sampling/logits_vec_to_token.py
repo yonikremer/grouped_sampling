@@ -1,7 +1,7 @@
 import copy
 
 import torch
-from torch import Tensor, long, FloatTensor, LongTensor, multinomial, argmax, exp
+from torch import Tensor, long, FloatTensor, multinomial, argmax, exp
 from transformers import GenerationConfig, LogitsProcessorList, GenerationMixin, LogitsProcessor
 from transformers.generation import LogitNormalization
 
@@ -40,14 +40,14 @@ class LogitVectorToTokenPipeLine:
 
     def single_logit_vector_to_token(
             self,
-            input_ids: LongTensor,
+            input_ids: Tensor,
             logits: FloatTensor,
             **kwargs
     ) -> long:
         """
         Convert a single logit vector to a token id.
         args:
-            input_ids: torch.LongTensor of shape (input_seq_len, ) with the input sequence.
+            input_ids: Tensor of shape (input_seq_len, ) with the input sequence.
             logits: torch.FloatTensor of shape (vocab_size, ) with the logits for the next token.
         """
         if input_ids.dim() != 1 or input_ids.shape[0] == 0:
@@ -69,14 +69,14 @@ class LogitVectorToTokenPipeLine:
 
     def logit_matrix_to_tokens(
             self,
-            input_ids: LongTensor,
+            input_ids: Tensor,
             logit_vectors: Tensor,
             **kwargs
     ) -> Tensor:
         """
         Convert multipule logit vectors to token ids in parallel.
         args:
-            input_ids: torch.LongTensor of shape (input_seq_len, ) with the input sequence.
+            input_ids: Tensor of shape (input_seq_len, ) with the input sequence.
             logits: torch.FloatTensor of shape (output_seq_len, vocab_size) with the logits for the next token.
             The input sequence is the same for all the logits.
         """
@@ -96,19 +96,19 @@ class LogitVectorToTokenPipeLine:
 
     def batch_to_tokens(
             self,
-            input_ids: LongTensor,
+            input_ids: Tensor,
             batch: FloatTensor,
     ) -> Tensor:
         """
         Convert a batch of logit matrices to tokens.
         args:
-            input_ids: LongTensor of shape (batch_size, input_seq_len) with the input sequences.
+            input_ids: Tensor of shape (batch_size, input_seq_len) with the input sequences.
             batch: FloatTensor of shape (batch_size, output_seq_len, vocab_size) with the logits for the next token.
         Returns:
-            A torch.LongTensor of shape (batch_size, output_seq_len) with the tokens.
+            A Tensor of shape (batch_size, output_seq_len) with the tokens.
         """
         if not isinstance(input_ids, Tensor) or input_ids.dtype not in [torch.long, torch.int]:
-            raise ValueError(f"input_ids should be a LongTensor, got {type(input_ids)}")
+            raise ValueError(f"input_ids should be a Tensor of dtype int or long, got {input_ids}")
         if not isinstance(batch, Tensor) or batch.dtype not in [torch.float, torch.double, torch.half]:
             raise ValueError(f"batch should be a FloatTensor, got {type(batch)}")
         if input_ids.dim() != 2 or min(input_ids.shape) == 0:
