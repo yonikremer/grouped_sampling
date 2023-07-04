@@ -31,7 +31,7 @@ class TestEndToEndSingleSequencePipeLine:
     def test_output_length_0(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         with pytest.raises(ValueError):
-            pipeline('', 0)
+            pipeline.generate('', 0)
 
     #  Tests that the pipeline raises an exception when given a prompt and output_length greater than the max_position_embeddings
     def test_output_length_greater_than_max_position_embeddings(self):
@@ -39,7 +39,7 @@ class TestEndToEndSingleSequencePipeLine:
         prompt = 'This is a prompt.'
         output_length = pipeline.max_total_len + 1
         with pytest.raises(ValueError):
-            pipeline(prompt, output_length)
+            pipeline.generate(prompt, output_length)
 
     #  Tests that the pipeline raises an exception when given a prompt and output_length equal to the max_position_embeddings
     def test_output_length_equal_to_max_position_embeddings(self):
@@ -47,14 +47,14 @@ class TestEndToEndSingleSequencePipeLine:
         prompt = 'This is a prompt.'
         output_length = pipeline.max_total_len
         with pytest.raises(ValueError):
-            pipeline(prompt, output_length)
+            pipeline.generate(prompt, output_length)
 
     #  Tests that the pipeline returns a string when given a prompt and output_length less than the length of the prompt
     def test_output_length_less_than_prompt_length(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         prompt = 'This is a prompt.'
         output_length = 2
-        result = pipeline(prompt, output_length)
+        result = pipeline.generate(prompt, output_length)
         assert isinstance(result, str)
         assert len(result) == output_length
 
@@ -62,13 +62,13 @@ class TestEndToEndSingleSequencePipeLine:
     def test_non_string_prompt(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         with pytest.raises(TypeError):  # noinspection PyTypeChecker
-            pipeline(123, 10)
+            pipeline.generate(123, 10)
 
     #  Tests that the pipeline raises a ValueError when given an empty prompt
     def test_empty_prompt(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         with pytest.raises(ValueError):
-            pipeline('', 10)
+            pipeline.generate('', 10)
 
     def test_string_to_tokens_valid_prompt(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')

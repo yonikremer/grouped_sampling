@@ -108,7 +108,7 @@ class EndToEndSingleSequencePipeLine:
             raise ValueError(f"tokens should be a Tensor of type integer/long, got {tokens.dtype}")
         return self.tokenizer.decode(tokens.tolist())
 
-    def __call__(
+    def generate(
             self,
             prompt: str,
             output_length: int,
