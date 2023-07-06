@@ -12,8 +12,11 @@
       <excludeFolder url="file://$MODULE_DIR$/evaluation/tables" />
       <excludeFolder url="file://$MODULE_DIR$/tests/offload" />
     </content>
-    <orderEntry type="jdk" jdkName="grouped_sampling" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="grouped_sampling_new" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="PackageRequirementsSettings">
+    <option name="versionSpecifier" value="Don't specify version" />
   </component>
   <component name="PyDocumentationSettings">
     <option name="format" value="PLAIN" />
