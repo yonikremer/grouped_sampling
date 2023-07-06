@@ -160,6 +160,7 @@ def get_tokenizer(
     raw_tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         trust_remote_code=True,
+        padding_side="right",
     )
     if not hasattr(raw_tokenizer, "pad_token_id") or raw_tokenizer.pad_token_id is None:
         raw_tokenizer.pad_token_id = get_padding_id(raw_tokenizer)
