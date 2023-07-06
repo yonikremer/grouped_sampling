@@ -8,3 +8,4 @@ urllib3
 sentencepiece
 bitsandbytes
 cache-to-disk
+huggingface-hub

@@ -5,6 +5,8 @@ import random
 import numpy as np
 import pytest
 import torch
+from huggingface_hub.utils import RepositoryNotFoundError
+from torch import inference_mode
 from torch._dynamo import OptimizedModule
 from transformers import AutoTokenizer
 
@@ -19,7 +21,6 @@ The objective of the 'get_model' function is to load a pre-trained model from th
 Inputs:
 - model_name (str): the name or path of the pre-trained model to load
 - load_in_8bit (bool): whether to use 8-bit quantization for the model (default False)
-- use_cuda (bool): whether to use CUDA acceleration (default True)
 - **kwargs: additional keyword arguments to pass to the 'from_pretrained' method of the 'AutoModelForCausalLM' class
 
 Flow:
@@ -54,16 +55,12 @@ class TestGetModel:
         model = get_model(model_name, **kwargs)
         assert model.config.output_hidden_states == kwargs['output_hidden_states']
 
-    #  Tests that the function warns when CUDA is not available
-    def test_warns_when_cuda_not_available(self):
-        with pytest.warns(UserWarning):
-            model = get_model('gpt2', use_cuda=False)
-
     #  Tests that the function loads the model in 8bit correctly
     def test_loads_model_in_8bit(self):
         model_name = 'gpt2'
         get_model(model_name, load_in_8bit=True)
 
+    @inference_mode()
     # Tests that the model gives the same output when getting the same input
     def test_model_gives_same_output(self):
         model_name = 'gpt2'
@@ -77,6 +74,7 @@ class TestGetModel:
         logits2 = output2.logits
         assert torch.equal(logits1, logits2)
 
+    @inference_mode()
     # Tests that the model gives the same output whith and without batching
     def test_model_gives_same_output_with_and_without_batching(self):
         torch.manual_seed(0)
@@ -91,7 +89,6 @@ class TestGetModel:
         with torch.no_grad():
             output_batch = model(input_ids_batch)
         logits_batch = output_batch.logits
-
         input_ids = tokenizer(prompts[0], return_tensors='pt')["input_ids"].cuda()
         with torch.no_grad():
             output = model(input_ids)
@@ -103,3 +100,7 @@ class TestGetModel:
         for i in range(input_ids.shape[1]):
             assert torch.isclose(logits_batch[0][i], logits[0][i], atol=1e-5, rtol=1e-4).all(),\
                 f'Index {i} does not match. got {logits_batch[0][i]} and {logits[0][i]}'
+
+    def test_nonexistent_model(self):
+        with pytest.raises(RepositoryNotFoundError):
+            model = get_model('nonexistent-model')

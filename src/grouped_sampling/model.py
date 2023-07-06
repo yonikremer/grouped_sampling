@@ -1,5 +1,6 @@
 from warnings import warn
 
+from huggingface_hub.utils import RepositoryNotFoundError
 from torch import cuda, compile, inference_mode
 from torch.cuda import OutOfMemoryError
 from transformers import AutoModelForCausalLM
@@ -19,6 +20,7 @@ def get_model(
         **kwargs: additional arguments to pass to the model's from_pretrained method.
     returns:
         the loaded model.
+    raises: huggingface_hub.utils.RepositoryNotFoundError if the model is not found.
     """
     using_8bit = load_in_8bit and cuda.is_available()
     full_model_kwargs = {
@@ -29,7 +31,16 @@ def get_model(
     }
     if using_8bit:
         full_model_kwargs["device_map"] = "auto"
-    model = AutoModelForCausalLM.from_pretrained(**full_model_kwargs)
+    try:
+        model = AutoModelForCausalLM.from_pretrained(**full_model_kwargs)
+    # If the model doesn't support exists
+    except OSError as error:
+        raise RepositoryNotFoundError(
+            f"Model {model_name} not found in the model hub.\n"
+            "If you are trying to use a local model, make sure to use the full path.\n"
+            "If you are trying to load a private model, make sure to pass your huggingface token."
+            + str(error)
+        )
     if cuda.is_available():
         try:
             model = model.cuda()
