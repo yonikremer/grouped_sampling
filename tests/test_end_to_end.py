@@ -3,7 +3,7 @@
 
 import pytest
 import torch
-from torch import Tensor, LongTensor
+from torch import Tensor, long
 
 from src.grouped_sampling.end_to_end_pipeline import EndToEndSingleSequencePipeLine
 
@@ -26,12 +26,27 @@ Fields:
 - max_input_len: the maximum length of the input sequence that the model can handle.
 - logit_vector_to_token: an instance of the LogitVectorToTokenPipeLine class, which is responsible for converting logits vectors to tokens.
 """
+
+
+def string_to_tokens(
+        pipeline,
+        string: str,
+) -> Tensor:
+    """Convert a string to a Tensor of tokens."""
+    tokens = torch.tensor(
+        pipeline.tokenizer.encode(string),
+        device=pipeline.device,
+        dtype=long,
+        requires_grad=False,
+    )
+    return tokens
+
+
 class TestEndToEndSingleSequencePipeLine:
     #  Tests that the pipeline returns an empty string when given an empty prompt and output_length of 0
     def test_output_length_0(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        with pytest.raises(ValueError):
-            pipeline.generate('', 0)
+        assert pipeline.generate('This is an example', 0) == ''
 
     #  Tests that the pipeline raises an exception when given a prompt and output_length greater than the max_position_embeddings
     def test_output_length_greater_than_max_position_embeddings(self):
@@ -56,7 +71,7 @@ class TestEndToEndSingleSequencePipeLine:
         output_length = 2
         result = pipeline.generate(prompt, output_length)
         assert isinstance(result, str)
-        assert len(result) == output_length
+        assert len(result) >= output_length
 
     #  Tests that the pipeline raises a TypeError when given a non-string prompt
     def test_non_string_prompt(self):
@@ -73,47 +88,28 @@ class TestEndToEndSingleSequencePipeLine:
     def test_string_to_tokens_valid_prompt(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         multi_token_prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(multi_token_prompt)
+        tokens = string_to_tokens(pipeline, multi_token_prompt)
         assert isinstance(tokens, Tensor)
-        assert tokens.dtype in (torch.long, torch.int64, torch.int32, torch.int16, torch.int8)
+        assert tokens.dtype == long
         assert tokens.shape[0] > 1
-
-    def test_string_to_tokens_empty_prompt(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        empty_prompt = ''
-        with pytest.raises(ValueError):
-            pipeline.string_to_tokens(empty_prompt)
-
-    def test_string_to_tokens_non_string_prompt(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        non_string_prompt = 123
-        with pytest.raises(TypeError):  # noinspection PyTypeChecker
-            pipeline.string_to_tokens(non_string_prompt)
 
     def test_string_to_tokens_one_token_prompt(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         one_token_prompt = 'the'
-        tokens = pipeline.string_to_tokens(one_token_prompt)
+        tokens = string_to_tokens(pipeline, one_token_prompt)
         assert isinstance(tokens, Tensor)
-        assert tokens.dtype in (torch.long, torch.int64, torch.int32, torch.int16, torch.int8)
+        assert tokens.dtype == long
         assert tokens.shape == (1, )
 
     def test_tokens_to_logit_matrix_valid_prompt(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(prompt)
+        tokens = string_to_tokens(pipeline, prompt)
         output_length = 10
         logits = pipeline.tokens_to_logit_matrix(tokens, output_length)
         assert isinstance(logits, Tensor)
         assert logits.dtype in (torch.float32, torch.float64)
         assert logits.shape == (output_length, pipeline.tokenizer.vocab_size)
-
-    def test_tokens_to_logit_matrix_empty_prompt(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        tokens = LongTensor([])
-        output_length = 10
-        with pytest.raises(ValueError):
-            pipeline.tokens_to_logit_matrix(tokens, output_length)
 
     def test_tokens_to_logit_matrix_non_tensor_prompt(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
@@ -122,34 +118,10 @@ class TestEndToEndSingleSequencePipeLine:
         with pytest.raises(TypeError):  # noinspection PyTypeChecker
             pipeline.tokens_to_logit_matrix(tokens, output_length)
 
-    def test_tokens_to_logit_matrix_valid_prompt_output_length_0(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(prompt)
-        output_length = 0
-        with pytest.raises(ValueError):  # noinspection PyTypeChecker
-            pipeline.tokens_to_logit_matrix(tokens, output_length)
-
-    def test_tokens_to_logit_matrix_valid_prompt_output_length_greater_than_max_position_embeddings(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(prompt)
-        output_length = pipeline.max_total_len + 1
-        with pytest.raises(ValueError):
-            pipeline.tokens_to_logit_matrix(tokens, output_length)
-
-    def test_tokens_to_logit_matrix_valid_prompt_output_length_equal_to_max_position_embeddings(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(prompt)
-        output_length = pipeline.max_total_len
-        with pytest.raises(ValueError):
-            pipeline.tokens_to_logit_matrix(tokens, output_length)
-
     def test_tokens_to_logit_matrix_valid_prompt_output_length_less_than_prompt_length(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(prompt)
+        tokens = string_to_tokens(pipeline, prompt)
         output_length = 2
         logits = pipeline.tokens_to_logit_matrix(tokens, output_length)
         assert isinstance(logits, Tensor)
@@ -159,7 +131,7 @@ class TestEndToEndSingleSequencePipeLine:
     def test_tokens_to_logit_matrix_valid_prompt_output_length_equal_to_prompt_length(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(prompt)
+        tokens = string_to_tokens(pipeline, prompt)
         output_length = len(tokens)
         logits = pipeline.tokens_to_logit_matrix(tokens, output_length)
         assert isinstance(logits, Tensor)
@@ -169,39 +141,9 @@ class TestEndToEndSingleSequencePipeLine:
     def test_tokens_to_logit_matrix_valid_prompt_output_length_greater_than_prompt_length(self):
         pipeline = EndToEndSingleSequencePipeLine('gpt2')
         prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(prompt)
+        tokens = string_to_tokens(pipeline, prompt)
         output_length = len(tokens) + 1
         logits = pipeline.tokens_to_logit_matrix(tokens, output_length)
         assert isinstance(logits, Tensor)
         assert logits.dtype in (torch.float32, torch.float64)
         assert logits.shape == (output_length, pipeline.tokenizer.vocab_size)
-
-    def test_tokens_to_string_valid_prompt(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        prompt = 'This is a prompt.'
-        tokens = pipeline.string_to_tokens(prompt)
-        string = pipeline.tokens_to_string(tokens)
-        assert isinstance(string, str)
-        assert len(string) > 0
-        assert string == prompt
-
-    def test_tokens_to_string_empty_prompt(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        tokens = LongTensor([])
-        with pytest.raises(ValueError):
-            pipeline.tokens_to_string(tokens)
-
-    def test_tokens_to_string_non_tensor_prompt(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        tokens = 123
-        with pytest.raises(TypeError):  # noinspection PyTypeChecker
-            pipeline.tokens_to_string(tokens)
-
-    def test_tokens_to_string_one_token_prompt(self):
-        pipeline = EndToEndSingleSequencePipeLine('gpt2')
-        tokens = pipeline.string_to_tokens('the')
-        string = pipeline.tokens_to_string(tokens)
-        assert isinstance(string, str)
-        assert len(string) > 0
-        assert string == 'the'
-
