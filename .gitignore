@@ -159,9 +159,6 @@ evaluation/comet_ml_api_key.txt
 pypi_api_token.txt
 
 # sub projects
-model/.idea/
-model/.idea/sonarlint/issuestore
-model/.idea/sonarlint/
 /tests/supported_model_names.txt
 
 #offload
