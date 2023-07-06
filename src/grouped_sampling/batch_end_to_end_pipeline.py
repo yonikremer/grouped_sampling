@@ -14,15 +14,32 @@ class BatchEndToEndSingleSequencePipeLine:
             self,
             model_name: str,
             load_in_8bit: bool = False,
+            model_kwargs: dict = None,
     ):
+        """
+        Create a new BatchEndToEndSingleSequencePipeLine.
+        Args:
+            model_name: the name of the model to load from huggingfacehub.
+            load_in_8bit: if True, the model will be loaded in 8bit mode, which is faster but less accurate.
+            model_kwargs: additional arguments to pass to the model's from_pretrained method.
+        Returns:
+            A new BatchEndToEndSingleSequencePipeLine.
+        """
         if not load_in_8bit:
             torch.set_float32_matmul_precision('high')
         self.tokenizer = get_tokenizer(model_name)
-        self.model = get_model(
-            model_name=model_name,
-            load_in_8bit=load_in_8bit,
-        )
-        self.device = self.model.device
+        if model_kwargs is None:
+            self.model = get_model(
+                model_name=model_name,
+                load_in_8bit=load_in_8bit,
+            )
+        else:
+            self.model = get_model(
+                model_name=model_name,
+                load_in_8bit=load_in_8bit,
+                **model_kwargs,
+            )
+        self.device: torch.device = self.model.device
         self.max_total_len = self.model.config.max_position_embeddings
         generation_config = GenerationConfig.from_model_config(self.model.config)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(generation_config=generation_config)
@@ -72,7 +89,7 @@ class BatchEndToEndSingleSequencePipeLine:
             raise TypeError(f"output_length should be an int, got {type(output_length)}")
         if output_length <= 0:
             raise ValueError(f"output_length should be positive, got {output_length}")
-        attenction_mask = ones_like(padded_tokens, dtype=torch.float, device=self.device, requires_grad=False)
+        attenction_mask = ones_like(padded_tokens, dtype=torch.long, device=self.device, requires_grad=False)
         all_logits = self.model(
             output_attentions=False,
             output_hidden_states=False,
