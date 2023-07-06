@@ -105,15 +105,21 @@ class BatchEndToEndSingleSequencePipeLine:
     @inference_mode()
     def genearte_batch(
             self,
-            prompts: List[str],
+            prompts: List[str] | str,
             output_length: int,
     ) -> List[str]:
         """
         Given a batch of prompts and output length, generates a list of output strings.
         Args:
-            prompts: a list of strings
-            output_length: the length of the output strings (excluding the prompts) in tokens
+            prompts: a string or a list of strings.
+            output_length: the length of the output strings (excluding the prompts) in tokens.
+        Returns:
+            A list of strings.
+             The i-th string is the output of the i-th prompt.
+             If the prompts is a string, the output is a list of length 1.
         """
+        if isinstance(prompts, str):
+            prompts = [prompts]
         if output_length == 0:
             return ["" for _ in prompts]
         self._validate_output_length(output_length)

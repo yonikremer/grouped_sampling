@@ -177,3 +177,20 @@ class TestBatchEndToEndSingleSequencePipeLine:
         output_length = 1000000
         with pytest.raises(ValueError):
             pipeline.genearte_batch(prompts, output_length)
+
+    # test that genearte_batch works correctrly when it gets a string as input
+    def test_string_input(self):
+        pipeline = BatchEndToEndSingleSequencePipeLine('gpt2')
+        prompt = 'Hello'
+        output_length = 5
+        result = pipeline.genearte_batch(prompt, output_length)
+        assert isinstance(result, list)
+        assert len(result) == 1
+        for output in result:
+            assert isinstance(output, str), f"{output} is not a string"
+            assert len(output) >= output_length, f"{len(output)} > {output_length}"
+            # Each token is at least 1 character long
+            output_tokens = pipeline.tokenizer.encode(output)
+            rebuilt_output = pipeline.tokenizer.decode(output_tokens)
+            assert rebuilt_output == output, f"{rebuilt_output} != {output}"
+            assert len(output_tokens) <= output_length, f"{len(output_tokens)} != {output_length}"
