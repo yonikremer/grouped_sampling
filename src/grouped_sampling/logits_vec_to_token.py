@@ -116,7 +116,7 @@ class LogitVectorToTokenPipeLine:
             raise ValueError(f"batch should be a a list, got {type(batch)}")
         if not all(isinstance(logit_matrix, Tensor) for logit_matrix in batch):
             raise ValueError(f"batch should be a a list of Tensors, got a list of {type(batch[0])}")
-        if not all(logit_matrix.dtype == torch.float for logit_matrix in batch):
+        if not all(logit_matrix.dtype in (torch.float, torch.float16) for logit_matrix in batch):
             raise ValueError(f"batch should be a a list of Tensors of dtype float, got a list of {batch[0].dtype}")
         if input_ids.dim() != 2 or min(input_ids.shape) == 0:
             raise ValueError(f"input_ids should be a 2D long tensor"
