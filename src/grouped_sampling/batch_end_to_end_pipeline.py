@@ -134,7 +134,7 @@ class BatchEndToEndSingleSequencePipeLine:
         padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
         relavent_logits = [
-            all_logits[i, index : index + output_length]
+            all_logits[i, index: index + output_length]
             for i, index in enumerate(last_non_pad_indices)
         ]
         return relavent_logits
