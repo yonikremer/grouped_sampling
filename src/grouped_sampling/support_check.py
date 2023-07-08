@@ -81,8 +81,3 @@ class UnsupportedModelNameException(Exception):
 def check_support(model_name: str) -> None:
     if not is_supported(model_name):
         raise UnsupportedModelNameException(model_name)
-
-
-if __name__ == "__main__":
-    delete_disk_caches_for_function("get_full_models_list")
-    delete_disk_caches_for_function("is_supported")
