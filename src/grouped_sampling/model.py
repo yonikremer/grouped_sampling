@@ -54,4 +54,5 @@ def get_model(
     model = compile(model)
     if hasattr(model, "config") and hasattr(model.config, "use_cache"):
         model.config.use_cache = False
+    # noinspection PyTypeChecker
     return model
