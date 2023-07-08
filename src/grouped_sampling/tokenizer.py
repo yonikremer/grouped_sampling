@@ -4,11 +4,11 @@ from functools import lru_cache
 from typing import Optional, Dict
 
 import requests
-from huggingface_hub.utils import validate_repo_id, HFValidationError
+from huggingface_hub.utils import validate_repo_id, HFValidationError, RepositoryNotFoundError
 from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig, PreTrainedTokenizerFast
 
 
-def get_padding_id(tokenizer: PreTrainedTokenizer):
+def get_padding_id(tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast) -> int:
     if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None:
         return tokenizer.pad_token_id
     if hasattr(tokenizer, "pad_token_ids") and tokenizer.pad_token_ids is not None:
@@ -29,7 +29,7 @@ def get_padding_id(tokenizer: PreTrainedTokenizer):
     )
 
 
-def get_end_of_text_id(tokenizer: PreTrainedTokenizer, config: PretrainedConfig):
+def get_end_of_text_id(tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast, config: PretrainedConfig):
     if tokenizer.eos_token_id is not None:
         return tokenizer.eos_token_id
     if hasattr(tokenizer, "eos_token_ids") and tokenizer.eos_token_ids is not None:
@@ -155,13 +155,29 @@ def get_tokenizer_name(
 def get_tokenizer(
         model_name: str,
 ) -> PreTrainedTokenizer | PreTrainedTokenizerFast:
-    """Returns a tokenizer based on the model name"""
+    """
+    Returns a tokenizer based on the model name
+    Args:
+        model_name: The model name.
+    Returns:
+        A tokenizer, either from huggingfacehub or from the local huggingface cache.
+        The tokenizer is either a PreTrainedTokenizer or a PreTrainedTokenizerFast.
+    Raises:
+        RepositoryNotFoundError: If the model is not found in huggingfacehub or in the local huggingface cache.
+    """
     tokenizer_name = get_tokenizer_name(model_name)
-    raw_tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_name,
-        trust_remote_code=True,
-        padding_side="right",
-    )
+    try:
+        raw_tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_name,
+            trust_remote_code=True,
+            padding_side="right",
+        )
+    except (OSError, EnvironmentError) as error:
+        raise RepositoryNotFoundError(
+            f"Model {model_name} not found in huggingfacehub. Local tokenizers are not supported yet.\n"
+            f"If {model_name} is a tokenizers model, please make sure you are logged in.\n"
+            f"If {model_name} is a tokenizers model, please make sure it exists.\n" + str(error)
+        )
     if not hasattr(raw_tokenizer, "pad_token_id") or raw_tokenizer.pad_token_id is None:
         raw_tokenizer.pad_token_id = get_padding_id(raw_tokenizer)
     return raw_tokenizer
