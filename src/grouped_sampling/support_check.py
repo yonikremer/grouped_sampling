@@ -1,7 +1,7 @@
 import multiprocessing
 import os
 from functools import lru_cache
-from typing import Iterable, List, Optional, Set
+from typing import Iterable, Optional, Set
 
 from huggingface_hub import ModelFilter, hf_api
 from huggingface_hub.hf_api import ModelInfo
@@ -41,8 +41,7 @@ def model_info_filter(model_info: ModelInfo, ) -> Optional[str]:
         return None
     return model_id
 
-
-def get_full_models_list() -> List[str]:
+def get_full_models_list() -> Set[str]:
     model_filter = ModelFilter(
         task="text-generation",
         library="pytorch",
@@ -53,10 +52,10 @@ def get_full_models_list() -> List[str]:
             iterable=models,
             func=model_info_filter,
         )
-    return [
+    return {
         model_name for model_name in supported_model_names
         if model_name is not None
-    ]
+    }
 
 
 def unsupported_model_name_error_message(model_name: str) -> str:
