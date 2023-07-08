@@ -6,9 +6,12 @@ from typing import List
 import pytest
 import torch
 from torch import inference_mode, Tensor, float32, long
-from transformers import AutoConfig
+# noinspection PyProtectedMember
+from torch._dynamo import OptimizedModule
+from transformers import AutoConfig, PreTrainedTokenizer, PreTrainedTokenizerFast
 
 from src.grouped_sampling.batch_end_to_end_pipeline import BatchEndToEndSingleSequencePipeLine
+from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
 """
 Code Analysis
@@ -242,10 +245,18 @@ class TestBatchEndToEndSingleSequencePipeLine:
     @inference_mode()
     def validate_pipeline(pipeline):
         assert pipeline.tokenizer is not None, 'tokenizer is None'
+        assert isinstance(pipeline.tokenizer, PreTrainedTokenizer) or isinstance(pipeline.tokenizer, PreTrainedTokenizerFast),\
+            'tokenizer is not PreTrainedTokenizer or PreTrainedTokenizerFast'
         assert pipeline.model is not None, 'model is None'
+        assert isinstance(pipeline.model, OptimizedModule), 'model is not OptimizedModule'
         assert pipeline.logit_to_token_pipeline is not None, 'logit_to_token_pipeline is None'
+        assert isinstance(pipeline.logit_to_token_pipeline, LogitVectorToTokenPipeLine), \
+            'logit_to_token_pipeline is not LogitVectorToTokenPipeLine'
         assert pipeline.max_total_len is not None, 'max_total_len is None'
+        assert isinstance(pipeline.max_total_len, int), 'max_total_len is not int'
+        assert pipeline.max_total_len > 0, 'max_total_len <= 0'
         assert pipeline.device is not None, 'device is None'
+        assert isinstance(pipeline.device, torch.device), 'device is not torch.device'
         # assert that the device is cuda
         assert pipeline.device.type == 'cuda', f"device is not cuda: {pipeline.device.type}"
         prompt = 'Hello'
