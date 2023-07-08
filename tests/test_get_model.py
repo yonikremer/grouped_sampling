@@ -7,7 +7,8 @@ import numpy as np
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode, cuda
+from torch import cuda, inference_mode
+
 # noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
 from torch.nn import Module
@@ -46,46 +47,62 @@ Additional aspects:
 
 
 class TestGetModel:
+
     @staticmethod
     def validate_model(model):
-        assert isinstance(model, OptimizedModule), "The model is not an instance of OptimizedModule"
-        assert isinstance(model, Module), "The model is not an instance of torch.nn.Module"
-        assert hasattr(model, "config"), "The model does not have a config attribute"
-        assert isinstance(model.config, PretrainedConfig), "The model config is not an instance of PretrainedConfig"
-        assert hasattr(model, "device"), "The model does not have a device attribute"
-        assert isinstance(model.device, torch.device), "The model device is not an instance of torch.device"
+        assert isinstance(
+            model,
+            OptimizedModule), "The model is not an instance of OptimizedModule"
+        assert isinstance(
+            model, Module), "The model is not an instance of torch.nn.Module"
+        assert hasattr(model,
+                       "config"), "The model does not have a config attribute"
+        assert isinstance(
+            model.config, PretrainedConfig
+        ), "The model config is not an instance of PretrainedConfig"
+        assert hasattr(model,
+                       "device"), "The model does not have a device attribute"
+        assert isinstance(
+            model.device, torch.device
+        ), "The model device is not an instance of torch.device"
         if cuda.is_available():
-            assert model.device.type == "cuda", "CUDA is avilable and the model device is not utilizing it"
+            assert (
+                model.device.type == "cuda"
+            ), "CUDA is avilable and the model device is not utilizing it"
         else:
-            assert model.device.type == "cpu", "CUDA is not avilable and the model device is not on the CPU"
+            assert (
+                model.device.type == "cpu"
+            ), "CUDA is not avilable and the model device is not on the CPU"
         assert isinstance(model, Callable), "The model is not callable"
 
     #  Tests that the function returns a PreTrainedModel object
     def test_returns_model_object(self):
-        model = get_model('gpt2')
+        model = get_model("gpt2")
         self.validate_model(model)
 
     #  Tests that the function loads the model with the correct kwargs
     def test_loads_correct_kwargs(self):
-        model_name = 'gpt2'
-        kwargs = {'output_hidden_states': True}
+        model_name = "gpt2"
+        kwargs = {"output_hidden_states": True}
         model = get_model(model_name, **kwargs)
-        assert model.config.output_hidden_states == kwargs['output_hidden_states']
+        assert model.config.output_hidden_states == kwargs[
+            "output_hidden_states"]
         self.validate_model(model)
 
     #  Tests that the function loads the model in 8bit correctly
     def test_loads_model_in_8bit(self):
-        model_name = 'gpt2'
+        model_name = "gpt2"
         model = get_model(model_name, load_in_8bit=True)
         self.validate_model(model)
 
     @inference_mode()
     # Tests that the model gives the same output when getting the same input
     def test_model_gives_same_output(self):
-        model_name = 'gpt2'
+        model_name = "gpt2"
         model = get_model(model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        input_ids = tokenizer('Hello, my dog is cute', return_tensors='pt')["input_ids"]
+        input_ids = tokenizer("Hello, my dog is cute",
+                              return_tensors="pt")["input_ids"]
         input_ids = input_ids.cuda()
         output1 = model(input_ids)
         logits1 = output1.logits
@@ -99,27 +116,33 @@ class TestGetModel:
         torch.manual_seed(0)
         random.seed(0)
         np.random.seed(0)
-        os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-        model_name = 'fxmarty/tiny-llama-fast-tokenizer'
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
+        model_name = "fxmarty/tiny-llama-fast-tokenizer"
         model = get_model(model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        prompts = ['Hello, my dog is cute'] * 2
-        input_ids_batch = tokenizer(prompts, return_tensors='pt')["input_ids"].cuda()
+        prompts = ["Hello, my dog is cute"] * 2
+        input_ids_batch = tokenizer(prompts,
+                                    return_tensors="pt")["input_ids"].cuda()
         with torch.no_grad():
             output_batch = model(input_ids_batch)
         logits_batch = output_batch.logits
-        input_ids = tokenizer(prompts[0], return_tensors='pt')["input_ids"].cuda()
+        input_ids = tokenizer(prompts[0],
+                              return_tensors="pt")["input_ids"].cuda()
         with torch.no_grad():
             output = model(input_ids)
         logits = output.logits
         assert torch.equal(logits_batch[0], logits_batch[1])
-        assert logits_batch.shape == (2, input_ids.shape[1], model.config.vocab_size)
+        assert logits_batch.shape == (2, input_ids.shape[1],
+                                      model.config.vocab_size)
         assert logits.shape == (1, input_ids.shape[1], model.config.vocab_size)
         assert logits.dtype == logits_batch.dtype
         for i in range(input_ids.shape[1]):
-            assert torch.isclose(logits_batch[0][i], logits[0][i], atol=1e-5, rtol=1e-4).all(), \
-                f'Index {i} does not match. got {logits_batch[0][i]} and {logits[0][i]}'
+            assert torch.isclose(
+                logits_batch[0][i], logits[0][i], atol=1e-5, rtol=1e-4
+            ).all(), (
+                f"Index {i} does not match. got {logits_batch[0][i]} and {logits[0][i]}"
+            )
 
     def test_nonexistent_model(self):
         with pytest.raises(RepositoryNotFoundError):
-            get_model('nonexistent-model')
+            get_model("nonexistent-model")

@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import torch
-from torch import Tensor, long, inference_mode, full, argmax, int8, eq, ones_like
+from torch import Tensor, argmax, eq, full, inference_mode, int8, long, ones_like
 from transformers import GenerationConfig
 
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
@@ -10,12 +10,13 @@ from src.grouped_sampling.tokenizer import get_tokenizer
 
 
 class BatchEndToEndSingleSequencePipeLine:
+
     def __init__(
-            self,
-            model_name: str,
-            load_in_8bit: bool = False,
-            model_kwargs: Optional[dict] = None,
-            generation_config: Optional[GenerationConfig] = None,
+        self,
+        model_name: str,
+        load_in_8bit: bool = False,
+        model_kwargs: Optional[dict] = None,
+        generation_config: Optional[GenerationConfig] = None,
     ):
         """
         Create a new BatchEndToEndSingleSequencePipeLine.
@@ -33,15 +34,22 @@ class BatchEndToEndSingleSequencePipeLine:
             TypeError: If one of the arguments is of the wrong type.
         """
         if not isinstance(model_name, str):
-            raise TypeError(f"model_name should be a string, got {type(model_name)}")
+            raise TypeError(
+                f"model_name should be a string, got {type(model_name)}")
         if not isinstance(load_in_8bit, bool):
-            raise TypeError(f"load_in_8bit should be a bool, got {type(load_in_8bit)}")
+            raise TypeError(
+                f"load_in_8bit should be a bool, got {type(load_in_8bit)}")
         if model_kwargs is not None and not isinstance(model_kwargs, dict):
-            raise TypeError(f"model_kwargs should be a dict or None, got {type(model_kwargs)}")
-        if generation_config is not None and not isinstance(generation_config, GenerationConfig):
-            raise TypeError(f"generation_config should be a GenerationConfig or None, got {type(generation_config)}")
+            raise TypeError(
+                f"model_kwargs should be a dict or None, got {type(model_kwargs)}"
+            )
+        if generation_config is not None and not isinstance(
+                generation_config, GenerationConfig):
+            raise TypeError(
+                f"generation_config should be a GenerationConfig or None, got {type(generation_config)}"
+            )
         if not load_in_8bit:
-            torch.set_float32_matmul_precision('high')
+            torch.set_float32_matmul_precision("high")
         self.tokenizer = get_tokenizer(model_name)
         if model_kwargs is None:
             self.model = get_model(
@@ -57,18 +65,23 @@ class BatchEndToEndSingleSequencePipeLine:
         self.device: torch.device = self.model.device
         self.max_total_len = self.model.config.max_position_embeddings
         if generation_config is None:
-            generation_config = GenerationConfig.from_model_config(self.model.config)
-        self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(generation_config=generation_config)
+            generation_config = GenerationConfig.from_model_config(
+                self.model.config)
+        self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
+            generation_config=generation_config)
 
     def tokenize_and_pad(
-            self,
-            prompts: List[str],
-            output_length: int,
+        self,
+        prompts: List[str],
+        output_length: int,
     ) -> Tensor:
         """A helper function that converts a list of strings to a padded tensor of tokens."""
         prompt_tokens_list = self.tokenizer.batch_encode_plus(
-            prompts, add_special_tokens=True, padding=True, return_attention_mask=False,
-        )['input_ids']
+            prompts,
+            add_special_tokens=True,
+            padding=True,
+            return_attention_mask=False,
+        )["input_ids"]
         prompt_tokens = torch.tensor(
             prompt_tokens_list,
             device=self.device,
@@ -77,7 +90,9 @@ class BatchEndToEndSingleSequencePipeLine:
         max_input_length = prompt_tokens.shape[1]
         padding_length: int = max_input_length + output_length - 1
         if padding_length > self.max_total_len:
-            raise ValueError(f"padding_length should be at most {self.max_total_len}, got {padding_length}")
+            raise ValueError(
+                f"padding_length should be at most {self.max_total_len}, got {padding_length}"
+            )
         batch_size = prompt_tokens.shape[0]
         extra_padding = full(
             fill_value=self.tokenizer.pad_token_id,
@@ -88,9 +103,9 @@ class BatchEndToEndSingleSequencePipeLine:
         return torch.cat([prompt_tokens, extra_padding], dim=1)
 
     def tokens_batch_to_logit_matrices(
-            self,
-            padded_tokens: Tensor,
-            output_length: int,
+        self,
+        padded_tokens: Tensor,
+        output_length: int,
     ) -> List[Tensor]:
         """
         Given a batch of prompts where each prompt is a sequence of tokens, and an output_length,
@@ -98,21 +113,29 @@ class BatchEndToEndSingleSequencePipeLine:
         where logits[i] is the logits matrix of the i-th prompt.
         """
         if padded_tokens.dim() != 2:
-            raise ValueError(f"tokens should be a 2D tensor, got {padded_tokens.dim()}D tensor")
+            raise ValueError(
+                f"tokens should be a 2D tensor, got {padded_tokens.dim()}D tensor"
+            )
         if padded_tokens.requires_grad:
             raise ValueError("tokens should not require grad")
         if not isinstance(output_length, int):
-            raise TypeError(f"output_length should be an int, got {type(output_length)}")
+            raise TypeError(
+                f"output_length should be an int, got {type(output_length)}")
         if output_length <= 0:
-            raise ValueError(f"output_length should be positive, got {output_length}")
-        attenction_mask = ones_like(padded_tokens, dtype=torch.long, device=self.device, requires_grad=False)
+            raise ValueError(
+                f"output_length should be positive, got {output_length}")
+        attenction_mask = ones_like(padded_tokens,
+                                    dtype=torch.long,
+                                    device=self.device,
+                                    requires_grad=False)
         all_logits = self.model(
             output_attentions=False,
             output_hidden_states=False,
             input_ids=padded_tokens,
             attention_mask=attenction_mask,
         ).logits
-        padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
+        padding_int_tokens = eq(padded_tokens,
+                                self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
         relavent_logits = [
             all_logits[i, index:index + output_length]
@@ -122,11 +145,15 @@ class BatchEndToEndSingleSequencePipeLine:
 
     def _validate_output_length(self, output_length: int) -> None:
         if not isinstance(output_length, int):
-            raise TypeError(f"output_length should be an int, got {type(output_length)}")
+            raise TypeError(
+                f"output_length should be an int, got {type(output_length)}")
         if output_length <= 0:
-            raise ValueError(f"output_length should be positive, got {output_length}")
+            raise ValueError(
+                f"output_length should be positive, got {output_length}")
         if output_length >= self.max_total_len:
-            raise ValueError(f"output_length should be smaller than {self.max_total_len}, got {output_length}")
+            raise ValueError(
+                f"output_length should be smaller than {self.max_total_len}, got {output_length}"
+            )
 
     @staticmethod
     def _validate_prompts(prompts: List[str]):
@@ -137,9 +164,9 @@ class BatchEndToEndSingleSequencePipeLine:
 
     @inference_mode()
     def genearte_batch(
-            self,
-            prompts: List[str] | str,
-            output_length: int,
+        self,
+        prompts: List[str] | str,
+        output_length: int,
     ) -> List[str]:
         """
         Given a batch of prompts and output length, generates a list of output strings.
@@ -160,9 +187,11 @@ class BatchEndToEndSingleSequencePipeLine:
             return []
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
+        logits = self.tokens_batch_to_logit_matrices(padded_tokens,
+                                                     output_length)
         output_tokens = self.logit_to_token_pipeline.batch_to_tokens(
             input_ids=padded_tokens,
             batch=logits,
         )
-        return self.tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+        return self.tokenizer.batch_decode(output_tokens,
+                                           skip_special_tokens=True)

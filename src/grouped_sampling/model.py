@@ -1,7 +1,7 @@
 from warnings import warn
 
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import cuda, compile, inference_mode
+from torch import compile, cuda, inference_mode
 from torch._dynamo import OptimizedModule
 from torch.cuda import OutOfMemoryError
 from transformers import AutoModelForCausalLM
@@ -9,9 +9,9 @@ from transformers import AutoModelForCausalLM
 
 @inference_mode()
 def get_model(
-        model_name: str,
-        load_in_8bit: bool = False,
-        **kwargs,
+    model_name: str,
+    load_in_8bit: bool = False,
+    **kwargs,
 ) -> OptimizedModule:
     """
     Load a model from the huggingface model hub, and compile it for faster inference.
@@ -40,8 +40,7 @@ def get_model(
             f"Model {model_name} not found in the model hub.\n"
             "If you are trying to use a local model, make sure to use the full path.\n"
             "If you are trying to load a private model, make sure to pass your huggingface token."
-            + str(error)
-        )
+            + str(error))
     if cuda.is_available():
         try:
             model = model.cuda()
