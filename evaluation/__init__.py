@@ -5,8 +5,9 @@ from typing import Callable, Tuple, Dict, Any
 from warnings import warn
 
 from datasets import Dataset, load_dataset
+from transformers import GenerationConfig
 
-from src.grouped_sampling import GroupedGenerationPipeLine, GroupedSamplingPipeLine
+from src.grouped_sampling import BatchEndToEndSingleSequencePipeLine
 
 try:
     # noinspection PyUnresolvedReferences
@@ -103,12 +104,20 @@ def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, D
     return subset_part1, subset_part2, language_code1, language_code2
 
 
-def create_pipeline() -> GroupedGenerationPipeLine:
+def create_pipeline() -> BatchEndToEndSingleSequencePipeLine:
     """Creates a text pipeline from the evaluated_text_generator_dict.json file"""
     parent_folder = Path(__file__).parent
     with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
-    pipeline = GroupedSamplingPipeLine(**evaluated_text_generator_dict)
+    model_name = evaluated_text_generator_dict.pop("model_name")
+    generation_config = GenerationConfig.from_pretrained(model_name)
+    for key, value in evaluated_text_generator_dict.items():
+        setattr(generation_config, key, value)
+    pipeline = BatchEndToEndSingleSequencePipeLine(
+        model_name=model_name,
+        load_in_8bit=True,
+        generation_config=generation_config,
+    )
     return pipeline
 
 
