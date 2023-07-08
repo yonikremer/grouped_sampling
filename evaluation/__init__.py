@@ -106,12 +106,10 @@ def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, D
 
 def create_pipeline() -> BatchEndToEndSingleSequencePipeLine:
     """Creates a text pipeline from the experiment_arguments.json file"""
-    parent_folder = Path(__file__).parent
-    with open(os.path.join(parent_folder, "experiment_arguments.json"), "r") as json_file:
-        evaluated_text_generator_dict = json.load(json_file)
-    model_name = evaluated_text_generator_dict.pop("model_name")
+    experiment_parameters = get_experiment_parameters()
+    model_name = experiment_parameters.pop("model_name")
     generation_config = GenerationConfig.from_pretrained(model_name)
-    for key, value in evaluated_text_generator_dict.items():
+    for key, value in experiment_parameters.items():
         setattr(generation_config, key, value)
     pipeline = BatchEndToEndSingleSequencePipeLine(
         model_name=model_name,
@@ -119,6 +117,13 @@ def create_pipeline() -> BatchEndToEndSingleSequencePipeLine:
         generation_config=generation_config,
     )
     return pipeline
+
+
+def get_experiment_parameters():
+    parent_folder = Path(__file__).parent
+    with open(os.path.join(parent_folder, "experiment_arguments.json"), "r") as json_file:
+        experiment_parameters = json.load(json_file)
+    return experiment_parameters
 
 
 def disable_transformers_progress_bar():
