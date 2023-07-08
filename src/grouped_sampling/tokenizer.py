@@ -5,7 +5,7 @@ from typing import Optional, Dict
 
 import requests
 from huggingface_hub.utils import validate_repo_id, HFValidationError
-from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig
+from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig, PreTrainedTokenizerFast
 
 
 def get_padding_id(tokenizer: PreTrainedTokenizer):
@@ -154,7 +154,7 @@ def get_tokenizer_name(
 
 def get_tokenizer(
         model_name: str,
-) -> PreTrainedTokenizer:
+) -> PreTrainedTokenizer | PreTrainedTokenizerFast:
     """Returns a tokenizer based on the model name"""
     tokenizer_name = get_tokenizer_name(model_name)
     raw_tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
