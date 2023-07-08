@@ -347,7 +347,7 @@ def test_dict_conversions(curr_pipeline: GroupedGenerationPipeLine):
     assert (curr_pipeline.wrapped_model.end_of_sentence_stop ==
             new_pipeline.wrapped_model.end_of_sentence_stop)
     assert (curr_pipeline.wrapped_model.max_input_len ==
-            new_pipeline.wrapped_model.max_input_len)
+            new_pipeline.wrapped_model.max_total_len)
     assert (curr_pipeline.answer_length_multiplier ==
             new_pipeline.answer_length_multiplier)
     assert (curr_pipeline.wrapped_model.vocab_size ==

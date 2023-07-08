@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import torch
 from torch import Tensor, long, inference_mode, full, argmax, int8, eq, ones_like
@@ -14,14 +14,18 @@ class BatchEndToEndSingleSequencePipeLine:
             self,
             model_name: str,
             load_in_8bit: bool = False,
-            model_kwargs: dict = None,
+            model_kwargs: Optional[dict] = None,
+            generation_config: Optional[GenerationConfig] = None,
     ):
         """
         Create a new BatchEndToEndSingleSequencePipeLine.
         Args:
-            model_name: the name of the model to load from huggingfacehub.
-            load_in_8bit: if True, the model will be loaded in 8bit mode, which is faster but less accurate.
-            model_kwargs: additional arguments to pass to the model's from_pretrained method.
+            model_name: str. The name of the model to load from huggingfacehub.
+            load_in_8bit: BOOL. If True, the model will be loaded in 8bit mode, which is faster but less accurate.
+            model_kwargs: Optional dict. Additional arguments to pass to the model's from_pretrained method.
+                If None, no additional arguments will be passed.
+            generation_config: Optional GenerationConfig. The generation config for the model.
+                If None, the method would create a generation config from the model's config.
         Returns:
             A new BatchEndToEndSingleSequencePipeLine.
         """
@@ -41,7 +45,8 @@ class BatchEndToEndSingleSequencePipeLine:
             )
         self.device: torch.device = self.model.device
         self.max_total_len = self.model.config.max_position_embeddings
-        generation_config = GenerationConfig.from_model_config(self.model.config)
+        if generation_config is None:
+            generation_config = GenerationConfig.from_model_config(self.model.config)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(generation_config=generation_config)
 
     def tokenize_and_pad(

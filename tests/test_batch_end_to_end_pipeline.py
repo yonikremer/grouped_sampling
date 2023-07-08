@@ -243,6 +243,13 @@ class TestBatchEndToEndSingleSequencePipeLine:
         pipeline = BatchEndToEndSingleSequencePipeLine('gpt2', model_kwargs={'config': config})
         self.validate_pipeline(pipeline)
 
+    def test_init_generation_config(self):
+        config = AutoConfig.from_pretrained('gpt2')
+        config.top_k = 10
+        config.top_p = 0.9
+        pipeline = BatchEndToEndSingleSequencePipeLine('gpt2', generation_config=config)
+        self.validate_pipeline(pipeline)
+
     @staticmethod
     @inference_mode()
     def validate_pipeline(pipeline):
