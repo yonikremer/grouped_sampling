@@ -113,7 +113,7 @@ def create_pipeline() -> BatchEndToEndSingleSequencePipeLine:
         setattr(generation_config, key, value)
     pipeline = BatchEndToEndSingleSequencePipeLine(
         model_name=model_name,
-        load_in_8bit=True,
+        load_in_8bit=False,
         generation_config=generation_config,
     )
     return pipeline
