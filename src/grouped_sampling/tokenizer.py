@@ -5,7 +5,7 @@ from typing import Optional, Dict
 
 import requests
 from huggingface_hub.utils import validate_repo_id, HFValidationError, RepositoryNotFoundError
-from transformers import PreTrainedTokenizer, AutoTokenizer, PretrainedConfig, PreTrainedTokenizerFast
+from transformers import PreTrainedTokenizer, AutoTokenizer, PreTrainedTokenizerFast
 
 
 def get_padding_id(tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast) -> int:
