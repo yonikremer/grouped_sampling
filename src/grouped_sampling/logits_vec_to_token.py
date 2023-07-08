@@ -95,6 +95,7 @@ class LogitVectorToTokenPipeLine:
                 f"logits should be a 1D float tensor."
                 f"Got logits with shape {logits.shape} and dimention {logits.dim()}"
             )
+        # noinspection PyTypeChecker
         wrapped_logits = self.logit_wrapper(
             input_ids=input_ids, scores=logits, **kwargs
         )
