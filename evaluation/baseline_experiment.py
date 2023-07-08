@@ -12,7 +12,6 @@ from transformers import TextGenerationPipeline, AutoModelForCausalLM, AutoToken
 
 from evaluation.experiment_manager import ExperimentManager
 from evaluation import lang_code_to_name, process_translation_data, DATASET_NAME, disable_progress_bars
-from src.grouped_sampling import GenerationType
 
 disable_progress_bars()
 
@@ -134,7 +133,6 @@ def create_hugging_face_pipeline(debug: bool) -> Tuple[TextGenerationPipeline, D
         "repetition_penalty": 1.2,
         "group_size": 1,
         "end_of_sentence_stop": True,
-        "generation_type": GenerationType.RANDOM,
     }
     return pipeline, parameters
 
