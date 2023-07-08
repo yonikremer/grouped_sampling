@@ -339,3 +339,22 @@ class TestBatchEndToEndSingleSequencePipeLine:
             BatchEndToEndSingleSequencePipeLine("gpt2", model_kwargs=1)
         with pytest.raises(TypeError):
             BatchEndToEndSingleSequencePipeLine("gpt2", generation_config=1)
+
+    def test_generrate_huge_batch(self):
+        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2", max_batch_size=128)
+        number_of_prompts = 1024
+        prompts = ["Hello"] * number_of_prompts
+        output_length = 5
+        result = pipeline.genearte_batch(prompts, output_length)
+        assert isinstance(result, list)
+        assert len(result) == number_of_prompts
+        for output in result:
+            assert isinstance(output, str), f"{output} is not a string"
+            assert len(output) >= output_length, f"{len(output)} > {output_length}"
+            # Each token is at least 1 character long
+            output_tokens = pipeline.tokenizer.encode(output)
+            rebuilt_output = pipeline.tokenizer.decode(output_tokens)
+            assert rebuilt_output == output, f"{rebuilt_output} != {output}"
+            assert (
+                len(output_tokens) <= output_length
+            ), f"{len(output_tokens)} != {output_length}"

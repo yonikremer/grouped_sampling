@@ -16,6 +16,7 @@ class BatchEndToEndSingleSequencePipeLine:
         load_in_8bit: bool = False,
         model_kwargs: Optional[dict] = None,
         generation_config: Optional[GenerationConfig] = None,
+        max_batch_size: int = 128
     ):
         """
         Create a new BatchEndToEndSingleSequencePipeLine.
@@ -26,6 +27,7 @@ class BatchEndToEndSingleSequencePipeLine:
                 If None, no additional arguments will be passed.
             generation_config: Optional GenerationConfig. The generation config for the model.
                 If None, the method would create a generation config from the model's config.
+            max_batch_size: int. The maximum batch size to use.
         Returns:
             A new BatchEndToEndSingleSequencePipeLine.
         Raises:
@@ -46,6 +48,11 @@ class BatchEndToEndSingleSequencePipeLine:
             raise TypeError(
                 f"generation_config should be a GenerationConfig or None, got {type(generation_config)}"
             )
+        if not isinstance(max_batch_size, int):
+            raise TypeError(f"max_batch_size should be an int, got {type(max_batch_size)}")
+        if max_batch_size < 1:
+            raise ValueError(f"max_batch_size should be at least 1, got {max_batch_size}")
+        self.max_batch_size = max_batch_size
         if not load_in_8bit:
             torch.set_float32_matmul_precision("high")
         self.tokenizer = get_tokenizer(model_name)
@@ -181,6 +188,14 @@ class BatchEndToEndSingleSequencePipeLine:
         self._validate_output_length(output_length)
         if len(prompts) == 0:
             return []
+        if len(prompts) > self.max_batch_size:
+            batches: List[List[str]] = [
+                prompts[i:i + self.max_batch_size] for i in range(0, len(prompts), self.max_batch_size)
+            ]
+            outputs: List[str] = []
+            for batch in batches:
+                outputs.extend(self.genearte_batch(batch, output_length))
+            return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
         logits = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
