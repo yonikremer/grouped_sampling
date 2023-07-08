@@ -3,8 +3,7 @@ from typing import Generator
 import pytest
 from transformers import PreTrainedTokenizer
 
-from src.grouped_sampling.base_pipeline import get_padding_id
-from src.grouped_sampling.tokenizer import get_tokenizer
+from src.grouped_sampling.tokenizer import get_tokenizer, get_padding_id
 
 
 def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:
