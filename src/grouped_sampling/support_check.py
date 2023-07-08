@@ -41,6 +41,7 @@ def model_info_filter(model_info: ModelInfo, ) -> Optional[str]:
         return None
     return model_id
 
+@lru_cache(maxsize=1)
 def get_full_models_list() -> Set[str]:
     model_filter = ModelFilter(
         task="text-generation",
