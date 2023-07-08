@@ -17,6 +17,7 @@ from transformers import (
     GenerationConfig,
 )
 
+from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling.batch_end_to_end_pipeline import (
     BatchEndToEndSingleSequencePipeLine,
 )
@@ -142,18 +143,9 @@ class TestBatchEndToEndSingleSequencePipeLine:
     @staticmethod
     def setup_method():
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
-        new_path = "/home/yoni/miniconda3/envs/grouped_sampling_new/lib/python3.10/site-packages/nvidia/cuda_runtime/lib"
-        if "LD_LIBRARY_PATH" in os.environ:
-            os.environ["LD_LIBRARY_PATH"] += ":" + new_path
-        else:
-            os.environ["LD_LIBRARY_PATH"] = new_path
+        fix_ld_library_path()
         # noinspection PyUnresolvedReferences
         torch._dynamo.config.verbose = True
-        import bitsandbytes
-
-        assert (
-            bitsandbytes.COMPILED_WITH_CUDA
-        ), "bitsandbytes was not compiled with CUDA"
 
     #  Tests that the function returns a list of output strings for a batch of prompts with positive output length
     def test_happy_path(self):

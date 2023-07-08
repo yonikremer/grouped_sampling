@@ -14,6 +14,7 @@ from torch._dynamo import OptimizedModule
 from torch.nn import Module
 from transformers import AutoTokenizer, PretrainedConfig
 
+from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling.model import get_model
 
 """
@@ -49,16 +50,7 @@ Additional aspects:
 class TestGetModel:
     @staticmethod
     def setup_method():
-        os.environ["TOKENIZERS_PARALLELISM"] = "false"
-        new_path = "/home/yoni/miniconda3/envs/grouped_sampling_new/lib/python3.10/site-packages/nvidia/cuda_runtime/lib"
-        if "LD_LIBRARY_PATH" in os.environ:
-            os.environ["LD_LIBRARY_PATH"] += ":" + new_path
-        else:
-            os.environ["LD_LIBRARY_PATH"] = new_path
-        import bitsandbytes
-        assert (
-            bitsandbytes.COMPILED_WITH_CUDA
-        ), "bitsandbytes was not compiled with CUDA"
+        fix_ld_library_path()
 
     @staticmethod
     def validate_model(model):
