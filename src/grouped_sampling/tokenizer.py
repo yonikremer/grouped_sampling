@@ -1,6 +1,7 @@
 import json
 import os
 from functools import lru_cache
+from json import JSONDecodeError
 from typing import Optional, Dict
 
 import requests
@@ -84,7 +85,7 @@ def is_valid_model_name(model_name: str) -> bool:
 def get_model_name_from_repo(repo_id: str) -> str:
     try:
         model_config = get_model_config(repo_id)
-    except Exception:
+    except JSONDecodeError:
         return repo_id
     repo_id_no_org = repo_id.split("/")[-1]
     if model_config is not None and "_name_or_path" in model_config.keys():
@@ -100,7 +101,7 @@ def get_model_name_from_repo(repo_id: str) -> str:
 def get_tokenizer_name_from_repo(repo_id: str) -> str:
     try:
         tokenizer_config = get_tokenizer_config(repo_id)
-    except Exception:
+    except JSONDecodeError:
         return repo_id
     repo_id_no_org = repo_id.split("/")[-1]
     if tokenizer_config is not None and "name_or_path" in tokenizer_config.keys():
