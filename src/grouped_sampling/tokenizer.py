@@ -29,29 +29,6 @@ def get_padding_id(tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast) -> 
     )
 
 
-def get_end_of_text_id(tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast, config: PretrainedConfig):
-    if tokenizer.eos_token_id is not None:
-        return tokenizer.eos_token_id
-    if hasattr(tokenizer, "eos_token_ids") and tokenizer.eos_token_ids is not None:
-        return tokenizer.eos_token_ids[0]
-    if hasattr(config, "eos_token_id") and config.eos_token_id is not None:
-        return config.eos_token_id
-    if hasattr(config, "eos_token_ids") and config.eos_token_ids is not None:
-        raise RuntimeError("Could not find end of text id")
-    if hasattr(tokenizer, "_eos_token_type_id") and tokenizer.eos_token_type_id is not None:
-        return tokenizer.eos_token_type_id
-    if hasattr(tokenizer, "_eos_token") and tokenizer.eos_token is not None:
-        return int(tokenizer.eos_token)
-    raise RuntimeError(
-        "Could not find end of text id in a tokenizer with the following attributes: "
-        f"{tokenizer.__dict__.keys()}"
-        "And in a config with the following attributes: "
-        f"{config.__dict__.keys()}"
-        "Please make sure that the tokenizer or config has the following attributes: "
-        "eos_token_id, eos_token_ids"
-    )
-
-
 def get_model_config(model_name: str) -> Optional[dict]:
     """Returns the config.json file of a model from huggingface as a dictionary"""
     base_url = f"https://huggingface.co/{model_name}/raw/main/config.json"
