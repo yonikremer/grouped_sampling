@@ -22,7 +22,7 @@ class BatchEndToEndSingleSequencePipeLine:
         Create a new BatchEndToEndSingleSequencePipeLine.
         Args:
             model_name: str. The name of the model to load from huggingfacehub.
-            load_in_8bit: BOOL. If True, the model will be loaded in 8bit mode, which is faster but less accurate.
+            load_in_8bit: bool. If True, the model will be loaded in 8bit mode, which is faster but less accurate.
             model_kwargs: Optional dict. Additional arguments to pass to the model's from_pretrained method.
                 If None, no additional arguments will be passed.
             generation_config: Optional GenerationConfig. The generation config for the model.
@@ -31,7 +31,16 @@ class BatchEndToEndSingleSequencePipeLine:
             A new BatchEndToEndSingleSequencePipeLine.
         Raises:
             RepositoryNotFoundError: If the model is not found in the model hub.
+            TypeError: If one of the arguments is of the wrong type.
         """
+        if not isinstance(model_name, str):
+            raise TypeError(f"model_name should be a string, got {type(model_name)}")
+        if not isinstance(load_in_8bit, bool):
+            raise TypeError(f"load_in_8bit should be a bool, got {type(load_in_8bit)}")
+        if model_kwargs is not None and not isinstance(model_kwargs, dict):
+            raise TypeError(f"model_kwargs should be a dict or None, got {type(model_kwargs)}")
+        if generation_config is not None and not isinstance(generation_config, GenerationConfig):
+            raise TypeError(f"generation_config should be a GenerationConfig or None, got {type(generation_config)}")
         if not load_in_8bit:
             torch.set_float32_matmul_precision('high')
         self.tokenizer = get_tokenizer(model_name)

@@ -274,3 +274,12 @@ class TestBatchEndToEndSingleSequencePipeLine:
         assert pipeline.device.type == 'cuda', f"device is not cuda: {pipeline.device.type}"
         prompt = 'Hello'
         pipeline.genearte_batch(prompt, 5)
+
+    # noinspection PyTypeChecker
+    def test_init_wrong_types(self):
+        with pytest.raises(TypeError):
+            BatchEndToEndSingleSequencePipeLine(1)
+        with pytest.raises(TypeError):
+            BatchEndToEndSingleSequencePipeLine('gpt2', model_kwargs=1)
+        with pytest.raises(TypeError):
+            BatchEndToEndSingleSequencePipeLine('gpt2', generation_config=1)
