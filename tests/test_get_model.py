@@ -59,6 +59,10 @@ class TestGetModel:
         assert isinstance(
             model.config, PretrainedConfig
         ), "The model config is not an instance of PretrainedConfig"
+        if hasattr(model.config, "use_cache"):
+            assert not model.config.use_cache, "The model config use_cache is not False"
+        else:
+            print("The model config does not have a use_cache attribute")
         assert hasattr(model, "device"), "The model does not have a device attribute"
         assert isinstance(
             model.device, torch.device

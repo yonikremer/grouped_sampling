@@ -51,4 +51,6 @@ def get_model(
         warn("CUDA is not avilable, using the CPU instead")
     model = model.eval()
     model = compile(model)
+    if hasattr(model, "config") and hasattr(model.config, "use_cache"):
+        model.config.use_cache = False
     return model
