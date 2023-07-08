@@ -2,6 +2,7 @@ from warnings import warn
 
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import cuda, compile, inference_mode
+from torch._dynamo import OptimizedModule
 from torch.cuda import OutOfMemoryError
 from transformers import AutoModelForCausalLM
 
@@ -11,7 +12,7 @@ def get_model(
         model_name: str,
         load_in_8bit: bool = False,
         **kwargs,
-):
+) -> OptimizedModule:
     """
     Load a model from the huggingface model hub, and compile it for faster inference.
     args:
@@ -19,7 +20,7 @@ def get_model(
         load_in_8bit: if True, the model will be loaded in 8bit mode, which is faster but less accurate.
         **kwargs: additional arguments to pass to the model's from_pretrained method.
     returns:
-        the loaded model.
+        the loaded model OptimizedModule.
     raises: huggingface_hub.utils.RepositoryNotFoundError if the model is not found.
     """
     using_8bit = load_in_8bit and cuda.is_available()
