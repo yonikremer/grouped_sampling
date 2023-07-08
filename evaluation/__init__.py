@@ -105,9 +105,9 @@ def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, D
 
 
 def create_pipeline() -> BatchEndToEndSingleSequencePipeLine:
-    """Creates a text pipeline from the evaluated_text_generator_dict.json file"""
+    """Creates a text pipeline from the experiment_arguments.json file"""
     parent_folder = Path(__file__).parent
-    with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
+    with open(os.path.join(parent_folder, "experiment_arguments.json"), "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
     model_name = evaluated_text_generator_dict.pop("model_name")
     generation_config = GenerationConfig.from_pretrained(model_name)

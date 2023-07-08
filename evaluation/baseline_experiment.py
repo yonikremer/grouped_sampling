@@ -108,7 +108,7 @@ def run_experiment(
 def create_hugging_face_pipeline(debug: bool) -> Tuple[TextGenerationPipeline, Dict[str, Any]]:
     """Creates a translation pipeline from hugging face"""
     parent_folder = Path(__file__).parent
-    with open(os.path.join(parent_folder, "evaluated_text_generator_dict.json"), "r") as json_file:
+    with open(os.path.join(parent_folder, "experiment_arguments.json"), "r") as json_file:
         evaluated_text_generator_dict = json.load(json_file)
     model_name = "gpt2" if debug else evaluated_text_generator_dict["model_name"]
     model = AutoModelForCausalLM.from_pretrained(model_name)

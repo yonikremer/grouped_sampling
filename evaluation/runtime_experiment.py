@@ -61,9 +61,9 @@ def change_group_size(new_group_size: int):
     """
     Changes the group size value
      in the hyper_params_file
-      at ./grouped_sampling/evaluation/evaluated_text_generator_dict.json
+      at ./grouped_sampling/evaluation/experiment_arguments.json
     """
-    hyper_params_file = join(curr_dir, "evaluated_text_generator_dict.json")
+    hyper_params_file = join(curr_dir, "experiment_arguments.json")
     with open(hyper_params_file, 'r+') as f:
         data = json.load(f)
         data['group_size'] = new_group_size
