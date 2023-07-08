@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 import torch
-from huggingface_hub.utils import RepositoryNotFoundError
 from torch import Tensor, long, inference_mode, full, argmax, int8, eq, ones_like
 from transformers import GenerationConfig
 
