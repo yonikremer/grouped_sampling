@@ -220,7 +220,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
         self.validate_pipeline(pipeline)
 
     def test_init_non_existing_model(self):
-        with pytest.raises(OSError):
+        with pytest.raises(RepositoryNotFoundError):
             BatchEndToEndSingleSequencePipeLine('non_existing_model')
 
     @inference_mode()

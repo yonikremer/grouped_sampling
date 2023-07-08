@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 import torch
+from huggingface_hub.utils import RepositoryNotFoundError
 from torch import Tensor, long, inference_mode, full, argmax, int8, eq, ones_like
 from transformers import GenerationConfig
 
@@ -28,6 +29,8 @@ class BatchEndToEndSingleSequencePipeLine:
                 If None, the method would create a generation config from the model's config.
         Returns:
             A new BatchEndToEndSingleSequencePipeLine.
+        Raises:
+            RepositoryNotFoundError: If the model is not found in the model hub.
         """
         if not load_in_8bit:
             torch.set_float32_matmul_precision('high')
