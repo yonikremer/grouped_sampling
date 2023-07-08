@@ -1,1 +1,1 @@
-from batch_end_to_end_pipeline import BatchEndToEndSingleSequencePipeLine
+from .batch_end_to_end_pipeline import BatchEndToEndSingleSequencePipeLine
