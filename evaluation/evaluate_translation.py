@@ -8,8 +8,9 @@ from evaluate import TranslationEvaluator
 from datasets import Dataset, get_dataset_config_names
 
 from evaluation.experiment_manager import ExperimentManager
-from evaluation import lang_code_to_name, process_translation_data, DATASET_NAME, create_pipeline, disable_progress_bars
-from src.grouped_sampling import GroupedGenerationPipeLine
+from evaluation import lang_code_to_name, process_translation_data, DATASET_NAME, create_pipeline, \
+    disable_progress_bars, get_experiment_parameters
+from src.grouped_sampling import BatchEndToEndSingleSequencePipeLine
 
 disable_progress_bars()
 
@@ -18,7 +19,7 @@ def sub_experiment_half(
         my_evaluator: TranslationEvaluator,
         sub_set_half: Dataset,
         in_lang_code: str, out_lang_code: str,
-        generator: GroupedGenerationPipeLine,
+        generator: BatchEndToEndSingleSequencePipeLine,
         manager: ExperimentManager) -> None:
     input_lang_name, output_lang_name = lang_code_to_name(in_lang_code), lang_code_to_name(out_lang_code)
     prefix = f"Translate {input_lang_name} to {output_lang_name}: \n {input_lang_name}: "
@@ -36,15 +37,16 @@ def sub_experiment_half(
 
 
 def run_experiment(
-        pipeline: GroupedGenerationPipeLine,
+        pipeline: BatchEndToEndSingleSequencePipeLine,
         my_evaluator: TranslationEvaluator,
         sub_sut_names: List[str],
         debug: bool,
+        parameters: Dict[str, Any] = None,
 ) -> None:
     pipeline.task = "translation"
     manager = ExperimentManager(
         debug=debug,
-        parameters=pipeline.as_dict(),
+        parameters=parameters,
     )
     for i, sub_set_name in enumerate(sub_sut_names):
         print(f"Running sub-experiment {i + 1} out of {len(sub_sut_names)}")
@@ -76,7 +78,8 @@ def main(debug: bool = __debug__) -> None:
         sub_sut_names = sub_sut_names[:1]
     curr_text_generator = create_pipeline()
     curr_evaluator = create_evaluator()
-    run_experiment(curr_text_generator, curr_evaluator, sub_sut_names, debug)
+    parameters = get_experiment_parameters()
+    run_experiment(curr_text_generator, curr_evaluator, sub_sut_names, debug, parameters)
 
 
 if __name__ == "__main__":
