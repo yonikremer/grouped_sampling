@@ -8,3 +8,4 @@ bitsandbytes
 huggingface-hub
 numpy
 scipy
+tqdm

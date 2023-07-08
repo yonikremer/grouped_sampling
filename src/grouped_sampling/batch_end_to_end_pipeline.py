@@ -1,7 +1,9 @@
+import gc
 from typing import List, Optional
 
 import torch
 from torch import Tensor, long, inference_mode, full, argmax, int8, eq, ones_like
+import tqdm
 from transformers import GenerationConfig
 
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
@@ -189,11 +191,9 @@ class BatchEndToEndSingleSequencePipeLine:
         if len(prompts) == 0:
             return []
         if len(prompts) > self.max_batch_size:
-            batches: List[List[str]] = [
-                prompts[i:i + self.max_batch_size] for i in range(0, len(prompts), self.max_batch_size)
-            ]
             outputs: List[str] = []
-            for batch in batches:
+            for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
+                batch = prompts[i:i + self.max_batch_size]
                 outputs.extend(self.genearte_batch(batch, output_length))
             return outputs
         self._validate_prompts(prompts)
