@@ -2,6 +2,7 @@ from warnings import warn
 
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import cuda, compile, inference_mode
+# noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
 from torch.cuda import OutOfMemoryError
 from transformers import AutoModelForCausalLM

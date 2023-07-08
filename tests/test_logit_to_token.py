@@ -240,6 +240,7 @@ class TestLogitVectorToTokenPipeLine:
         input_ids = torch.tensor([])
         batch = torch.randn(3, 4, 5)
         with pytest.raises(ValueError):
+            # noinspection PyTypeChecker
             pipeline.batch_to_tokens(input_ids, batch)
 
     def test_batch_to_tokens_invalid_batch(self):
@@ -250,4 +251,5 @@ class TestLogitVectorToTokenPipeLine:
         ]
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         with pytest.raises(ValueError):
+            # noinspection PyTypeChecker
             pipeline.batch_to_tokens(input_ids, batch)
