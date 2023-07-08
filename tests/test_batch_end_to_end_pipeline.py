@@ -9,7 +9,7 @@ from huggingface_hub.utils import RepositoryNotFoundError
 from torch import inference_mode, Tensor, float32, long
 # noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
-from transformers import AutoConfig, PreTrainedTokenizer, PreTrainedTokenizerFast
+from transformers import AutoConfig, PreTrainedTokenizer, PreTrainedTokenizerFast, GenerationConfig
 
 from src.grouped_sampling.batch_end_to_end_pipeline import BatchEndToEndSingleSequencePipeLine
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
@@ -247,7 +247,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
         self.validate_pipeline(pipeline)
 
     def test_init_generation_config(self):
-        config = AutoConfig.from_pretrained('gpt2')
+        config = GenerationConfig.from_pretrained('gpt2')
         config.top_k = 10
         config.top_p = 0.9
         pipeline = BatchEndToEndSingleSequencePipeLine('gpt2', generation_config=config)
