@@ -93,13 +93,15 @@ def validate_output_tokens(pipeline: BatchEndToEndSingleSequencePipeLine, output
 
 
 class TestBatchEndToEndSingleSequencePipeLine:
-    def setup_method(self):
+    @staticmethod
+    def setup_method():
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
         new_path = "/home/yoni/miniconda3/envs/grouped_sampling_new/lib/python3.10/site-packages/nvidia/cuda_runtime/lib"
         if "LD_LIBRARY_PATH" in os.environ:
             os.environ["LD_LIBRARY_PATH"] += ":" + new_path
         else:
             os.environ["LD_LIBRARY_PATH"] = new_path
+        # noinspection PyUnresolvedReferences
         torch._dynamo.config.verbose = True
         import bitsandbytes
         assert bitsandbytes.COMPILED_WITH_CUDA, "bitsandbytes was not compiled with CUDA"
