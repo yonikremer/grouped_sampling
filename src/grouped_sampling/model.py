@@ -9,9 +9,9 @@ from transformers import AutoModelForCausalLM
 
 @inference_mode()
 def get_model(
-        model_name: str,
-        load_in_8bit: bool = False,
-        **kwargs,
+    model_name: str,
+    load_in_8bit: bool = False,
+    **kwargs,
 ) -> OptimizedModule:
     """
     Load a model from the huggingface model hub, and compile it for faster inference.
