@@ -5,6 +5,7 @@ from typing import List
 
 import pytest
 import torch
+from huggingface_hub.utils import RepositoryNotFoundError
 from torch import inference_mode, Tensor, float32, long
 # noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
@@ -73,7 +74,8 @@ def validate_padded_tokens(pipeline: BatchEndToEndSingleSequencePipeLine, padded
         raise ValueError("The first token can never be the padding token")
 
 
-def validate_output_tokens(pipeline: BatchEndToEndSingleSequencePipeLine, output_tokens: List[Tensor], output_length: int) -> None:
+def validate_output_tokens(pipeline: BatchEndToEndSingleSequencePipeLine, output_tokens: List[Tensor],
+                           output_length: int) -> None:
     if not isinstance(output_tokens, list):
         raise TypeError(f"output_tokens should be a list, got {type(output_tokens)}")
     if len(output_tokens) == 0:
@@ -81,7 +83,8 @@ def validate_output_tokens(pipeline: BatchEndToEndSingleSequencePipeLine, output
     if not all(isinstance(tokens, Tensor) for tokens in output_tokens):
         raise TypeError("output_tokens should be a list of tensors")
     if not all(tokens.device == pipeline.device for tokens in output_tokens):
-        raise ValueError(f"output_tokens should be on device {pipeline.device}, got {output_tokens[0].device} for some tokens")
+        raise ValueError(
+            f"output_tokens should be on device {pipeline.device}, got {output_tokens[0].device} for some tokens")
     if not all(tokens.dtype == long for tokens in output_tokens):
         raise ValueError(f"output_tokens should have dtype {long}, got {output_tokens[0].dtype} for some tokens")
     if not all(tokens.dim() == 1 for tokens in output_tokens):
@@ -254,7 +257,8 @@ class TestBatchEndToEndSingleSequencePipeLine:
     @inference_mode()
     def validate_pipeline(pipeline):
         assert pipeline.tokenizer is not None, 'tokenizer is None'
-        assert isinstance(pipeline.tokenizer, PreTrainedTokenizer) or isinstance(pipeline.tokenizer, PreTrainedTokenizerFast),\
+        assert isinstance(pipeline.tokenizer, PreTrainedTokenizer) or isinstance(pipeline.tokenizer,
+                                                                                 PreTrainedTokenizerFast), \
             'tokenizer is not PreTrainedTokenizer or PreTrainedTokenizerFast'
         assert pipeline.model is not None, 'model is None'
         assert isinstance(pipeline.model, OptimizedModule), 'model is not OptimizedModule'
