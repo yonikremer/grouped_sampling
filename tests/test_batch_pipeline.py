@@ -153,7 +153,7 @@ def validate_output_tokens(
         raise ValueError("output_tokens should have at most output_length tokens")
 
 
-class TestBatchEndToEndSingleSequencePipeLine:
+class TestBatchPipeLine:
     @staticmethod
     def setup_method():
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
