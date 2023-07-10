@@ -30,18 +30,6 @@ class TestLogitVectorToTokenPipeLine:
         [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.1, 0.4]]
     ).cuda()
 
-    #  Tests that single_logit_vector_to_token returns a valid token id when given valid input_ids and logits
-    def test_single_logit_vector_to_token_valid_input(self):
-        generation_config = GenerationConfig()
-        pipeline = LogitVectorToTokenPipeLine(generation_config)
-        result = pipeline.single_logit_vector_to_token(
-            self.exapmle_input_ids, self.example_logits_vector
-        )
-        assert result in self.exapmle_input_ids
-        assert isinstance(result, torch.Tensor)
-        assert result.shape == torch.Size([1])
-        assert result.dtype == torch.int64
-
     # Tests that batch_to_tokens returns valid token ids with valid input_ids and batch
     def test_batch_to_tokens_valid_input(self):
         input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
@@ -49,12 +37,9 @@ class TestLogitVectorToTokenPipeLine:
             torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]),
             torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]),
         ]
+
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         token_ids = pipeline.batch_to_tokens(input_ids, batch)
-        assert isinstance(token_ids, list)
-        assert len(token_ids) == 2
-        assert all(isinstance(tokens, Tensor) for tokens in token_ids)
-        assert all(token_ids[i].shape == (3,) for i in range(2))
-        assert all(
-            token_id.dtype == long for tokens in token_ids for token_id in tokens
-        )
+        assert isinstance(token_ids, Tensor)
+        assert token_ids.shape == torch.Size([2, 3])
+        assert token_ids.dtype == long

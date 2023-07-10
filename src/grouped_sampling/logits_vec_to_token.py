@@ -2,7 +2,7 @@ import copy
 from typing import List
 
 import torch
-from torch import Tensor, long, FloatTensor, multinomial, argmax, exp
+from torch import Tensor, multinomial, argmax, exp
 from transformers import (
     GenerationConfig,
     LogitsProcessorList,
@@ -74,29 +74,11 @@ class LogitVectorToTokenPipeLine:
             )
             self.logit_wrapper.append(softmax)
 
-    def single_logit_vector_to_token(
-        self, input_ids: Tensor, logits: FloatTensor, **kwargs
-    ) -> long:
-        """
-        Convert a single logit vector to a token id.
-        args:
-            input_ids: Tensor of shape (input_seq_len, ) with the input sequence.
-            logits: torch.FloatTensor of shape (vocab_size, ) with the logits for the next token.
-        """
-        logits = logits.unsqueeze(0)
-        # noinspection PyTypeChecker
-        wrapped_logits = self.logit_wrapper(
-            input_ids=input_ids, scores=logits, **kwargs
-        )
-        if self.do_sample:
-            return multinomial(wrapped_logits, num_samples=1)
-        return argmax(wrapped_logits, dim=-1)
-
     def batch_to_tokens(
         self,
         input_ids: Tensor,
         batch: List[Tensor],
-    ) -> List[Tensor]:
+    ) -> Tensor:
         """
         Convert a batch of logit matrices to tokens.
         args:
@@ -104,15 +86,19 @@ class LogitVectorToTokenPipeLine:
             batch: list of Tensors with shape (output_seq_len, vocab_size) with the logits for every sequence in the
                     batch.
         Returns:
-            A list of Tensors with length output_seq_len with the output tokens for every sequence in the batch.
+            A Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
         """
-        all_output_seqs = []
-        for logit_matrix, curr_sequence in zip(batch, input_ids):
-            curr_output_seq = torch.stack(
-                [
-                    self.single_logit_vector_to_token(curr_sequence, logit_vector)
-                    for logit_vector in logit_matrix
-                ],
-            ).squeeze()
-            all_output_seqs.append(curr_output_seq)
-        return all_output_seqs
+        batch: Tensor = torch.stack(batch, dim=1)
+        # batch shape: (output_seq_len, batch_size, vocab_size)
+        answer = []
+        for i in range(batch.shape[0]):
+            # noinspection PyTypeChecker
+            ith_tokens = self.logit_wrapper(
+                input_ids=input_ids, scores=batch[i], **{}
+            )  # a vector of size batch_size with the ith token for every sequence in the batch
+            if self.do_sample:
+                ith_tokens = multinomial(ith_tokens, num_samples=1)
+            else:
+                ith_tokens = argmax(ith_tokens, dim=-1)
+            answer.append(ith_tokens)
+        return torch.stack(answer, dim=1)

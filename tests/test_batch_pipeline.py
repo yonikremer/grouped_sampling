@@ -9,7 +9,7 @@ from typing import List
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode, Tensor, float32, long
+from torch import inference_mode, Tensor, float32, long, int64
 from transformers import (
     AutoConfig,
     PreTrainedTokenizer,
@@ -119,35 +119,27 @@ def validate_padded_tokens(
 
 def validate_output_tokens(
     pipeline: BatchPipeLine,
-    output_tokens: List[Tensor],
+    output_tokens: Tensor,
     output_length: int,
+    batch_size: int,
 ) -> None:
-    if not isinstance(output_tokens, list):
+    if not isinstance(output_tokens, Tensor):
         raise TypeError(f"output_tokens should be a list, got {type(output_tokens)}")
-    if len(output_tokens) == 0:
-        raise ValueError("output_tokens should not be empty")
-    if not all(isinstance(tokens, Tensor) for tokens in output_tokens):
-        raise TypeError("output_tokens should be a list of tensors")
-    if not all(tokens.device == pipeline.device for tokens in output_tokens):
+    if output_tokens.dtype != long:
+        raise ValueError(f"output_tokens should be a tensor of type long. Got {output_tokens.dtype} instead")
+    if output_tokens.device != pipeline.device:
         raise ValueError(
-            f"output_tokens should be on device {pipeline.device}, got {output_tokens[0].device} for some tokens"
+            f"output_tokens should be on device {pipeline.device}, got {output_tokens.device} for some tokens"
         )
-    if not all(tokens.dtype == long for tokens in output_tokens):
-        raise ValueError(
-            f"output_tokens should have dtype {long}, got {output_tokens[0].dtype} for some tokens"
-        )
-    if not all(tokens.dim() == 1 for tokens in output_tokens):
-        raise ValueError(
-            f"output_tokens should be 1D tensors, got {output_tokens[0].dim()}D tensor for some tokens"
-        )
+    if output_tokens.dim() != 2:
+        raise ValueError(f"output_tokens should be a 2D tensor. Got {output_tokens.dim()}D tensor")
+    if output_tokens.shape != (batch_size, output_length):
+        raise ValueError(f"output_tokens should be of size (batch_size, output_length). Got {output_tokens.shape} instead")
     if not all(
         0 <= token < pipeline.tokenizer.vocab_size
-        for sequence in output_tokens
-        for token in sequence
+        for token in output_tokens.flatten()
     ):
         raise ValueError("output_tokens should be valid token ids")
-    if not all(sequence.shape[0] <= output_length for sequence in output_tokens):
-        raise ValueError("output_tokens should have at most output_length tokens")
 
 
 class TestBatchPipeLine:
@@ -239,7 +231,7 @@ class TestBatchPipeLine:
             input_ids=padded_tokens,
             batch=logits,
         )
-        validate_output_tokens(pipeline, output_tokens, output_length)
+        validate_output_tokens(pipeline, output_tokens, output_length, 2)
 
     #  Tests that the function raises a ValueError if output_length is too large
     def test_huge_output_length(self):
@@ -295,7 +287,7 @@ class TestBatchPipeLine:
             input_ids=padded_tokens,
             batch=logits,
         )
-        validate_output_tokens(pipeline, output_tokens, 5)
+        validate_output_tokens(pipeline, output_tokens, 5, 2)
         # self.validate_pipeline(pipeline)
 
     def test_init_model_kwargs(self):
