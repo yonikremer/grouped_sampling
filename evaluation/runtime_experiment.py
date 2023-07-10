@@ -1,13 +1,19 @@
-import json
+import gc
+import os
 import time
-from os.path import abspath, dirname, join
-from typing import List, Iterable, Dict
+from os.path import abspath, dirname
+from typing import List, Iterable
 
+import torch
 from datasets import get_dataset_config_names
-import matplotlib.pyplot as plt
-from pandas import DataFrame
+from torch import inference_mode
+from torch.cuda import OutOfMemoryError
+import pandas as pd
 
-from evaluation import process_translation_data, DATASET_NAME, lang_code_to_name, create_pipeline
+from evaluation import process_translation_data, DATASET_NAME, lang_code_to_name, create_pipeline, \
+    get_experiment_parameters
+from fix_bitsandbytes import fix_ld_library_path
+from src.grouped_sampling import get_tokenizer
 
 curr_dir = dirname(abspath(__file__))
 
@@ -34,62 +40,44 @@ def get_prompts(debug: bool) -> List[str]:
     return prompts
 
 
-def save_plot(df: DataFrame):
-    plots_folder = join(curr_dir, "plots")
-    plot_path = join(plots_folder, "group_size_to_duration.png")
-    plt.xscale("log")
-    df.plot(x="group size", y="duration", kind="scatter", logx=True,
-            title="Duration as a function of (log scaled) Group Size",
-            xlabel="Group Size (Log Scaled)", ylabel="Duration (Hours)")
-    plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
+@inference_mode()
+def generate(prompts: List[str], max_batch_size: int, max_prompt_length: int):
+    pipeline = create_pipeline(max_batch_size)
+    output_length = pipeline.max_total_len - max_prompt_length - 1
+    pipeline.max_batch_size = max_batch_size
+    start_time = time.time()
+    pipeline.genearte_batch(prompts, output_length)
+    end_time = time.time()
+    duration_seconds = (end_time - start_time)
+    del pipeline
+    torch.cuda.empty_cache()
+    gc.collect()
+    return duration_seconds
 
 
-def save_csv(df: DataFrame):
-    tables_folder = join(curr_dir, "tables")
-    table_path = join(tables_folder, "group_size_to_duration.csv")
-    df.to_csv(table_path, index=False)
-
-
-def create_df(group_size_to_duration: Dict[int, float]):
-    df = DataFrame(columns=["group size", "duration"])
-    df["group size"] = group_size_to_duration.keys()
-    df["duration"] = group_size_to_duration.values()
-    return df
-
-
-def change_group_size(new_group_size: int):
-    """
-    Changes the group size value
-     in the hyper_params_file
-      at ./grouped_sampling/evaluation/experiment_arguments.json
-    """
-    hyper_params_file = join(curr_dir, "experiment_arguments.json")
-    with open(hyper_params_file, 'r+') as f:
-        data = json.load(f)
-        data['group_size'] = new_group_size
-        f.seek(0)
-        json.dump(data, f, indent=4)
-        f.truncate()
-
-
+@inference_mode()
 def main(debug: bool = False):
-    if debug:
-        group_sizes = [1024]
-    else:
-        group_sizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
-    group_size_to_duration = {}
+    fix_ld_library_path()
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    model_name = get_experiment_parameters()["model_name"]
+    tokenizer = get_tokenizer(model_name)
     prompts: List[str] = get_prompts(debug=debug)
-    for group_size in group_sizes:
-        change_group_size(group_size)
-        pipeline = create_pipeline()
-        start_time = time.time()
-        pipeline(prompts)
-        end_time = time.time()
-        duration_seconds = end_time - start_time
-        group_size_to_duration[group_size] = duration_seconds / 3600
-    df = create_df(group_size_to_duration)
-    save_plot(df)
-    save_csv(df)
+    batch_size_to_duration = {}
+    max_prompt_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
+    max_batch_size = 1
+    while max_batch_size <= len(prompts):
+        try:
+            batch_size_to_duration[max_batch_size] = generate(prompts, max_batch_size, max_prompt_length)
+        except OutOfMemoryError:
+            print(f"Out of memory for batch size {max_batch_size}")
+            break
+        max_batch_size *= 2
+    optimal_batch_size = min(batch_size_to_duration, key=batch_size_to_duration.get)
+    print(f"Optimal batch size: {optimal_batch_size}")
+    print(f"Duration for batch size {optimal_batch_size}: {batch_size_to_duration[optimal_batch_size]}")
+    df = pd.DataFrame.from_dict(batch_size_to_duration, orient="index", columns=["Duration"])
+    df.to_csv(f"{curr_dir}/batch_size_to_duration.csv")
+    df.plot()
 
 
 if __name__ == "__main__":
