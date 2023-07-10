@@ -9,7 +9,7 @@ from typing import List
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode, Tensor, float32, long, ones_like
+from torch import inference_mode, Tensor, float32, long
 
 # noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
@@ -17,16 +17,14 @@ from transformers import (
     AutoConfig,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
-    GenerationConfig, pipeline, AutoTokenizer, AutoModelForCausalLM,
+    GenerationConfig
 )
 
 from fix_bitsandbytes import fix_ld_library_path
-from src.grouped_sampling import get_tokenizer
 from src.grouped_sampling.batch_end_to_end_pipeline import (
     BatchEndToEndSingleSequencePipeLine,
 )
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
-from src.grouped_sampling.model import get_model
 
 """
 Code Analysis
@@ -381,40 +379,13 @@ class TestBatchEndToEndSingleSequencePipeLine:
         return ''.join(random.choice(letters) for _ in range(length))
 
     @inference_mode()
-    def test_gpu_memory_is_freed_transformers(self):
-        random.seed(0)
-        device = torch.device("cuda:0")
-        my_pipleline = pipeline(task="text-generation", model="fxmarty/tiny-llama-fast-tokenizer", device=device)
-        prompts1 = [self.random_prompt(2048) for _ in range(32)]
-        my_pipleline(prompts1)
-        mid_memory = torch.cuda.memory_allocated()
-        prompts2 = [self.random_prompt(2048) for _ in range(32)]
-        my_pipleline(prompts2)
-        end_memory = torch.cuda.memory_allocated()
-        assert end_memory == mid_memory, f"{end_memory} != {mid_memory}"
-
-    @inference_mode()
     def test_gpu_memory_is_freed(self):
         random.seed(0)
-        model = get_model("fxmarty/tiny-llama-fast-tokenizer")
-        tokenizer = get_tokenizer("fxmarty/tiny-llama-fast-tokenizer")
-        self.use_pipeline(model, tokenizer)
+        my_pipeline = BatchEndToEndSingleSequencePipeLine("fxmarty/tiny-llama-fast-tokenizer")
+        prompts = [self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)]
+        my_pipeline.genearte_batch(prompts, 10)
         mid_memory = torch.cuda.memory_allocated()
-        self.use_pipeline(model, tokenizer)
+        prompts = [self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)]
+        my_pipeline.genearte_batch(prompts, 10)
         end_memory = torch.cuda.memory_allocated()
         assert end_memory == mid_memory, f"{end_memory} != {mid_memory}"
-
-    @inference_mode()
-    def use_pipeline(self, model, tokenizer: PreTrainedTokenizerFast):
-        prompt = [self.random_prompt(64) for _ in range(2)]
-        input_ids = tokenizer.encode(prompt, return_tensors="pt").cuda()
-        attenction_mask = ones_like(
-            input_ids, dtype=torch.long, device=model.device, requires_grad=False
-        )
-        result = model(
-            output_attentions=False,
-            output_hidden_states=False,
-            input_ids=input_ids,
-            attention_mask=attenction_mask,
-        )
-        del result, input_ids
