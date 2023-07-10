@@ -83,31 +83,13 @@ class LogitVectorToTokenPipeLine:
             input_ids: Tensor of shape (input_seq_len, ) with the input sequence.
             logits: torch.FloatTensor of shape (vocab_size, ) with the logits for the next token.
         """
-        if input_ids.dim() != 1 or input_ids.shape[0] == 0:
-            raise ValueError(
-                f"input_ids should be a 1D long tensor. "
-                f"Got input ids with shape {input_ids.shape} and dimention {input_ids.dim()}"
-            )
         if logits.dim() == 1:
             logits = logits.unsqueeze(0)
-        if logits.dim() != 2 or min(logits.shape) == 0:
-            raise ValueError(
-                f"logits should be a 1D float tensor."
-                f"Got logits with shape {logits.shape} and dimention {logits.dim()}"
-            )
         # noinspection PyTypeChecker
         wrapped_logits = self.logit_wrapper(
             input_ids=input_ids, scores=logits, **kwargs
         )
         if self.do_sample:
-            if not torch.all(wrapped_logits >= 0):
-                raise RuntimeError(
-                    f"Probabilities should be non-negative, got {wrapped_logits}"
-                )
-            if not torch.isclose(torch.sum(wrapped_logits), torch.tensor(1.0)):
-                raise RuntimeError(
-                    f"Probabilities should sum to 1.0, got {wrapped_logits}"
-                )
             return multinomial(wrapped_logits, num_samples=1)
         return argmax(wrapped_logits, dim=-1)
 
@@ -121,17 +103,6 @@ class LogitVectorToTokenPipeLine:
             logits: torch.FloatTensor of shape (output_seq_len, vocab_size) with the logits for the next token.
             The input sequence is the same for all the logits.
         """
-        if input_ids.dim() != 1 or input_ids.shape[0] == 0:
-            raise ValueError(
-                f"input_ids should be a 1D long tensor"
-                f"Got input ids with shape {input_ids.shape} and dimention {input_ids.dim()}"
-            )
-        if logit_vectors.dim() != 2 or min(logit_vectors.shape) == 0:
-            raise ValueError(
-                f"logits should be a 2D float tensor"
-                f"Got logits with shape {logit_vectors.shape} and dimention {logit_vectors.dim()}"
-            )
-
         def logit_vector_to_token(vector) -> long:
             return self.single_logit_vector_to_token(input_ids, vector, **kwargs)
 
@@ -153,43 +124,6 @@ class LogitVectorToTokenPipeLine:
         Returns:
             A list of Tensors with length output_seq_len with the output tokens for every sequence in the batch.
         """
-        if not isinstance(input_ids, Tensor) or input_ids.dtype not in [
-            torch.long,
-            torch.int,
-        ]:
-            raise ValueError(
-                f"input_ids should be a Tensor of dtype int or long, got {input_ids}"
-            )
-        if not isinstance(batch, list):
-            raise ValueError(f"batch should be a a list, got {type(batch)}")
-        if not all(isinstance(logit_matrix, Tensor) for logit_matrix in batch):
-            raise ValueError(
-                f"batch should be a a list of Tensors, got a list of {type(batch[0])}"
-            )
-        if not all(
-            logit_matrix.dtype in (torch.float, torch.float16) for logit_matrix in batch
-        ):
-            raise ValueError(
-                f"batch should be a a list of Tensors of dtype float, got a list of {batch[0].dtype}"
-            )
-        if input_ids.dim() != 2 or min(input_ids.shape) == 0:
-            raise ValueError(
-                f"input_ids should be a 2D long tensor"
-                f"Got input ids with shape {input_ids.shape} and dimention {input_ids.dim()}"
-            )
-        if any(
-            logit_matrix.dim() != 2 or min(logit_matrix.shape) == 0
-            for logit_matrix in batch
-        ):
-            raise ValueError(
-                f"each logit matrix in batch should be a 2D float tensor"
-                f"Got batch: {batch}"
-            )
-        if len(batch) != input_ids.shape[0]:
-            raise ValueError(
-                f"batch and input_ids should have the same batch size"
-                f"Got batch with size {len(batch)} and input_ids with shape {input_ids.shape}"
-            )
         all_output_seqs = []
         for logit_matrix, curr_sequence in zip(batch, input_ids):
             curr_output_seq = torch.stack(
