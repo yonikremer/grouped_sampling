@@ -1,4 +1,3 @@
-import gc
 from typing import List, Optional
 
 import torch
@@ -191,6 +190,7 @@ class BatchPipeLine:
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
                 batch = prompts[i:i + self.max_batch_size]
                 outputs.extend(self.genearte_batch(batch, output_length))
+                torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
