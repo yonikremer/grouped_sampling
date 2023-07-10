@@ -225,7 +225,7 @@ class TestBatchPipeLine:
         with pytest.raises(TypeError):  # noinspection PyTypeChecker
             pipeline.genearte_batch(prompts, output_length)
 
-    @inference_mode
+    @inference_mode()
     def test_step_by_step_pipeline(self):
         pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
