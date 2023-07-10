@@ -148,3 +148,7 @@ class TestGetModel:
     def test_nonexistent_model(self):
         with pytest.raises(RepositoryNotFoundError):
             get_model("nonexistent-model")
+
+    def test_opt_dont_use_cache(self):
+        model = get_model("facebook/opt-125m")
+        assert not model.config.use_cache, "The model config use_cache is not False"
