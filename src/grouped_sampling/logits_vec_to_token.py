@@ -1,8 +1,9 @@
 import copy
+import gc
 from typing import List
 
 import torch
-from torch import Tensor, multinomial, argmax, exp
+from torch import Tensor, multinomial, argmax, exp, inference_mode
 from transformers import (
     GenerationConfig,
     LogitsProcessorList,
@@ -74,6 +75,7 @@ class LogitVectorToTokenPipeLine:
             )
             self.logit_wrapper.append(softmax)
 
+    @inference_mode()
     def batch_to_tokens(
         self,
         input_ids: Tensor,
@@ -93,12 +95,18 @@ class LogitVectorToTokenPipeLine:
         answer = []
         for i in range(batch.shape[0]):
             # noinspection PyTypeChecker
-            ith_tokens = self.logit_wrapper(
+            proccessed_logits = self.logit_wrapper(
                 input_ids=input_ids, scores=batch[i], **{}
             )  # a vector of size batch_size with the ith token for every sequence in the batch
             if self.do_sample:
-                ith_tokens = multinomial(ith_tokens, num_samples=1)
+                ith_tokens = multinomial(proccessed_logits, num_samples=1)
             else:
-                ith_tokens = argmax(ith_tokens, dim=-1)
+                ith_tokens = argmax(proccessed_logits, dim=-1)
+            del proccessed_logits
             answer.append(ith_tokens)
-        return torch.stack(answer, dim=1)
+        tensor_answer = torch.stack(answer, dim=1)
+        answer.clear()
+        del answer
+        torch.cuda.empty_cache()
+        gc.collect()
+        return tensor_answer
