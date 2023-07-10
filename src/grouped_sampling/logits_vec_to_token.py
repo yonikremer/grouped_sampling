@@ -93,23 +93,6 @@ class LogitVectorToTokenPipeLine:
             return multinomial(wrapped_logits, num_samples=1)
         return argmax(wrapped_logits, dim=-1)
 
-    def logit_matrix_to_tokens(
-        self, input_ids: Tensor, logit_vectors: Tensor, **kwargs
-    ) -> Tensor:
-        """
-        Convert multipule logit vectors to token ids in parallel.
-        args:
-            input_ids: Tensor of shape (input_seq_len, ) with the input sequence.
-            logits: torch.FloatTensor of shape (output_seq_len, vocab_size) with the logits for the next token.
-            The input sequence is the same for all the logits.
-        """
-        def logit_vector_to_token(vector) -> long:
-            return self.single_logit_vector_to_token(input_ids, vector, **kwargs)
-
-        tokens = [logit_vector_to_token(logit_vector) for logit_vector in logit_vectors]
-
-        return torch.stack(tokens, dim=0).squeeze()
-
     def batch_to_tokens(
         self,
         input_ids: Tensor,
