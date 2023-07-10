@@ -59,16 +59,12 @@ class BatchPipeLine:
             torch.set_float32_matmul_precision("high")
         self.tokenizer = get_tokenizer(model_name)
         if model_kwargs is None:
-            self.model = get_model(
-                model_name=model_name,
-                load_in_8bit=load_in_8bit,
-            )
-        else:
-            self.model = get_model(
-                model_name=model_name,
-                load_in_8bit=load_in_8bit,
-                **model_kwargs,
-            )
+            model_kwargs = {}
+        self.model = get_model(
+            model_name=model_name,
+            load_in_8bit=load_in_8bit,
+            **model_kwargs,
+        )
         self.device: torch.device = self.model.device
         self.max_total_len = self.model.config.max_position_embeddings
         if generation_config is None:
