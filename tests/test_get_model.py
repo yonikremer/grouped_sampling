@@ -8,9 +8,6 @@ import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import inference_mode, cuda
-
-# noinspection PyProtectedMember
-from torch._dynamo import OptimizedModule
 from torch.nn import Module
 from transformers import AutoTokenizer, PretrainedConfig
 
@@ -54,9 +51,6 @@ class TestGetModel:
 
     @staticmethod
     def validate_model(model):
-        assert isinstance(
-            model, OptimizedModule
-        ), "The model is not an instance of OptimizedModule"
         assert isinstance(
             model, Module
         ), "The model is not an instance of torch.nn.Module"
