@@ -7,7 +7,7 @@ from warnings import warn
 from datasets import Dataset, load_dataset
 from transformers import GenerationConfig
 
-from src.grouped_sampling import BatchEndToEndSingleSequencePipeLine
+from src.grouped_sampling import BatchPipeLine
 
 try:
     # noinspection PyUnresolvedReferences
@@ -104,17 +104,18 @@ def process_translation_data(sub_set_name: str, debug: bool) -> Tuple[Dataset, D
     return subset_part1, subset_part2, language_code1, language_code2
 
 
-def create_pipeline() -> BatchEndToEndSingleSequencePipeLine:
+def create_pipeline(max_batch_size: int) -> BatchPipeLine:
     """Creates a text pipeline from the experiment_arguments.json file"""
     experiment_parameters = get_experiment_parameters()
     model_name = experiment_parameters.pop("model_name")
     generation_config = GenerationConfig.from_pretrained(model_name)
     for key, value in experiment_parameters.items():
         setattr(generation_config, key, value)
-    pipeline = BatchEndToEndSingleSequencePipeLine(
-        model_name=model_name,
+    pipeline = BatchPipeLine(
+        model_name="gpt2",
         load_in_8bit=False,
         generation_config=generation_config,
+        max_batch_size=max_batch_size,
     )
     return pipeline
 
