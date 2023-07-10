@@ -1,7 +1,7 @@
 from warnings import warn
 
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import cuda, compile, inference_mode
+from torch import cuda, inference_mode
 # noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
 from torch.cuda import OutOfMemoryError
@@ -51,7 +51,6 @@ def get_model(
     else:
         warn("CUDA is not avilable, using the CPU instead")
     model = model.eval()
-    model = compile(model)
     if hasattr(model, "config") and hasattr(model.config, "use_cache"):
         model.config.use_cache = False
     # noinspection PyTypeChecker
