@@ -172,7 +172,7 @@ def get_tokenizer(
             f"Model {model_name} not found in huggingfacehub. Local tokenizers are not supported yet.\n"
             f"If {model_name} is a tokenizers model, please make sure you are logged in.\n"
             f"If {model_name} is a tokenizers model, please make sure it exists.\n"
-            + str(error)
+            + str(error), response=None
         )
     if not hasattr(raw_tokenizer, "pad_token_id") or raw_tokenizer.pad_token_id is None:
         raw_tokenizer.pad_token_id = get_padding_id(raw_tokenizer)
