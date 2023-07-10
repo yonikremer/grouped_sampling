@@ -83,8 +83,7 @@ class LogitVectorToTokenPipeLine:
             input_ids: Tensor of shape (input_seq_len, ) with the input sequence.
             logits: torch.FloatTensor of shape (vocab_size, ) with the logits for the next token.
         """
-        if logits.dim() == 1:
-            logits = logits.unsqueeze(0)
+        logits = logits.unsqueeze(0)
         # noinspection PyTypeChecker
         wrapped_logits = self.logit_wrapper(
             input_ids=input_ids, scores=logits, **kwargs
