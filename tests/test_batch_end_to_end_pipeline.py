@@ -21,7 +21,7 @@ from transformers import (
 )
 
 from fix_bitsandbytes import fix_ld_library_path
-from src.grouped_sampling.batch_end_to_end_pipeline import (
+from src.grouped_sampling.batch_pipeline import (
     BatchPipeLine,
 )
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
