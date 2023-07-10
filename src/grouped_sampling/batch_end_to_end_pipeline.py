@@ -11,7 +11,7 @@ from src.grouped_sampling.model import get_model
 from src.grouped_sampling.tokenizer import get_tokenizer
 
 
-class BatchEndToEndSingleSequencePipeLine:
+class BatchPipeLine:
     def __init__(
         self,
         model_name: str,

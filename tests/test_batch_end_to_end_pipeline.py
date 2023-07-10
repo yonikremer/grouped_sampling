@@ -22,7 +22,7 @@ from transformers import (
 
 from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling.batch_end_to_end_pipeline import (
-    BatchEndToEndSingleSequencePipeLine,
+    BatchPipeLine,
 )
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
@@ -50,7 +50,7 @@ Fields:
 
 @inference_mode()
 def use_model():
-    model = BatchEndToEndSingleSequencePipeLine("gpt2").model
+    model = BatchPipeLine("gpt2").model
     input_tokens = torch.tensor([[1, 2, 3]]).cuda()
     with torch.no_grad():
         output = model(input_tokens)
@@ -60,7 +60,7 @@ def use_model():
 
 
 def validate_logits(
-    pipeleine: BatchEndToEndSingleSequencePipeLine,
+    pipeleine: BatchPipeLine,
     logits: List[Tensor],
     output_length: int,
 ) -> None:
@@ -89,7 +89,7 @@ def validate_logits(
 
 
 def validate_padded_tokens(
-    pipeline: BatchEndToEndSingleSequencePipeLine, padded_tokens: Tensor
+    pipeline: BatchPipeLine, padded_tokens: Tensor
 ) -> None:
     if padded_tokens.dim() != 2:
         raise ValueError(
@@ -121,7 +121,7 @@ def validate_padded_tokens(
 
 
 def validate_output_tokens(
-    pipeline: BatchEndToEndSingleSequencePipeLine,
+    pipeline: BatchPipeLine,
     output_tokens: List[Tensor],
     output_length: int,
 ) -> None:
@@ -163,7 +163,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     #  Tests that the function returns a list of output strings for a batch of prompts with positive output length
     def test_happy_path(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 5
         result = pipeline.genearte_batch(prompts, output_length)
@@ -182,7 +182,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     #  Tests that the function returns an empty list for an empty batch
     def test_empty_prompts(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = []
         output_length = 5
         expected_output = []
@@ -190,7 +190,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     #  Tests that the function returns a list of empty strings for a batch of prompts with output length 0
     def test_empty_output_length(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 0
         expected_output = ["", ""]
@@ -198,7 +198,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     #  Tests that the function returns a list of empty strings for an empty list of prompts
     def test_empty_prompts_list(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = [""]
         output_length = 5
         with pytest.raises(ValueError):
@@ -206,7 +206,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     #  Tests that the function raises a ValueError if the prompts contain an empty string
     def test_empty_string_in_prompts(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", ""]
         output_length = 5
         with pytest.raises(ValueError):
@@ -214,7 +214,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     #  Tests that the function raises a ValueError if output_length is negative
     def test_negative_output_length(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = -1
         with pytest.raises(ValueError):
@@ -222,7 +222,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     #  Tests that the function raises a ValueError if output_length is not an integer
     def test_non_integer_output_length(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 1.5
         with pytest.raises(TypeError):  # noinspection PyTypeChecker
@@ -230,7 +230,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     @inference_mode
     def test_step_by_step_pipeline(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 5
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
@@ -246,7 +246,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     #  Tests that the function raises a ValueError if output_length is too large
     def test_huge_output_length(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 1000000
         with pytest.raises(ValueError):
@@ -254,7 +254,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
 
     # test that genearte_batch works correctrly when it gets a string as input
     def test_string_input(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         prompt = "Hello"
         output_length = 5
         result = pipeline.genearte_batch(prompt, output_length)
@@ -272,12 +272,12 @@ class TestBatchEndToEndSingleSequencePipeLine:
             ), f"{len(output_tokens)} != {output_length}"
 
     def test_init(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2")
+        pipeline = BatchPipeLine("gpt2")
         self.validate_pipeline(pipeline)
 
     def test_init_non_existing_model(self):
         with pytest.raises(RepositoryNotFoundError):
-            BatchEndToEndSingleSequencePipeLine("non_existing_model")
+            BatchPipeLine("non_existing_model")
 
     @inference_mode()
     def test_init_8bits_model(self):
@@ -286,7 +286,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
         assert (
             bitsandbytes.COMPILED_WITH_CUDA
         ), "bitsandbytes was not compiled with CUDA"
-        pipeline = BatchEndToEndSingleSequencePipeLine(
+        pipeline = BatchPipeLine(
             "fxmarty/tiny-llama-fast-tokenizer"
         )
         prompts = ["Hello", "How are you?"]
@@ -304,7 +304,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
     def test_init_model_kwargs(self):
         config = AutoConfig.from_pretrained("gpt2")
         config.output_hidden_states = True
-        pipeline = BatchEndToEndSingleSequencePipeLine(
+        pipeline = BatchPipeLine(
             "gpt2", model_kwargs={"config": config}
         )
         self.validate_pipeline(pipeline)
@@ -313,7 +313,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
         config = GenerationConfig.from_pretrained("gpt2")
         config.top_k = 10
         config.top_p = 0.9
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2", generation_config=config)
+        pipeline = BatchPipeLine("gpt2", generation_config=config)
         self.validate_pipeline(pipeline)
 
     @staticmethod
@@ -348,14 +348,14 @@ class TestBatchEndToEndSingleSequencePipeLine:
     # noinspection PyTypeChecker
     def test_init_wrong_types(self):
         with pytest.raises(TypeError):
-            BatchEndToEndSingleSequencePipeLine(1)
+            BatchPipeLine(1)
         with pytest.raises(TypeError):
-            BatchEndToEndSingleSequencePipeLine("gpt2", model_kwargs=1)
+            BatchPipeLine("gpt2", model_kwargs=1)
         with pytest.raises(TypeError):
-            BatchEndToEndSingleSequencePipeLine("gpt2", generation_config=1)
+            BatchPipeLine("gpt2", generation_config=1)
 
     def test_generrate_huge_batch(self):
-        pipeline = BatchEndToEndSingleSequencePipeLine("gpt2", max_batch_size=128)
+        pipeline = BatchPipeLine("gpt2", max_batch_size=128)
         number_of_prompts = 1024
         prompts = ["Hello"] * number_of_prompts
         output_length = 5
@@ -381,7 +381,7 @@ class TestBatchEndToEndSingleSequencePipeLine:
     @inference_mode()
     def test_gpu_memory_is_freed(self):
         random.seed(0)
-        my_pipeline = BatchEndToEndSingleSequencePipeLine("fxmarty/tiny-llama-fast-tokenizer")
+        my_pipeline = BatchPipeLine("fxmarty/tiny-llama-fast-tokenizer")
         prompts = [self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)]
         my_pipeline.genearte_batch(prompts, 10)
         mid_memory = torch.cuda.memory_allocated()
