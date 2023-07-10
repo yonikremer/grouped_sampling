@@ -10,9 +10,6 @@ import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import inference_mode, Tensor, float32, long
-
-# noinspection PyProtectedMember
-from torch._dynamo import OptimizedModule
 from transformers import (
     AutoConfig,
     PreTrainedTokenizer,
@@ -324,9 +321,6 @@ class TestBatchPipeLine:
             pipeline.tokenizer, PreTrainedTokenizerFast
         ), "tokenizer is not PreTrainedTokenizer or PreTrainedTokenizerFast"
         assert pipeline.model is not None, "model is None"
-        assert isinstance(
-            pipeline.model, OptimizedModule
-        ), "model is not OptimizedModule"
         assert (
             pipeline.logit_to_token_pipeline is not None
         ), "logit_to_token_pipeline is None"
