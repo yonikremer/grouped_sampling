@@ -48,3 +48,8 @@ class TestGetTokenizer:
     def test_repo_not_found(self):
         with pytest.raises(RepositoryNotFoundError):
             get_tokenizer("nonexistent-model")
+
+    # Tests that llama tokenizers are supported
+    def test_llama_tokenizer(self):
+        tokenizer = get_tokenizer("fxmarty/tiny-llama-fast-tokenizer")
+        assert isinstance(tokenizer, (PreTrainedTokenizer, PreTrainedTokenizerFast))
