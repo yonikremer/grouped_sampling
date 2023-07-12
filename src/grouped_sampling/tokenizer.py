@@ -2,15 +2,15 @@ import json
 import os
 from functools import lru_cache
 from json import JSONDecodeError
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import requests
 from huggingface_hub.utils import (
-    validate_repo_id,
     HFValidationError,
     RepositoryNotFoundError,
+    validate_repo_id,
 )
-from transformers import PreTrainedTokenizer, AutoTokenizer, PreTrainedTokenizerFast
+from transformers import AutoTokenizer, PreTrainedTokenizer, PreTrainedTokenizerFast
 
 
 def get_padding_id(tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast) -> int:
@@ -172,7 +172,8 @@ def get_tokenizer(
             f"Model {model_name} not found in huggingfacehub. Local tokenizers are not supported yet.\n"
             f"If {model_name} is a tokenizers model, please make sure you are logged in.\n"
             f"If {model_name} is a tokenizers model, please make sure it exists.\n"
-            + str(error), response=None
+            + str(error),
+            response=None,
         )
     if not hasattr(raw_tokenizer, "pad_token_id") or raw_tokenizer.pad_token_id is None:
         raw_tokenizer.pad_token_id = get_padding_id(raw_tokenizer)
