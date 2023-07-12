@@ -69,7 +69,7 @@ class LogitVectorToTokenPipeLine:
             A Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
         """
         batch_size = input_ids.size(0)
-        answer = torch.zeros((batch_size, output_length), dtype=torch.long, device=logits.device)
+        answer = torch.empty((batch_size, output_length), dtype=torch.long, device=logits.device)
         for i in range(output_length):
             # noinspection PyTypeChecker
             logits[:, i, :] = self.logit_wrapper(

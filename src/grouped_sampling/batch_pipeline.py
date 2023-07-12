@@ -138,7 +138,7 @@ class BatchPipeLine:
         padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
         batch_size = padded_tokens.shape[0]
-        relavent_logits = torch.zeros(
+        relavent_logits = torch.empty(
             (batch_size, output_length, all_logits.shape[-1]),
             device=self.device,
             dtype=all_logits.dtype
