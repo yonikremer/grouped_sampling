@@ -7,7 +7,6 @@ from typing import List, Iterable
 import torch
 from datasets import get_dataset_config_names
 from torch import inference_mode
-from torch.cuda import OutOfMemoryError
 import pandas as pd
 
 from evaluation import process_translation_data, DATASET_NAME, lang_code_to_name, create_pipeline, \
@@ -64,14 +63,8 @@ def main(debug: bool = False):
     prompts: List[str] = get_prompts(debug=debug)
     batch_size_to_duration = {}
     max_prompt_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
-    max_batch_size = 1
-    while max_batch_size <= len(prompts):
-        try:
-            batch_size_to_duration[max_batch_size] = generate(prompts, max_batch_size, max_prompt_length)
-        except OutOfMemoryError:
-            print(f"Out of memory for batch size {max_batch_size}")
-            break
-        max_batch_size *= 2
+    max_batch_size = 32
+    batch_size_to_duration[max_batch_size] = generate(prompts, max_batch_size, max_prompt_length)
     optimal_batch_size = min(batch_size_to_duration, key=batch_size_to_duration.get)
     print(f"Optimal batch size: {optimal_batch_size}")
     print(f"Duration for batch size {optimal_batch_size}: {batch_size_to_duration[optimal_batch_size]}")
