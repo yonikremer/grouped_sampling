@@ -1,5 +1,5 @@
 {
-    "model_name": "facebook/opt-125m",
+    "model_name": "fxmarty/tiny-llama-fast-tokenizer",
     "temp": 1.0,
     "top_k": null,
     "top_p": 1.0
