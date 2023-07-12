@@ -1,4 +1,3 @@
-import gc
 import os
 import random
 import string
@@ -43,17 +42,6 @@ Fields:
 - max_total_len: The maximum length of the input sequence that the model can handle.
 - logit_to_token_pipeline: An object of the LogitVectorToTokenPipeLine class, which provides methods for converting logits to tokens.
 """
-
-
-@inference_mode()
-def use_model():
-    model = BatchPipeLine("gpt2").model
-    input_tokens = torch.tensor([[1, 2, 3]]).cuda()
-    with torch.no_grad():
-        output = model(input_tokens)
-    del model, input_tokens, output
-    torch.cuda.empty_cache()
-    gc.collect()
 
 
 def validate_logits(
