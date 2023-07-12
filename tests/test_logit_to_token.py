@@ -39,7 +39,7 @@ class TestLogitVectorToTokenPipeLine:
         ], device="cuda")
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         output_length = 3
-        token_ids = pipeline.batch_to_tokens(input_ids, batch, output_length)
+        token_ids = pipeline.logits_to_tokens(input_ids, batch, output_length)
         assert isinstance(token_ids, Tensor)
         assert token_ids.shape == torch.Size([2, output_length])
         assert token_ids.dtype == long
@@ -53,6 +53,6 @@ class TestLogitVectorToTokenPipeLine:
         batch = torch.randn((batch_size, vocab_size, output_length), device="cuda")
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         start_mem = torch.cuda.memory_allocated()
-        pipeline.batch_to_tokens(input_ids, batch, output_length)
+        pipeline.logits_to_tokens(input_ids, batch, output_length)
         end_mem = torch.cuda.memory_allocated()
         assert end_mem == start_mem

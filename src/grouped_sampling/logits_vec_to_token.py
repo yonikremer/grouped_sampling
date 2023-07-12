@@ -53,30 +53,30 @@ class LogitVectorToTokenPipeLine:
             self.logit_wrapper.append(softmax)
 
     @inference_mode()
-    def batch_to_tokens(
+    def logits_to_tokens(
         self,
         input_ids: Tensor,
-        batch: Tensor,
+        logits: Tensor,
         output_length: int,
     ) -> Tensor:
         """
         Convert a batch of logit matrices to tokens.
         args:
             input_ids: Tensor of shape (batch_size, input_seq_len) with the input sequences.
-            batch: Logits of shape (batch_size, output_seq_len, vocab_size).
+            batch: Tesnor of shape (batch_size, output_seq_len, vocab_size).
             output_length: int. The length of the output sequences.
         Returns:
             A Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
         """
         batch_size = input_ids.size(0)
-        answer = torch.zeros((batch_size, output_length), dtype=torch.long, device=batch.device)
+        answer = torch.zeros((batch_size, output_length), dtype=torch.long, device=logits.device)
         for i in range(output_length):
             # noinspection PyTypeChecker
-            batch[:, i, :] = self.logit_wrapper(
-                input_ids=input_ids, scores=batch[:, i, :]
+            logits[:, i, :] = self.logit_wrapper(
+                input_ids=input_ids, scores=logits[:, i, :]
             )  # a vector of size batch_size with the ith token for every sequence in the batch
             if self.do_sample:
-                answer[:, i] = multinomial(batch[:, i, :], num_samples=1)
+                answer[:, i] = multinomial(logits[:, i, :], num_samples=1)
             else:
-                answer[:, i] = argmax(batch[:, i, :], dim=-1)
+                answer[:, i] = argmax(logits[:, i, :], dim=-1)
         return answer

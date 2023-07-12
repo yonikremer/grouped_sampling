@@ -206,9 +206,9 @@ class TestBatchPipeLine:
         assert not padded_tokens.requires_grad
         logits = pipeline.tokens_batch_to_logit_matrices(padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
-        output_tokens = pipeline.logit_to_token_pipeline.batch_to_tokens(
+        output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
-            batch=logits,
+            logits=logits,
             output_length=output_length,
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
@@ -264,9 +264,9 @@ class TestBatchPipeLine:
         validate_padded_tokens(pipeline, padded_tokens)
         logits = pipeline.tokens_batch_to_logit_matrices(padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
-        output_tokens = pipeline.logit_to_token_pipeline.batch_to_tokens(
+        output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
-            batch=logits,
+            logits=logits,
             output_length=output_length,
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
