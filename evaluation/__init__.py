@@ -113,7 +113,7 @@ def create_pipeline(max_batch_size: int) -> BatchPipeLine:
         setattr(generation_config, key, value)
     pipeline = BatchPipeLine(
         model_name=model_name,
-        load_in_8bit=False,
+        load_in_8bit=True,
         generation_config=generation_config,
         max_batch_size=max_batch_size,
     )
