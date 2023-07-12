@@ -1,5 +1,4 @@
 import copy
-import gc
 from typing import List
 
 import torch
@@ -106,9 +105,4 @@ class LogitVectorToTokenPipeLine:
                 ith_tokens = argmax(proccessed_logits, dim=-1)
             del proccessed_logits
             answer.append(ith_tokens)
-        tensor_answer = torch.stack(answer, dim=1)
-        answer.clear()
-        del answer
-        torch.cuda.empty_cache()
-        gc.collect()
-        return tensor_answer
+        return torch.stack(answer, dim=1)
