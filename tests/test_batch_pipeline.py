@@ -217,7 +217,8 @@ class TestBatchPipeLine:
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.batch_to_tokens(
             input_ids=padded_tokens,
-            batch=logits,
+            list_batch=logits,
+            output_length=output_length,
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
 
@@ -267,15 +268,17 @@ class TestBatchPipeLine:
             "fxmarty/tiny-llama-fast-tokenizer"
         )
         prompts = ["Hello", "How are you?"]
-        padded_tokens = pipeline.tokenize_and_pad(prompts, 5)
+        output_length = 5
+        padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
-        logits = pipeline.tokens_batch_to_logit_matrices(padded_tokens, 5)
-        validate_logits(pipeline, logits, 5)
+        logits = pipeline.tokens_batch_to_logit_matrices(padded_tokens, output_length)
+        validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.batch_to_tokens(
             input_ids=padded_tokens,
-            batch=logits,
+            list_batch=logits,
+            output_length=output_length,
         )
-        validate_output_tokens(pipeline, output_tokens, 5, 2)
+        validate_output_tokens(pipeline, output_tokens, output_length, 2)
         # self.validate_pipeline(pipeline)
 
     def test_init_model_kwargs(self):

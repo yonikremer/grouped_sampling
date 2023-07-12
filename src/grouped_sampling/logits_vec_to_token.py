@@ -79,21 +79,23 @@ class LogitVectorToTokenPipeLine:
     def batch_to_tokens(
         self,
         input_ids: Tensor,
-        batch: List[Tensor],
+        list_batch: List[Tensor],
+        output_length: int,
     ) -> Tensor:
         """
         Convert a batch of logit matrices to tokens.
         args:
             input_ids: Tensor of shape (batch_size, input_seq_len) with the input sequences.
-            batch: list of Tensors with shape (output_seq_len, vocab_size) with the logits for every sequence in the
+            list_batch: list of Tensors with shape (output_seq_len, vocab_size) with the logits for every sequence in the
                     batch.
+            output_length: int. The length of the output sequences.
         Returns:
             A Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
         """
-        batch: Tensor = torch.stack(batch, dim=1)
+        batch: Tensor = torch.stack(list_batch, dim=1)
         # batch shape: (output_seq_len, batch_size, vocab_size)
         answer = []
-        for i in range(batch.shape[0]):
+        for i in range(output_length):
             # noinspection PyTypeChecker
             proccessed_logits = self.logit_wrapper(
                 input_ids=input_ids, scores=batch[i], **{}

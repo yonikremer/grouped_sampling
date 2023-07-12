@@ -197,6 +197,7 @@ class BatchPipeLine:
         logits = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
         output_tokens = self.logit_to_token_pipeline.batch_to_tokens(
             input_ids=padded_tokens,
-            batch=logits,
+            list_batch=logits,
+            output_length=output_length,
         )
         return self.tokenizer.batch_decode(output_tokens, skip_special_tokens=True)

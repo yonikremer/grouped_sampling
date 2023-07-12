@@ -32,14 +32,16 @@ class TestLogitVectorToTokenPipeLine:
 
     # Tests that batch_to_tokens returns valid token ids with valid input_ids and batch
     def test_batch_to_tokens_valid_input(self):
-        input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
+        input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]], device="cuda")
         batch = [
-            torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]),
-            torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]),
+            torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]], device="cuda"),
+            torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]], device="cuda"),
         ]
 
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
-        token_ids = pipeline.batch_to_tokens(input_ids, batch)
+        output_length = 3
+        token_ids = pipeline.batch_to_tokens(input_ids, batch, output_length)
         assert isinstance(token_ids, Tensor)
-        assert token_ids.shape == torch.Size([2, 3])
+        assert token_ids.shape == torch.Size([2, output_length])
         assert token_ids.dtype == long
+        assert token_ids.is_cuda
