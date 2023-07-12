@@ -27,17 +27,6 @@ def prepare_generation_config(
     generation_config_copy = GenerationConfig(**generation_config.to_dict())
     generation_config_copy.renormalize_logits = True
     generation_config_copy.num_beams = 1
-    required_attrs = (
-        "epsilon_cutoff",
-        "temperature",
-        "top_k",
-        "top_p",
-        "typical_p",
-        "eta_cutoff",
-    )
-    for attr in required_attrs:
-        if not hasattr(generation_config_copy, attr):
-            setattr(generation_config_copy, attr, None)
     return generation_config_copy
 
 
