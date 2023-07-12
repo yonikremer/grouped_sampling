@@ -9,7 +9,7 @@ from typing import List
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode, Tensor, float32, long, int64
+from torch import inference_mode, Tensor, float32, long
 from transformers import (
     AutoConfig,
     PreTrainedTokenizer,
