@@ -63,7 +63,7 @@ def main(debug: bool = False):
     prompts: List[str] = get_prompts(debug=debug)
     batch_size_to_duration = {}
     max_prompt_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
-    max_batch_size = 32
+    max_batch_size = 16
     batch_size_to_duration[max_batch_size] = generate(prompts, max_batch_size, max_prompt_length)
     optimal_batch_size = min(batch_size_to_duration, key=batch_size_to_duration.get)
     print(f"Optimal batch size: {optimal_batch_size}")
