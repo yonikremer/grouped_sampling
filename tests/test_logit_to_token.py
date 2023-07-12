@@ -45,3 +45,17 @@ class TestLogitVectorToTokenPipeLine:
         assert token_ids.shape == torch.Size([2, output_length])
         assert token_ids.dtype == long
         assert token_ids.is_cuda
+
+    def test_memory_leak(self):
+        batch_size = 128
+        vocab_size = 2048
+        input_ids = torch.randint(0, vocab_size, (batch_size, 100), device="cuda")
+        output_length = 100
+        batch = [
+            torch.randn(vocab_size, output_length, device="cuda") for _ in range(batch_size)
+        ]
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        start_mem = torch.cuda.memory_allocated()
+        pipeline.batch_to_tokens(input_ids, batch, output_length)
+        end_mem = torch.cuda.memory_allocated()
+        assert end_mem == start_mem
