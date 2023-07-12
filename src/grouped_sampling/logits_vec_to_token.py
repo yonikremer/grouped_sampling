@@ -1,25 +1,13 @@
 import torch
-from torch import Tensor, multinomial, argmax, exp, inference_mode
+from torch import Tensor, multinomial, argmax, inference_mode
 from transformers import (
     GenerationConfig,
     LogitsProcessorList,
     GenerationMixin,
-    LogitsProcessor,
 )
 from transformers.generation import LogitNormalization
 
-
-class SoftmaxLogitNormalization(LogitsProcessor):
-    """
-    LogitsProcessor for Softmax normalization of logits.
-    """
-
-    def __init__(self, temperature: float):
-        self.temperature = temperature
-
-    def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
-        scores = exp(scores / self.temperature)
-        return scores / scores.sum(-1, keepdim=True)
+from src.grouped_sampling.softmax import SoftmaxLogitNormalization
 
 
 class LogitVectorToTokenPipeLine:
