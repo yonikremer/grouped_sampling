@@ -10,16 +10,16 @@ from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 Code Analysis
 
 Main functionalities:
-The LogitVectorToTokenPipeLine class is a pipeline for converting logit vectors to token ids. It takes in a GenerationConfig object and uses it to create a LogitsProcessorList object, which is used to normalize the logits and convert them to probabilities. The pipeline can handle both single logit vectors and multiple logit vectors in parallel, and can either return the token with the highest probability or sample from the probability distribution.
+The LogitVectorToTokenPipeLine class is responsible for converting a batch of logit matrices to tokens. It prepares a generation config for the pipeline, initializes a LogitsProcessorList, and applies Softmax normalization of logits if do_sample is True. The batch_to_tokens method takes input_ids, a list_batch of Tensors with shape (output_seq_len, vocab_size) with the logits for every sequence in the batch, and output_length, and returns a Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
 
 Methods:
-- __init__: initializes the pipeline by creating a copy of the GenerationConfig object, setting renormalize_logits to True, and creating a LogitsProcessorList object with a LogitNormalization processor. It also sets the do_sample field to the value in the GenerationConfig object.
-- single_logit_vector_to_token: takes in an input sequence and a single logit vector, and returns the token id with the highest probability or a sampled token id.
-- logit_vectors_to_token: takes in an input sequence and multiple logit vectors, and returns the token ids with the highest probability or sampled token ids in parallel.
+- prepare_generation_config: prepares a generation config for the LogitVectorToTokenPipeLine.
+- __init__: initializes the LogitVectorToTokenPipeLine class and applies Softmax normalization of logits if do_sample is True.
+- batch_to_tokens: converts a batch of logit matrices to tokens.
 
 Fields:
-- logit_wrapper: a LogitsProcessorList object that is used to normalize the logits and convert them to probabilities.
-- do_sample: a boolean field that determines whether to return the token with the highest probability or sample from the probability distribution.
+- logit_wrapper: a LogitsProcessorList that wraps the logits processors.
+- do_sample: a boolean that indicates whether to use sampling or not.
 """
 
 
