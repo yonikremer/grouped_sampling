@@ -1,12 +1,12 @@
 import copy
 
 import torch
-from torch import Tensor, multinomial, argmax, exp, inference_mode
+from torch import Tensor, argmax, exp, inference_mode, multinomial
 from transformers import (
     GenerationConfig,
-    LogitsProcessorList,
     GenerationMixin,
     LogitsProcessor,
+    LogitsProcessorList,
 )
 from transformers.generation import LogitNormalization
 
@@ -56,7 +56,8 @@ class LogitVectorToTokenPipeLine:
         self,
         generation_config: GenerationConfig,
     ):
-        generation_config_copy = self.prepare_generation_config(generation_config)
+        generation_config_copy = self.prepare_generation_config(
+            generation_config)
         mixin = GenerationMixin()
         mixin.generation_config = generation_config_copy
         # noinspection PyProtectedMember
@@ -90,7 +91,9 @@ class LogitVectorToTokenPipeLine:
             A Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
         """
         batch_size = input_ids.size(0)
-        answer = torch.zeros((batch_size, output_length), dtype=torch.long, device=batch.device)
+        answer = torch.zeros(
+            (batch_size, output_length), dtype=torch.long, device=batch.device
+        )
         for i in range(output_length):
             # noinspection PyTypeChecker
             proccessed_logits = self.logit_wrapper(
