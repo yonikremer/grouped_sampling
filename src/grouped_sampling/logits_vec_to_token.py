@@ -1,5 +1,3 @@
-import copy
-
 import torch
 from torch import Tensor, multinomial, argmax, exp, inference_mode
 from transformers import (
@@ -36,7 +34,7 @@ class LogitVectorToTokenPipeLine:
         Returns:
             A new GenerationConfig.
         """
-        generation_config_copy = copy.deepcopy(generation_config)
+        generation_config_copy = GenerationConfig(**generation_config.to_dict())
         generation_config_copy.renormalize_logits = True
         generation_config_copy.num_beams = 1
         required_attrs = (
