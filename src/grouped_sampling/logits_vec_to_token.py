@@ -72,13 +72,11 @@ class LogitVectorToTokenPipeLine:
         answer = torch.zeros((batch_size, output_length), dtype=torch.long, device=batch.device)
         for i in range(output_length):
             # noinspection PyTypeChecker
-            proccessed_logits = self.logit_wrapper(
+            batch[:, i, :] = self.logit_wrapper(
                 input_ids=input_ids, scores=batch[:, i, :]
             )  # a vector of size batch_size with the ith token for every sequence in the batch
             if self.do_sample:
-                ith_tokens = multinomial(proccessed_logits, num_samples=1)
+                answer[:, i] = multinomial(batch[:, i, :], num_samples=1)
             else:
-                ith_tokens = argmax(proccessed_logits, dim=-1)
-            del proccessed_logits
-            answer[:, i] = ith_tokens
+                answer[:, i] = argmax(batch[:, i, :], dim=-1)
         return answer
