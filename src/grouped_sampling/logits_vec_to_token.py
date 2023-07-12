@@ -1,5 +1,4 @@
 import copy
-from typing import List
 
 import torch
 from torch import Tensor, multinomial, argmax, exp, inference_mode
