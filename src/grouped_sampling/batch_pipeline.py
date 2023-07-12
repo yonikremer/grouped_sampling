@@ -108,7 +108,7 @@ class BatchPipeLine:
         self,
         padded_tokens: Tensor,
         output_length: int,
-    ) -> List[Tensor]:
+    ) -> Tensor:
         """
         Given a batch of prompts where each prompt is a sequence of tokens, and an output_length,
         returns the logits matrices of shape (batch_size, output_length, vocab_size)
@@ -137,10 +137,14 @@ class BatchPipeLine:
         ).logits
         padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
-        relavent_logits = [
-            all_logits[i, index: index + output_length]
-            for i, index in enumerate(last_non_pad_indices)
-        ]
+        batch_size = padded_tokens.shape[0]
+        relavent_logits = torch.zeros(
+            (batch_size, output_length, all_logits.shape[-1]),
+            device=self.device,
+            dtype=all_logits.dtype
+        )
+        for i, index in enumerate(last_non_pad_indices):
+            relavent_logits[i, :, :] = all_logits[i, index:index+output_length]
         return relavent_logits
 
     def _validate_output_length(self, output_length: int) -> None:
@@ -197,7 +201,7 @@ class BatchPipeLine:
         logits = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
         output_tokens = self.logit_to_token_pipeline.batch_to_tokens(
             input_ids=padded_tokens,
-            list_batch=logits,
+            batch=logits,
             output_length=output_length,
         )
         return self.tokenizer.batch_decode(output_tokens, skip_special_tokens=True)

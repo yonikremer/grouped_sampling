@@ -33,11 +33,10 @@ class TestLogitVectorToTokenPipeLine:
     # Tests that batch_to_tokens returns valid token ids with valid input_ids and batch
     def test_batch_to_tokens_valid_input(self):
         input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]], device="cuda")
-        batch = [
-            torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]], device="cuda"),
-            torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]], device="cuda"),
-        ]
-
+        batch = torch.tensor([
+            [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
+            [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]
+        ], device="cuda")
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         output_length = 3
         token_ids = pipeline.batch_to_tokens(input_ids, batch, output_length)
@@ -51,9 +50,7 @@ class TestLogitVectorToTokenPipeLine:
         vocab_size = 2048
         input_ids = torch.randint(0, vocab_size, (batch_size, 100), device="cuda")
         output_length = 100
-        batch = [
-            torch.randn(vocab_size, output_length, device="cuda") for _ in range(batch_size)
-        ]
+        batch = torch.randn((batch_size, vocab_size, output_length), device="cuda")
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         start_mem = torch.cuda.memory_allocated()
         pipeline.batch_to_tokens(input_ids, batch, output_length)
