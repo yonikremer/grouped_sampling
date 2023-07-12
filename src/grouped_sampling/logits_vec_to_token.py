@@ -20,6 +20,10 @@ def prepare_generation_config(
     Returns:
         A new GenerationConfig.
     """
+    if not isinstance(generation_config, GenerationConfig):
+        raise TypeError(
+            f"generation_config should be a GenerationConfig, got {type(generation_config)}"
+        )
     generation_config_copy = GenerationConfig(**generation_config.to_dict())
     generation_config_copy.renormalize_logits = True
     generation_config_copy.num_beams = 1
