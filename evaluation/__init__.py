@@ -112,7 +112,7 @@ def create_pipeline(max_batch_size: int) -> BatchPipeLine:
     for key, value in experiment_parameters.items():
         setattr(generation_config, key, value)
     pipeline = BatchPipeLine(
-        model_name="gpt2",
+        model_name=model_name,
         load_in_8bit=False,
         generation_config=generation_config,
         max_batch_size=max_batch_size,
