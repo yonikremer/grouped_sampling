@@ -92,18 +92,18 @@ class LogitVectorToTokenPipeLine:
             A Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
         """
         batch_size = input_ids.size(0)
-        batch: Tensor = torch.stack(list_batch, dim=1)
-        # batch shape: (output_seq_len, batch_size, vocab_size)
-        answer = torch.zeros((output_length, batch_size), dtype=torch.long, device=batch.device)
+        batch: Tensor = torch.stack(list_batch, dim=0)
+        # batch shape: (batch_size, output_seq_len, vocab_size)
+        answer = torch.zeros((batch_size, output_length), dtype=torch.long, device=batch.device)
         for i in range(output_length):
             # noinspection PyTypeChecker
             proccessed_logits = self.logit_wrapper(
-                input_ids=input_ids, scores=batch[i], **{}
+                input_ids=input_ids, scores=batch[:, i, :], **{}
             )  # a vector of size batch_size with the ith token for every sequence in the batch
             if self.do_sample:
                 ith_tokens = multinomial(proccessed_logits, num_samples=1)
             else:
                 ith_tokens = argmax(proccessed_logits, dim=-1)
             del proccessed_logits
-            answer[i] = ith_tokens
-        return answer.transpose(0, 1)
+            answer[:, i] = ith_tokens
+        return answer
