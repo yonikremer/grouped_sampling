@@ -24,3 +24,5 @@ accelerate
 scipy
 pytest-mock
 comet-ml
+black[jupyter]
+pylint
