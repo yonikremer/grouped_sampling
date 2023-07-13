@@ -8,14 +8,10 @@ hatchling
 toml~=0.10.2
 numpy~=1.24.2
 requests
-beautifulsoup4~=4.11.2
 pandas~=1.5.3
 setuptools~=67.5.1
-urllib3
 sentencepiece~=0.1.97
 bitsandbytes
-pip
-cache-to-disk
 tqdm~=4.64.1
 datasets~=2.10.0
 matplotlib~=3.7.0
