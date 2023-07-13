@@ -8,6 +8,8 @@ import torch
 from datasets import get_dataset_config_names
 from torch import inference_mode
 import pandas as pd
+from torch._C._profiler import ProfilerActivity
+from torch.profiler import profile
 
 from evaluation import process_translation_data, DATASET_NAME, lang_code_to_name, create_pipeline, \
     get_experiment_parameters
@@ -45,7 +47,13 @@ def generate(prompts: List[str], max_batch_size: int, max_prompt_length: int):
     output_length = pipeline.max_total_len - max_prompt_length - 1
     pipeline.max_batch_size = max_batch_size
     start_time = time.time()
-    pipeline.genearte_batch(prompts, output_length)
+    with profile(
+            activities=[ProfilerActivity.CUDA],
+            record_shapes=True,
+            profile_memory=True,
+    ) as profiler:
+        pipeline.genearte_batch(prompts, output_length)
+    print(profiler.key_averages().table(sort_by="self_cuda_memory_usage"))
     end_time = time.time()
     duration_seconds = (end_time - start_time)
     del pipeline
