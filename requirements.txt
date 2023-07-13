@@ -1,15 +1,8 @@
 torch>=2.0.0
 transformers
-pytest~=7.2.1
-coverage~=7.1.0
-build~=0.10.0
-twine~=4.0.2
-hatchling
-toml~=0.10.2
 numpy~=1.24.2
 requests
 pandas~=1.5.3
-setuptools~=67.5.1
 sentencepiece~=0.1.97
 bitsandbytes
 tqdm~=4.64.1
@@ -18,7 +11,4 @@ matplotlib~=3.7.0
 evaluate~=0.4.0
 accelerate
 scipy
-pytest-mock
 comet-ml
-black[jupyter]
-pylint
