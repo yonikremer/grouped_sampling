@@ -37,17 +37,18 @@ class ExperimentManager:
         self.start_time = datetime.now()
         self.df = DataFrame(
             columns=[
-                        "input_text",
-                        "target_text",
-                        "input_language",
-                        "output_language",
-                    ] + list(BERT_SCORES)
+                "input_text",
+                "target_text",
+                "input_language",
+                "output_language",
+            ]
+            + list(BERT_SCORES)
         )
 
     def log_stats(self, scores: DataFrame, title: str) -> None:
-        self.experiment.log_dataframe_profile(scores,
-                                              f"{title}_BERT_scores",
-                                              header=True)
+        self.experiment.log_dataframe_profile(
+            scores, f"{title}_BERT_scores", header=True
+        )
         for score_name in BERT_SCORES:
             curr_column = scores[score_name]
             score_stats = {
@@ -59,7 +60,8 @@ class ExperimentManager:
             plt.title(f"Histogram of {title}_{score_name}")
             plt.legend()
             self.experiment.log_figure(
-                figure_name=f"{title}_{score_name}_histogram", figure=plt)
+                figure_name=f"{title}_{score_name}_histogram", figure=plt
+            )
 
     def log_sub_experiment(
         self,
@@ -78,7 +80,8 @@ class ExperimentManager:
         sub_set: The dataset that was used for this sub experiment half
         """
         input_lang_name, output_lang_name = lang_code_to_name(
-            input_lang_code), lang_code_to_name(output_lang_code)
+            input_lang_code
+        ), lang_code_to_name(output_lang_code)
         self.language_pairs.add((input_lang_name, output_lang_name))
         f_1: List[float] = bert_scores["f1"]
         precision: List[float] = bert_scores["precision"]
@@ -86,20 +89,17 @@ class ExperimentManager:
         if not len(f_1) == len(precision) == len(recall):
             raise AssertionError
         # add scores to the dataframe
-        new_data: DataFrame = DataFrame.from_dict({
-            "input_language": [input_lang_name] * len(f_1),
-            "output_language": [output_lang_name] * len(f_1),
-            "BERT_f1":
-            f_1,
-            "BERT_precision":
-            precision,
-            "BERT_recall":
-            recall,
-            "input_text":
-            sub_set[input_lang_code],
-            "target_text":
-            sub_set[output_lang_code],
-        })
+        new_data: DataFrame = DataFrame.from_dict(
+            {
+                "input_language": [input_lang_name] * len(f_1),
+                "output_language": [output_lang_name] * len(f_1),
+                "BERT_f1": f_1,
+                "BERT_precision": precision,
+                "BERT_recall": recall,
+                "input_text": sub_set[input_lang_code],
+                "target_text": sub_set[output_lang_code],
+            }
+        )
         self.df = concat([self.df, new_data], ignore_index=True, copy=False)
         curr_time_diff = datetime.now() - self.start_time
         print(f"Translated {len(self.df)} examples in {curr_time_diff}")
@@ -109,22 +109,22 @@ class ExperimentManager:
         self.log_stats(self.df, "general")
         for input_lang, output_lang in self.language_pairs:
             pair_scores: DataFrame
-            pair_scores = self.df[(self.df["input_language"] == input_lang)
-                                  &
-                                  (self.df["output_language"] == output_lang)]
+            pair_scores = self.df[
+                (self.df["input_language"] == input_lang)
+                & (self.df["output_language"] == output_lang)
+            ]
             self.log_stats(pair_scores, f"{input_lang} to {output_lang}")
-        total_time_in_seconds = (datetime.now() -
-                                 self.start_time).total_seconds()
+        total_time_in_seconds = (datetime.now() - self.start_time).total_seconds()
         num_examples = len(self.df)
         total_time_in_hours = total_time_in_seconds / 3600
-        self.experiment.log_metrics({
-            "time in hours":
-            total_time_in_hours,
-            "seconds per example":
-            total_time_in_seconds / num_examples,
-            "examples per second":
-            num_examples / total_time_in_seconds,
-        })
+        self.experiment.log_metrics(
+            {
+                "time in hours": total_time_in_hours,
+                "seconds per example": total_time_in_seconds / num_examples,
+                "examples per second": num_examples / total_time_in_seconds,
+            }
+        )
         self.experiment.send_notification(
-            f"Experiment finished successfully in {total_time_in_hours} hours")
+            f"Experiment finished successfully in {total_time_in_hours} hours"
+        )
         self.experiment.end()

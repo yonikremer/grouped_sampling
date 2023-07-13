@@ -3,7 +3,11 @@ from typing import Callable
 from warnings import warn
 
 # noinspection PyUnresolvedReferences
-from nvidia_smi import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtilizationRates
+from nvidia_smi import (
+    nvmlInit,
+    nvmlDeviceGetHandleByIndex,
+    nvmlDeviceGetUtilizationRates,
+)
 
 
 def check_gpu_utilization(func: Callable) -> Callable:
@@ -11,6 +15,7 @@ def check_gpu_utilization(func: Callable) -> Callable:
     A decorator that checks the GPU utilization during the execution of the wrapped function
     And prints a warning if it is zero for interval consecutive seconds
     """
+
     def wrapper(*args, **kwargs):
         # Initialize the NVML library
         nvmlInit()

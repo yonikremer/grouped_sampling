@@ -2,6 +2,7 @@ from warnings import warn
 
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import cuda, inference_mode
+
 # noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
 from torch.cuda import OutOfMemoryError
@@ -41,7 +42,8 @@ def get_model(
             f"Model {model_name} not found in the model hub.\n"
             "If you are trying to use a local model, make sure to use the full path.\n"
             "If you are trying to load a private model, make sure to pass your huggingface token."
-            + str(error), response=None
+            + str(error),
+            response=None,
         )
     if cuda.is_available():
         try:

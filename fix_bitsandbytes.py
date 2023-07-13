@@ -8,5 +8,6 @@ def fix_ld_library_path():
     else:
         os.environ["LD_LIBRARY_PATH"] = new_path
     import bitsandbytes
+
     if not bitsandbytes.COMPILED_WITH_CUDA:
         raise RuntimeError("bitsandbytes was not compiled with CUDA support")

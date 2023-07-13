@@ -12,7 +12,7 @@ from transformers import (
     AutoConfig,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
-    GenerationConfig
+    GenerationConfig,
 )
 
 from fix_bitsandbytes import fix_ld_library_path
@@ -55,18 +55,22 @@ def validate_logits(
     if logits.dim() != 3:
         raise ValueError(f"logits should be 3D tensors, got {logits.dim()}D")
     if logits.shape[1] != output_length:
-        raise ValueError(f"logits should have {output_length} columns, got {logits.shape[1]}")
+        raise ValueError(
+            f"logits should have {output_length} columns, got {logits.shape[1]}"
+        )
     if logits.shape[2] != pipeleine.tokenizer.vocab_size:
-        raise ValueError(f"logits should have {pipeleine.tokenizer.vocab_size} columns, got {logits.shape[2]}")
+        raise ValueError(
+            f"logits should have {pipeleine.tokenizer.vocab_size} columns, got {logits.shape[2]}"
+        )
     if logits.device != pipeleine.device:
-        raise ValueError(f"logits should be on device {pipeleine.device}, got {logits.device}")
+        raise ValueError(
+            f"logits should be on device {pipeleine.device}, got {logits.device}"
+        )
     if logits.dtype != float32:
         raise ValueError(f"logits should have dtype {float32}, got {logits[0].dtype}")
 
 
-def validate_padded_tokens(
-    pipeline: BatchPipeLine, padded_tokens: Tensor
-) -> None:
+def validate_padded_tokens(pipeline: BatchPipeLine, padded_tokens: Tensor) -> None:
     if padded_tokens.dim() != 2:
         raise ValueError(
             f"tokens should be a 2D tensor, got {padded_tokens.dim()}D tensor"
@@ -105,18 +109,23 @@ def validate_output_tokens(
     if not isinstance(output_tokens, Tensor):
         raise TypeError(f"output_tokens should be a list, got {type(output_tokens)}")
     if output_tokens.dtype != long:
-        raise ValueError(f"output_tokens should be a tensor of type long. Got {output_tokens.dtype} instead")
+        raise ValueError(
+            f"output_tokens should be a tensor of type long. Got {output_tokens.dtype} instead"
+        )
     if output_tokens.device != pipeline.device:
         raise ValueError(
             f"output_tokens should be on device {pipeline.device}, got {output_tokens.device} for some tokens"
         )
     if output_tokens.dim() != 2:
-        raise ValueError(f"output_tokens should be a 2D tensor. Got {output_tokens.dim()}D tensor")
+        raise ValueError(
+            f"output_tokens should be a 2D tensor. Got {output_tokens.dim()}D tensor"
+        )
     if output_tokens.shape != (batch_size, output_length):
-        raise ValueError(f"output_tokens should be of size (batch_size, output_length). Got {output_tokens.shape} instead")
+        raise ValueError(
+            f"output_tokens should be of size (batch_size, output_length). Got {output_tokens.shape} instead"
+        )
     if not all(
-        0 <= token < pipeline.tokenizer.vocab_size
-        for token in output_tokens.flatten()
+        0 <= token < pipeline.tokenizer.vocab_size for token in output_tokens.flatten()
     ):
         raise ValueError("output_tokens should be valid token ids")
 
@@ -255,9 +264,7 @@ class TestBatchPipeLine:
         assert (
             bitsandbytes.COMPILED_WITH_CUDA
         ), "bitsandbytes was not compiled with CUDA"
-        pipeline = BatchPipeLine(
-            "fxmarty/tiny-llama-fast-tokenizer"
-        )
+        pipeline = BatchPipeLine("fxmarty/tiny-llama-fast-tokenizer")
         prompts = ["Hello", "How are you?"]
         output_length = 5
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
@@ -275,9 +282,7 @@ class TestBatchPipeLine:
     def test_init_model_kwargs(self):
         config = AutoConfig.from_pretrained("gpt2")
         config.output_hidden_states = True
-        pipeline = BatchPipeLine(
-            "gpt2", model_kwargs={"config": config}
-        )
+        pipeline = BatchPipeLine("gpt2", model_kwargs={"config": config})
         self.validate_pipeline(pipeline)
 
     def test_init_generation_config(self):
@@ -344,16 +349,20 @@ class TestBatchPipeLine:
     @staticmethod
     def random_prompt(length):
         letters = string.ascii_lowercase + string.ascii_uppercase + string.digits + " "
-        return ''.join(random.choice(letters) for _ in range(length))
+        return "".join(random.choice(letters) for _ in range(length))
 
     @inference_mode()
     def test_gpu_memory_is_freed(self):
         random.seed(0)
         my_pipeline = BatchPipeLine("fxmarty/tiny-llama-fast-tokenizer")
-        prompts = [self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)]
+        prompts = [
+            self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)
+        ]
         my_pipeline.genearte_batch(prompts, 10)
         mid_memory = torch.cuda.memory_allocated()
-        prompts = [self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)]
+        prompts = [
+            self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)
+        ]
         my_pipeline.genearte_batch(prompts, 10)
         end_memory = torch.cuda.memory_allocated()
         assert end_memory == mid_memory, f"{end_memory} != {mid_memory}"

@@ -17,7 +17,7 @@ class BatchPipeLine:
         load_in_8bit: bool = False,
         model_kwargs: Optional[dict] = None,
         generation_config: Optional[GenerationConfig] = None,
-        max_batch_size: int = 128
+        max_batch_size: int = 128,
     ):
         """
         Create a new BatchEndToEndSingleSequencePipeLine.
@@ -50,9 +50,13 @@ class BatchPipeLine:
                 f"generation_config should be a GenerationConfig or None, got {type(generation_config)}"
             )
         if not isinstance(max_batch_size, int):
-            raise TypeError(f"max_batch_size should be an int, got {type(max_batch_size)}")
+            raise TypeError(
+                f"max_batch_size should be an int, got {type(max_batch_size)}"
+            )
         if max_batch_size < 1:
-            raise ValueError(f"max_batch_size should be at least 1, got {max_batch_size}")
+            raise ValueError(
+                f"max_batch_size should be at least 1, got {max_batch_size}"
+            )
         self.max_batch_size = max_batch_size
         if not load_in_8bit:
             torch.set_float32_matmul_precision("high")
@@ -141,10 +145,10 @@ class BatchPipeLine:
         relavent_logits = torch.empty(
             (batch_size, output_length, all_logits.shape[-1]),
             device=self.device,
-            dtype=all_logits.dtype
+            dtype=all_logits.dtype,
         )
         for i, index in enumerate(last_non_pad_indices):
-            relavent_logits[i, :, :] = all_logits[i, index:index+output_length]
+            relavent_logits[i, :, :] = all_logits[i, index : index + output_length]
         return relavent_logits
 
     def _validate_output_length(self, output_length: int) -> None:
@@ -192,7 +196,7 @@ class BatchPipeLine:
         if len(prompts) > self.max_batch_size:
             outputs: List[str] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i:i + self.max_batch_size]
+                batch = prompts[i : i + self.max_batch_size]
                 outputs.extend(self.genearte_batch(batch, output_length))
                 torch.cuda.empty_cache()
             return outputs
