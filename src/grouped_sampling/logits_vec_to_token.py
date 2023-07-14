@@ -80,7 +80,7 @@ class LogitVectorToTokenPipeLine:
                 input_ids=current_tokens, scores=logits[:, i, :])
             if self.do_sample:
                 probs = softmax(logits[:, i, :], dim=-1)
-                answer[:, i] = multinomial(probs, num_samples=1)
+                answer[:, i] = multinomial(probs, num_samples=1).squeeze(-1)
             else:
                 answer[:, i] = argmax(logits[:, i, :], dim=-1)
             current_tokens[dim1_indecies, first_padding_indecies] = answer[:, i]
