@@ -69,3 +69,41 @@ class TestLogitVectorToTokenPipeLine:
         pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
         end_mem = torch.cuda.memory_allocated()
         assert end_mem == start_mem
+
+    def test_sampling(self):
+        generation_config = GenerationConfig.from_pretrained("gpt2")
+        generation_config.do_sample = True
+        generation_config.top_k = 50
+        generation_config.top_p = 0.95
+        generation_config.temperature = 0.7
+        generation_config.num_return_sequences = 1
+        pipeline = LogitVectorToTokenPipeLine(generation_config, 0)
+        # Batch size 2:
+        input_ids = torch.tensor([[1, 2, 3, 0, 0], [4, 5, 6, 0, 0]], device="cuda")
+        batch = torch.tensor(
+            [
+                [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
+                [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
+            ],
+            device="cuda",
+        )
+        last_non_padding = torch.tensor([2, 2], device="cuda")
+        output_length = 3
+        token_ids = pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
+        assert isinstance(token_ids, Tensor)
+        assert token_ids.shape == torch.Size([2, output_length])
+        assert token_ids.dtype == long
+        assert token_ids.is_cuda
+
+        # Batch size 1:
+        input_ids = torch.tensor([[1, 2, 3, 0, 0]], device="cuda")
+        batch = torch.tensor(
+            [[[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]],
+            device="cuda",
+        )
+        last_non_padding = torch.tensor([2], device="cuda")
+        output_length = 3
+        token_ids = pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
+        assert isinstance(token_ids, Tensor)
+        assert token_ids.shape == torch.Size([1, output_length])
+        assert token_ids.dtype == long
