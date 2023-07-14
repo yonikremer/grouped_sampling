@@ -13,14 +13,23 @@ from huggingface_hub.utils import (
 from transformers import PreTrainedTokenizer, AutoTokenizer, PreTrainedTokenizerFast
 
 
-def get_padding_id(tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast) -> int:
-    if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None:
+def get_padding_id(tokenizer: PreTrainedTokenizer |
+                   PreTrainedTokenizerFast) -> int:
+    if hasattr(
+            tokenizer,
+            "pad_token_id") and tokenizer.pad_token_id is not None:
         return tokenizer.pad_token_id
-    if hasattr(tokenizer, "pad_token_ids") and tokenizer.pad_token_ids is not None:
+    if hasattr(
+            tokenizer,
+            "pad_token_ids") and tokenizer.pad_token_ids is not None:
         return tokenizer.pad_token_ids[0]
-    if hasattr(tokenizer, "mask_token_id") and tokenizer.mask_token_id is not None:
+    if hasattr(
+            tokenizer,
+            "mask_token_id") and tokenizer.mask_token_id is not None:
         return tokenizer.mask_token_id
-    if hasattr(tokenizer, "mask_token_ids") and tokenizer.mask_token_ids is not None:
+    if hasattr(
+            tokenizer,
+            "mask_token_ids") and tokenizer.mask_token_ids is not None:
         return tokenizer.mask_token_ids[0]
     if (
         hasattr(tokenizer, "pad_token_type_id")
@@ -33,8 +42,7 @@ def get_padding_id(tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast) -> 
         "Could not find padding id in a tokenizer with the following attributes: "
         f"{tokenizer.__dict__.keys()}"
         "Please make sure that the tokenizer has the following attributes: "
-        "pad_token_id, pad_token_ids, mask_token_id, mask_token_ids"
-    )
+        "pad_token_id, pad_token_ids, mask_token_id, mask_token_ids")
 
 
 def get_model_config(model_name: str) -> Optional[dict]:
@@ -171,10 +179,12 @@ def get_tokenizer(
         raise RepositoryNotFoundError(
             f"Model {model_name} not found in huggingfacehub. Local tokenizers are not supported yet.\n"
             f"If {model_name} is a tokenizers model, please make sure you are logged in.\n"
-            f"If {model_name} is a tokenizers model, please make sure it exists.\n"
-            + str(error),
+            f"If {model_name} is a tokenizers model, please make sure it exists.\n" +
+            str(error),
             response=None,
         )
-    if not hasattr(raw_tokenizer, "pad_token_id") or raw_tokenizer.pad_token_id is None:
+    if not hasattr(
+            raw_tokenizer,
+            "pad_token_id") or raw_tokenizer.pad_token_id is None:
         raw_tokenizer.pad_token_id = get_padding_id(raw_tokenizer)
     return raw_tokenizer

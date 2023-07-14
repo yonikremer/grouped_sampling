@@ -114,7 +114,9 @@ class ExperimentManager:
                 & (self.df["output_language"] == output_lang)
             ]
             self.log_stats(pair_scores, f"{input_lang} to {output_lang}")
-        total_time_in_seconds = (datetime.now() - self.start_time).total_seconds()
+        total_time_in_seconds = (
+            datetime.now() -
+            self.start_time).total_seconds()
         num_examples = len(self.df)
         total_time_in_hours = total_time_in_seconds / 3600
         self.experiment.log_metrics(

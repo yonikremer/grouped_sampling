@@ -45,8 +45,7 @@ def get_prompts(debug: bool) -> List[str]:
     language_code2: str
     for sub_set_name in sub_set_names:
         subset_part, _, language_code1, language_code2 = process_translation_data(
-            sub_set_name, debug
-        )
+            sub_set_name, debug)
         prompts.extend(subset_part[language_code1])
         prompts.extend(subset_part[language_code2])
     return prompts
@@ -81,12 +80,15 @@ def main(debug: bool = False):
     tokenizer = get_tokenizer(model_name)
     prompts: List[str] = get_prompts(debug=debug)
     batch_size_to_duration = {}
-    max_prompt_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
+    max_prompt_length = max(len(tokenizer.encode(prompt))
+                            for prompt in prompts)
     max_batch_size = 2
     batch_size_to_duration[max_batch_size] = generate(
         prompts, max_batch_size, max_prompt_length
     )
-    optimal_batch_size = min(batch_size_to_duration, key=batch_size_to_duration.get)
+    optimal_batch_size = min(
+        batch_size_to_duration,
+        key=batch_size_to_duration.get)
     print(f"Optimal batch size: {optimal_batch_size}")
     print(
         f"Duration for batch size {optimal_batch_size}: {batch_size_to_duration[optimal_batch_size]}"

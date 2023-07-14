@@ -30,7 +30,8 @@ class TestLogitVectorToTokenPipeLine:
         [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.1, 0.4]]
     ).cuda()
 
-    # Tests that batch_to_tokens returns valid token ids with valid input_ids and batch
+    # Tests that batch_to_tokens returns valid token ids with valid input_ids
+    # and batch
     def test_batch_to_tokens_valid_input(self):
         input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]], device="cuda")
         batch = torch.tensor(
@@ -51,9 +52,11 @@ class TestLogitVectorToTokenPipeLine:
     def test_memory_leak(self):
         batch_size = 128
         vocab_size = 2048
-        input_ids = torch.randint(0, vocab_size, (batch_size, 100), device="cuda")
+        input_ids = torch.randint(
+            0, vocab_size, (batch_size, 100), device="cuda")
         output_length = 100
-        batch = torch.randn((batch_size, vocab_size, output_length), device="cuda")
+        batch = torch.randn(
+            (batch_size, vocab_size, output_length), device="cuda")
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         start_mem = torch.cuda.memory_allocated()
         pipeline.logits_to_tokens(input_ids, batch, output_length)

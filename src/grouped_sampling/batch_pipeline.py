@@ -36,9 +36,11 @@ class BatchPipeLine:
             TypeError: If one of the arguments is of the wrong type.
         """
         if not isinstance(model_name, str):
-            raise TypeError(f"model_name should be a string, got {type(model_name)}")
+            raise TypeError(
+                f"model_name should be a string, got {type(model_name)}")
         if not isinstance(load_in_8bit, bool):
-            raise TypeError(f"load_in_8bit should be a bool, got {type(load_in_8bit)}")
+            raise TypeError(
+                f"load_in_8bit should be a bool, got {type(load_in_8bit)}")
         if model_kwargs is not None and not isinstance(model_kwargs, dict):
             raise TypeError(
                 f"model_kwargs should be a dict or None, got {type(model_kwargs)}"
@@ -71,7 +73,8 @@ class BatchPipeLine:
         self.device: torch.device = self.model.device
         self.max_total_len = self.model.config.max_position_embeddings
         if generation_config is None:
-            generation_config = GenerationConfig.from_model_config(self.model.config)
+            generation_config = GenerationConfig.from_model_config(
+                self.model.config)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
             generation_config=generation_config
         )
@@ -129,17 +132,22 @@ class BatchPipeLine:
                 f"output_length should be an int, got {type(output_length)}"
             )
         if output_length <= 0:
-            raise ValueError(f"output_length should be positive, got {output_length}")
+            raise ValueError(
+                f"output_length should be positive, got {output_length}")
         attenction_mask = ones_like(
-            padded_tokens, dtype=torch.long, device=self.device, requires_grad=False
-        )
+            padded_tokens,
+            dtype=torch.long,
+            device=self.device,
+            requires_grad=False)
         all_logits = self.model(
             output_attentions=False,
             output_hidden_states=False,
             input_ids=padded_tokens,
             attention_mask=attenction_mask,
         ).logits
-        padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
+        padding_int_tokens = eq(
+            padded_tokens,
+            self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
         batch_size = padded_tokens.shape[0]
         relavent_logits = torch.empty(
@@ -148,7 +156,8 @@ class BatchPipeLine:
             dtype=all_logits.dtype,
         )
         for i, index in enumerate(last_non_pad_indices):
-            relavent_logits[i, :, :] = all_logits[i, index : index + output_length]
+            relavent_logits[i, :, :] = all_logits[i,
+                                                  index: index + output_length]
         return relavent_logits
 
     def _validate_output_length(self, output_length: int) -> None:
@@ -157,7 +166,8 @@ class BatchPipeLine:
                 f"output_length should be an int, got {type(output_length)}"
             )
         if output_length <= 0:
-            raise ValueError(f"output_length should be positive, got {output_length}")
+            raise ValueError(
+                f"output_length should be positive, got {output_length}")
         if output_length >= self.max_total_len:
             raise ValueError(
                 f"output_length should be smaller than {self.max_total_len}, got {output_length}"
@@ -196,16 +206,18 @@ class BatchPipeLine:
         if len(prompts) > self.max_batch_size:
             outputs: List[str] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i : i + self.max_batch_size]
+                batch = prompts[i: i + self.max_batch_size]
                 outputs.extend(self.genearte_batch(batch, output_length))
                 torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
+        logits = self.tokens_batch_to_logit_matrices(
+            padded_tokens, output_length)
         output_tokens = self.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
         )
-        return self.tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+        return self.tokenizer.batch_decode(
+            output_tokens, skip_special_tokens=True)

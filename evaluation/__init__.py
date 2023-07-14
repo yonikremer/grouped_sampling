@@ -85,9 +85,11 @@ def process_translation_data(
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
     if debug:
-        sub_set: Dataset = load_dataset(DATASET_NAME, sub_set_name, split="train[:2]")
+        sub_set: Dataset = load_dataset(
+            DATASET_NAME, sub_set_name, split="train[:2]")
     else:
-        sub_set: Dataset = load_dataset(DATASET_NAME, sub_set_name, split="train")
+        sub_set: Dataset = load_dataset(
+            DATASET_NAME, sub_set_name, split="train")
 
     def rename_keys(
         x: Dict[str, Any], input_lang_name: str, output_lang_name: str

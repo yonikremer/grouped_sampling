@@ -74,9 +74,10 @@ class LogitVectorToTokenPipeLine:
         )
         for i in range(output_length):
             # noinspection PyTypeChecker
+            # a vector of size batch_size with the ith token for every sequence
+            # in the batch
             logits[:, i, :] = self.logit_wrapper(
-                input_ids=input_ids, scores=logits[:, i, :]
-            )  # a vector of size batch_size with the ith token for every sequence in the batch
+                input_ids=input_ids, scores=logits[:, i, :])
             if self.do_sample:
                 answer[:, i] = multinomial(logits[:, i, :], num_samples=1)
             else:

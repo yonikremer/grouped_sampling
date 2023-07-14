@@ -67,10 +67,13 @@ def validate_logits(
             f"logits should be on device {pipeleine.device}, got {logits.device}"
         )
     if logits.dtype != float32:
-        raise ValueError(f"logits should have dtype {float32}, got {logits[0].dtype}")
+        raise ValueError(
+            f"logits should have dtype {float32}, got {logits[0].dtype}")
 
 
-def validate_padded_tokens(pipeline: BatchPipeLine, padded_tokens: Tensor) -> None:
+def validate_padded_tokens(
+        pipeline: BatchPipeLine,
+        padded_tokens: Tensor) -> None:
     if padded_tokens.dim() != 2:
         raise ValueError(
             f"tokens should be a 2D tensor, got {padded_tokens.dim()}D tensor"
@@ -84,7 +87,8 @@ def validate_padded_tokens(pipeline: BatchPipeLine, padded_tokens: Tensor) -> No
     if min(padded_tokens.shape) == 0:
         raise ValueError("tokens should not be empty")
     if padded_tokens.dtype != long:
-        raise ValueError(f"tokens should have dtype {long}, got {padded_tokens.dtype}")
+        raise ValueError(
+            f"tokens should have dtype {long}, got {padded_tokens.dtype}")
     if not all(
         0 <= token < pipeline.tokenizer.vocab_size for token in padded_tokens.flatten()
     ):
@@ -107,7 +111,8 @@ def validate_output_tokens(
     batch_size: int,
 ) -> None:
     if not isinstance(output_tokens, Tensor):
-        raise TypeError(f"output_tokens should be a list, got {type(output_tokens)}")
+        raise TypeError(
+            f"output_tokens should be a list, got {type(output_tokens)}")
     if output_tokens.dtype != long:
         raise ValueError(
             f"output_tokens should be a tensor of type long. Got {output_tokens.dtype} instead"
@@ -138,7 +143,8 @@ class TestBatchPipeLine:
         # noinspection PyUnresolvedReferences
         torch._dynamo.config.verbose = True
 
-    #  Tests that the function returns a list of output strings for a batch of prompts with positive output length
+    # Tests that the function returns a list of output strings for a batch of
+    # prompts with positive output length
     def test_happy_path(self):
         pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
@@ -148,7 +154,8 @@ class TestBatchPipeLine:
         assert len(result) == len(prompts)
         for output in result:
             assert isinstance(output, str), f"{output} is not a string"
-            assert len(output) >= output_length, f"{len(output)} > {output_length}"
+            assert len(
+                output) >= output_length, f"{len(output)} > {output_length}"
             # Each token is at least 1 character long
             output_tokens = pipeline.tokenizer.encode(output)
             rebuilt_output = pipeline.tokenizer.decode(output_tokens)
@@ -163,17 +170,21 @@ class TestBatchPipeLine:
         prompts = []
         output_length = 5
         expected_output = []
-        assert pipeline.genearte_batch(prompts, output_length) == expected_output
+        assert pipeline.genearte_batch(
+            prompts, output_length) == expected_output
 
-    #  Tests that the function returns a list of empty strings for a batch of prompts with output length 0
+    # Tests that the function returns a list of empty strings for a batch of
+    # prompts with output length 0
     def test_empty_output_length(self):
         pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 0
         expected_output = ["", ""]
-        assert pipeline.genearte_batch(prompts, output_length) == expected_output
+        assert pipeline.genearte_batch(
+            prompts, output_length) == expected_output
 
-    #  Tests that the function returns a list of empty strings for an empty list of prompts
+    # Tests that the function returns a list of empty strings for an empty
+    # list of prompts
     def test_empty_prompts_list(self):
         pipeline = BatchPipeLine("gpt2")
         prompts = [""]
@@ -181,7 +192,8 @@ class TestBatchPipeLine:
         with pytest.raises(ValueError):
             pipeline.genearte_batch(prompts, output_length)
 
-    #  Tests that the function raises a ValueError if the prompts contain an empty string
+    # Tests that the function raises a ValueError if the prompts contain an
+    # empty string
     def test_empty_string_in_prompts(self):
         pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", ""]
@@ -197,7 +209,8 @@ class TestBatchPipeLine:
         with pytest.raises(ValueError):
             pipeline.genearte_batch(prompts, output_length)
 
-    #  Tests that the function raises a ValueError if output_length is not an integer
+    # Tests that the function raises a ValueError if output_length is not an
+    # integer
     def test_non_integer_output_length(self):
         pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
@@ -213,7 +226,8 @@ class TestBatchPipeLine:
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
         assert not padded_tokens.requires_grad
-        logits = pipeline.tokens_batch_to_logit_matrices(padded_tokens, output_length)
+        logits = pipeline.tokens_batch_to_logit_matrices(
+            padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
@@ -222,7 +236,8 @@ class TestBatchPipeLine:
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
 
-    #  Tests that the function raises a ValueError if output_length is too large
+    # Tests that the function raises a ValueError if output_length is too
+    # large
     def test_huge_output_length(self):
         pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
@@ -240,7 +255,8 @@ class TestBatchPipeLine:
         assert len(result) == 1
         for output in result:
             assert isinstance(output, str), f"{output} is not a string"
-            assert len(output) >= output_length, f"{len(output)} > {output_length}"
+            assert len(
+                output) >= output_length, f"{len(output)} > {output_length}"
             # Each token is at least 1 character long
             output_tokens = pipeline.tokenizer.encode(output)
             rebuilt_output = pipeline.tokenizer.decode(output_tokens)
@@ -269,7 +285,8 @@ class TestBatchPipeLine:
         output_length = 5
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
-        logits = pipeline.tokens_batch_to_logit_matrices(padded_tokens, output_length)
+        logits = pipeline.tokens_batch_to_logit_matrices(
+            padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
@@ -307,10 +324,12 @@ class TestBatchPipeLine:
             pipeline.logit_to_token_pipeline, LogitVectorToTokenPipeLine
         ), "logit_to_token_pipeline is not LogitVectorToTokenPipeLine"
         assert pipeline.max_total_len is not None, "max_total_len is None"
-        assert isinstance(pipeline.max_total_len, int), "max_total_len is not int"
+        assert isinstance(pipeline.max_total_len,
+                          int), "max_total_len is not int"
         assert pipeline.max_total_len > 0, "max_total_len <= 0"
         assert pipeline.device is not None, "device is None"
-        assert isinstance(pipeline.device, torch.device), "device is not torch.device"
+        assert isinstance(
+            pipeline.device, torch.device), "device is not torch.device"
         # assert that the device is cuda
         assert (
             pipeline.device.type == "cuda"
@@ -337,7 +356,8 @@ class TestBatchPipeLine:
         assert len(result) == number_of_prompts
         for output in result:
             assert isinstance(output, str), f"{output} is not a string"
-            assert len(output) >= output_length, f"{len(output)} > {output_length}"
+            assert len(
+                output) >= output_length, f"{len(output)} > {output_length}"
             # Each token is at least 1 character long
             output_tokens = pipeline.tokenizer.encode(output)
             rebuilt_output = pipeline.tokenizer.decode(output_tokens)
@@ -356,13 +376,13 @@ class TestBatchPipeLine:
         random.seed(0)
         my_pipeline = BatchPipeLine("fxmarty/tiny-llama-fast-tokenizer")
         prompts = [
-            self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)
-        ]
+            self.random_prompt(64) for _ in range(
+                my_pipeline.max_batch_size * 2)]
         my_pipeline.genearte_batch(prompts, 10)
         mid_memory = torch.cuda.memory_allocated()
         prompts = [
-            self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)
-        ]
+            self.random_prompt(64) for _ in range(
+                my_pipeline.max_batch_size * 2)]
         my_pipeline.genearte_batch(prompts, 10)
         end_memory = torch.cuda.memory_allocated()
         assert end_memory == mid_memory, f"{end_memory} != {mid_memory}"
