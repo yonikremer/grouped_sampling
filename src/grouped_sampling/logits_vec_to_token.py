@@ -1,13 +1,10 @@
 import torch
-from torch import Tensor, multinomial, argmax, inference_mode
+from torch import Tensor, multinomial, argmax, inference_mode, softmax
 from transformers import (
     GenerationConfig,
     LogitsProcessorList,
     GenerationMixin,
 )
-from transformers.generation import LogitNormalization
-
-from src.grouped_sampling.softmax import SoftmaxLogitNormalization
 
 
 def prepare_generation_config(
@@ -25,7 +22,6 @@ def prepare_generation_config(
             f"generation_config should be a GenerationConfig, got {type(generation_config)}"
         )
     generation_config_copy = GenerationConfig(**generation_config.to_dict())
-    generation_config_copy.renormalize_logits = True
     generation_config_copy.num_beams = 1
     return generation_config_copy
 
@@ -43,15 +39,7 @@ class LogitVectorToTokenPipeLine:
         self.logit_wrapper: LogitsProcessorList = mixin._get_logits_warper(
             generation_config_copy
         )
-
         self.do_sample = generation_config_copy.do_sample
-        if isinstance(self.logit_wrapper[-1], LogitNormalization):
-            self.logit_wrapper.pop(-1)
-        if self.do_sample:
-            softmax = SoftmaxLogitNormalization(
-                temperature=generation_config_copy.temperature
-            )
-            self.logit_wrapper.append(softmax)
         self.pad_token_id = pad_token_id
 
     @inference_mode()
@@ -88,12 +76,11 @@ class LogitVectorToTokenPipeLine:
         current_tokens = torch.cat([input_ids, extra_padding], dim=1)
         for i in range(output_length):
             # noinspection PyTypeChecker
-            # a vector of size batch_size with the ith token for every sequence
-            # in the batch
             logits[:, i, :] = self.logit_wrapper(
                 input_ids=current_tokens, scores=logits[:, i, :])
             if self.do_sample:
-                answer[:, i] = multinomial(logits[:, i, :], num_samples=1)
+                probs = softmax(logits[:, i, :], dim=-1)
+                answer[:, i] = multinomial(probs, num_samples=1)
             else:
                 answer[:, i] = argmax(logits[:, i, :], dim=-1)
             current_tokens[dim1_indecies, first_padding_indecies] = answer[:, i]
