@@ -1,8 +1,8 @@
 from typing import List, Optional
 
 import torch
-from torch import Tensor, long, inference_mode, full, argmax, int8, eq, ones_like
 import tqdm
+from torch import Tensor, argmax, eq, full, inference_mode, int8, long, ones_like
 from transformers import GenerationConfig
 
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
@@ -11,6 +11,7 @@ from src.grouped_sampling.tokenizer import get_tokenizer
 
 
 class BatchPipeLine:
+
     def __init__(
         self,
         model_name: str,
@@ -46,19 +47,16 @@ class BatchPipeLine:
                 f"model_kwargs should be a dict or None, got {type(model_kwargs)}"
             )
         if generation_config is not None and not isinstance(
-            generation_config, GenerationConfig
-        ):
+                generation_config, GenerationConfig):
             raise TypeError(
                 f"generation_config should be a GenerationConfig or None, got {type(generation_config)}"
             )
         if not isinstance(max_batch_size, int):
             raise TypeError(
-                f"max_batch_size should be an int, got {type(max_batch_size)}"
-            )
+                f"max_batch_size should be an int, got {type(max_batch_size)}")
         if max_batch_size < 1:
             raise ValueError(
-                f"max_batch_size should be at least 1, got {max_batch_size}"
-            )
+                f"max_batch_size should be at least 1, got {max_batch_size}")
         self.max_batch_size = max_batch_size
         if not load_in_8bit:
             torch.set_float32_matmul_precision("high")
@@ -76,8 +74,7 @@ class BatchPipeLine:
             generation_config = GenerationConfig.from_model_config(
                 self.model.config)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
-            generation_config=generation_config
-        )
+            generation_config=generation_config)
 
     def tokenize_and_pad(
         self,
@@ -129,25 +126,22 @@ class BatchPipeLine:
             raise ValueError("tokens should not require grad")
         if not isinstance(output_length, int):
             raise TypeError(
-                f"output_length should be an int, got {type(output_length)}"
-            )
+                f"output_length should be an int, got {type(output_length)}")
         if output_length <= 0:
             raise ValueError(
                 f"output_length should be positive, got {output_length}")
-        attenction_mask = ones_like(
-            padded_tokens,
-            dtype=torch.long,
-            device=self.device,
-            requires_grad=False)
+        attenction_mask = ones_like(padded_tokens,
+                                    dtype=torch.long,
+                                    device=self.device,
+                                    requires_grad=False)
         all_logits = self.model(
             output_attentions=False,
             output_hidden_states=False,
             input_ids=padded_tokens,
             attention_mask=attenction_mask,
         ).logits
-        padding_int_tokens = eq(
-            padded_tokens,
-            self.tokenizer.pad_token_id).to(int8)
+        padding_int_tokens = eq(padded_tokens,
+                                self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
         batch_size = padded_tokens.shape[0]
         relavent_logits = torch.empty(
@@ -157,14 +151,13 @@ class BatchPipeLine:
         )
         for i, index in enumerate(last_non_pad_indices):
             relavent_logits[i, :, :] = all_logits[i,
-                                                  index: index + output_length]
+                                                  index:index + output_length]
         return relavent_logits
 
     def _validate_output_length(self, output_length: int) -> None:
         if not isinstance(output_length, int):
             raise TypeError(
-                f"output_length should be an int, got {type(output_length)}"
-            )
+                f"output_length should be an int, got {type(output_length)}")
         if output_length <= 0:
             raise ValueError(
                 f"output_length should be positive, got {output_length}")
@@ -206,18 +199,18 @@ class BatchPipeLine:
         if len(prompts) > self.max_batch_size:
             outputs: List[str] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i: i + self.max_batch_size]
+                batch = prompts[i:i + self.max_batch_size]
                 outputs.extend(self.genearte_batch(batch, output_length))
                 torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits = self.tokens_batch_to_logit_matrices(
-            padded_tokens, output_length)
+        logits = self.tokens_batch_to_logit_matrices(padded_tokens,
+                                                     output_length)
         output_tokens = self.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
         )
-        return self.tokenizer.batch_decode(
-            output_tokens, skip_special_tokens=True)
+        return self.tokenizer.batch_decode(output_tokens,
+                                           skip_special_tokens=True)

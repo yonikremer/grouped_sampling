@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Callable, Tuple, Dict, Any
+from typing import Any, Callable, Dict, Tuple
 from warnings import warn
 
 from datasets import Dataset, load_dataset
@@ -16,7 +16,6 @@ except ImportError:
     using_kaggle = False
 else:  # if we are using kaggle, we need to set the api key
     using_kaggle = True
-
 
 STAT_NAME_TO_FUNC: Tuple[Tuple[str, Callable], ...] = (
     ("mean", lambda x: x.mean()),
@@ -79,21 +78,21 @@ def get_project_name(debug: bool = __debug__) -> str:
     return "grouped-sampling-debug" if debug else "grouped-sampling-evaluation"
 
 
-def process_translation_data(
-    sub_set_name: str, debug: bool
-) -> Tuple[Dataset, Dataset, str, str]:
+def process_translation_data(sub_set_name: str,
+                             debug: bool) -> Tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
     if debug:
-        sub_set: Dataset = load_dataset(
-            DATASET_NAME, sub_set_name, split="train[:2]")
+        sub_set: Dataset = load_dataset(DATASET_NAME,
+                                        sub_set_name,
+                                        split="train[:2]")
     else:
-        sub_set: Dataset = load_dataset(
-            DATASET_NAME, sub_set_name, split="train")
+        sub_set: Dataset = load_dataset(DATASET_NAME,
+                                        sub_set_name,
+                                        split="train")
 
-    def rename_keys(
-        x: Dict[str, Any], input_lang_name: str, output_lang_name: str
-    ) -> Dict[str, str]:
+    def rename_keys(x: Dict[str, Any], input_lang_name: str,
+                    output_lang_name: str) -> Dict[str, str]:
         translation: Dict[str, str] = x["translation"]
         return {
             input_lang_name: translation[input_lang_name],
@@ -135,9 +134,8 @@ def create_pipeline(max_batch_size: int) -> BatchPipeLine:
 
 def get_experiment_parameters():
     parent_folder = Path(__file__).parent
-    with open(
-        os.path.join(parent_folder, "experiment_arguments.json"), "r"
-    ) as json_file:
+    with open(os.path.join(parent_folder, "experiment_arguments.json"),
+              "r") as json_file:
         experiment_parameters = json.load(json_file)
     return experiment_parameters
 

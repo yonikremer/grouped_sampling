@@ -37,10 +37,8 @@ class TestGetTokenizer:
     #  Tests that a tokenizer is returned when given a valid model name
     def test_valid_model_name(self):
         tokenizer = get_tokenizer("bert-base-uncased")
-        assert isinstance(
-            tokenizer,
-            (PreTrainedTokenizer,
-             PreTrainedTokenizerFast))
+        assert isinstance(tokenizer,
+                          (PreTrainedTokenizer, PreTrainedTokenizerFast))
 
     #  Tests that padding_side is set to 'right' when creating the tokenizer
     def test_padding_side(self):
@@ -56,7 +54,5 @@ class TestGetTokenizer:
     # Tests that llama tokenizers are supported
     def test_llama_tokenizer(self):
         tokenizer = get_tokenizer("fxmarty/tiny-llama-fast-tokenizer")
-        assert isinstance(
-            tokenizer,
-            (PreTrainedTokenizer,
-             PreTrainedTokenizerFast))
+        assert isinstance(tokenizer,
+                          (PreTrainedTokenizer, PreTrainedTokenizerFast))

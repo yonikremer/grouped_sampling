@@ -1,18 +1,13 @@
 import torch
-from torch import Tensor, multinomial, argmax, inference_mode
-from transformers import (
-    GenerationConfig,
-    LogitsProcessorList,
-    GenerationMixin,
-)
+from torch import Tensor, argmax, inference_mode, multinomial
+from transformers import GenerationConfig, GenerationMixin, LogitsProcessorList
 from transformers.generation import LogitNormalization
 
 from src.grouped_sampling.softmax import SoftmaxLogitNormalization
 
 
 def prepare_generation_config(
-    generation_config: GenerationConfig,
-) -> GenerationConfig:
+        generation_config: GenerationConfig, ) -> GenerationConfig:
     """
     Prepare a generation config for the LogitVectorToTokenPipeLine.
     Args:
@@ -31,6 +26,7 @@ def prepare_generation_config(
 
 
 class LogitVectorToTokenPipeLine:
+
     def __init__(
         self,
         generation_config: GenerationConfig,
@@ -40,16 +36,14 @@ class LogitVectorToTokenPipeLine:
         mixin.generation_config = generation_config_copy
         # noinspection PyProtectedMember
         self.logit_wrapper: LogitsProcessorList = mixin._get_logits_warper(
-            generation_config_copy
-        )
+            generation_config_copy)
 
         self.do_sample = generation_config_copy.do_sample
         if isinstance(self.logit_wrapper[-1], LogitNormalization):
             self.logit_wrapper.pop(-1)
         if self.do_sample:
             softmax = SoftmaxLogitNormalization(
-                temperature=generation_config_copy.temperature
-            )
+                temperature=generation_config_copy.temperature)
             self.logit_wrapper.append(softmax)
 
     @inference_mode()
@@ -69,15 +63,15 @@ class LogitVectorToTokenPipeLine:
             A Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
         """
         batch_size = input_ids.size(0)
-        answer = torch.empty(
-            (batch_size, output_length), dtype=torch.long, device=logits.device
-        )
+        answer = torch.empty((batch_size, output_length),
+                             dtype=torch.long,
+                             device=logits.device)
         for i in range(output_length):
             # noinspection PyTypeChecker
             # a vector of size batch_size with the ith token for every sequence
             # in the batch
-            logits[:, i, :] = self.logit_wrapper(
-                input_ids=input_ids, scores=logits[:, i, :])
+            logits[:, i, :] = self.logit_wrapper(input_ids=input_ids,
+                                                 scores=logits[:, i, :])
             if self.do_sample:
                 answer[:, i] = multinomial(logits[:, i, :], num_samples=1)
             else:
