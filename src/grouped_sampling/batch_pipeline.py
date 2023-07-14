@@ -146,6 +146,13 @@ class BatchPipeLine:
             input_ids=padded_tokens,
             attention_mask=attenction_mask,
         ).logits
+        if all_logits.isnan().any():
+            raise RuntimeError(
+                f"Model returned NaN logits."
+                f" logits: {all_logits}"
+                f" tokens: {padded_tokens}"
+                f" attention_mask: {attenction_mask}"
+            )
         padding_int_tokens = eq(
             padded_tokens,
             self.tokenizer.pad_token_id).to(int8)
