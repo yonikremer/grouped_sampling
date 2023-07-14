@@ -33,7 +33,7 @@ class TestLogitVectorToTokenPipeLine:
     # Tests that batch_to_tokens returns valid token ids with valid input_ids
     # and batch
     def test_batch_to_tokens_valid_input(self):
-        input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]], device="cuda")
+        input_ids = torch.tensor([[1, 2, 3, 0, 0], [4, 5, 6, 0, 0]], device="cuda")
         batch = torch.tensor(
             [
                 [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
@@ -41,9 +41,10 @@ class TestLogitVectorToTokenPipeLine:
             ],
             device="cuda",
         )
-        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        last_non_padding = torch.tensor([2, 2], device="cuda")
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig(), 0)
         output_length = 3
-        token_ids = pipeline.logits_to_tokens(input_ids, batch, output_length)
+        token_ids = pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
         assert isinstance(token_ids, Tensor)
         assert token_ids.shape == torch.Size([2, output_length])
         assert token_ids.dtype == long
@@ -52,13 +53,19 @@ class TestLogitVectorToTokenPipeLine:
     def test_memory_leak(self):
         batch_size = 128
         vocab_size = 2048
-        input_ids = torch.randint(
-            0, vocab_size, (batch_size, 100), device="cuda")
         output_length = 100
+        padding_id = 0
+        single_example = [1, 2, 3] + [padding_id] * (output_length - 1)
+        nested_list_input_ids = [single_example] * batch_size
+        assert isinstance(nested_list_input_ids, list)
+        assert all(isinstance(x, list) for x in nested_list_input_ids)
+        input_ids = torch.tensor(nested_list_input_ids, device="cuda")
+        assert input_ids.shape == torch.Size([batch_size, output_length + 2])
         batch = torch.randn(
             (batch_size, vocab_size, output_length), device="cuda")
-        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
+        last_non_padding = torch.full((batch_size,), 2, dtype=torch.long, device="cuda")
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig(), padding_id)
         start_mem = torch.cuda.memory_allocated()
-        pipeline.logits_to_tokens(input_ids, batch, output_length)
+        pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
         end_mem = torch.cuda.memory_allocated()
         assert end_mem == start_mem

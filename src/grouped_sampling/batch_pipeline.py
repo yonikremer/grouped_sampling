@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import torch
 from torch import Tensor, long, inference_mode, full, argmax, int8, eq, ones_like
@@ -76,7 +76,8 @@ class BatchPipeLine:
             generation_config = GenerationConfig.from_model_config(
                 self.model.config)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
-            generation_config=generation_config
+            generation_config=generation_config,
+            pad_token_id=self.tokenizer.pad_token_id,
         )
 
     def tokenize_and_pad(
@@ -115,7 +116,7 @@ class BatchPipeLine:
         self,
         padded_tokens: Tensor,
         output_length: int,
-    ) -> Tensor:
+    ) -> Tuple[Tensor, Tensor]:
         """
         Given a batch of prompts where each prompt is a sequence of tokens, and an output_length,
         returns the logits matrices of shape (batch_size, output_length, vocab_size)
@@ -158,7 +159,7 @@ class BatchPipeLine:
         for i, index in enumerate(last_non_pad_indices):
             relavent_logits[i, :, :] = all_logits[i,
                                                   index: index + output_length]
-        return relavent_logits
+        return relavent_logits, last_non_pad_indices
 
     def _validate_output_length(self, output_length: int) -> None:
         if not isinstance(output_length, int):
@@ -212,12 +213,13 @@ class BatchPipeLine:
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits = self.tokens_batch_to_logit_matrices(
+        logits, last_non_padding_indecies = self.tokens_batch_to_logit_matrices(
             padded_tokens, output_length)
         output_tokens = self.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
+            last_non_padding_indecies=last_non_padding_indecies,
         )
         return self.tokenizer.batch_decode(
             output_tokens, skip_special_tokens=True)

@@ -226,13 +226,14 @@ class TestBatchPipeLine:
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
         assert not padded_tokens.requires_grad
-        logits = pipeline.tokens_batch_to_logit_matrices(
+        logits, last_non_padding_indecies = pipeline.tokens_batch_to_logit_matrices(
             padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
+            last_non_padding_indecies=last_non_padding_indecies,
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
 
@@ -285,13 +286,14 @@ class TestBatchPipeLine:
         output_length = 5
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
-        logits = pipeline.tokens_batch_to_logit_matrices(
+        logits, last_non_padding_indecies = pipeline.tokens_batch_to_logit_matrices(
             padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
+            last_non_padding_indecies=last_non_padding_indecies
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
         # self.validate_pipeline(pipeline)
