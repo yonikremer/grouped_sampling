@@ -1,6 +1,6 @@
 """This is a script that plots the results of the experiments and saves the figures to the plots folder"""
 from os.path import abspath, dirname, join
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from comet_ml import API, APIExperiment
 from matplotlib import pyplot as plt
@@ -32,11 +32,11 @@ def experiment_filter(exp: APIExperiment) -> bool:
 
 def get_relevant_experiments() -> List[APIExperiment]:
     all_experiments: List[APIExperiment] = api.get_experiments(
-        workspace=WORKSPACE, project_name=get_project_name(
-            debug=False), pattern=None)
-    unsorted_relevant_experiments = (
-        exp for exp in all_experiments if experiment_filter(exp)
-    )
+        workspace=WORKSPACE,
+        project_name=get_project_name(debug=False),
+        pattern=None)
+    unsorted_relevant_experiments = (exp for exp in all_experiments
+                                     if experiment_filter(exp))
     return sorted(unsorted_relevant_experiments, key=get_duration)
 
 
@@ -55,9 +55,8 @@ def get_group_size(experiment: APIExperiment) -> int:
     return int(get_parameter(experiment, "group_size"))
 
 
-def filter_dict_by_name(
-    dict_list: List[Dict[str, Any]], name: str
-) -> List[Dict[str, Any]]:
+def filter_dict_by_name(dict_list: List[Dict[str, Any]],
+                        name: str) -> List[Dict[str, Any]]:
     return [curr_dict for curr_dict in dict_list if curr_dict["name"] == name]
 
 
@@ -88,7 +87,10 @@ def save_plot_from_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
     for curr_metric_name, curr_color in zip(metric_names, colors):
         plt.scatter(
             data.keys(),
-            [data[curr_group_size][curr_metric_name] for curr_group_size in data],
+            [
+                data[curr_group_size][curr_metric_name]
+                for curr_group_size in data
+            ],
             color=curr_color,
             label=curr_metric_name,
         )
@@ -131,8 +133,10 @@ def get_duration(exp: APIExperiment) -> float:
 
 
 def save_duration_plot():
-    group_size_to_duration = {get_group_size(exp): get_duration(
-        exp) for exp in get_relevant_experiments()}
+    group_size_to_duration = {
+        get_group_size(exp): get_duration(exp)
+        for exp in get_relevant_experiments()
+    }
     plt.autoscale(True)
     curr_figure = plt.gcf()
     curr_figure.clear()
@@ -146,7 +150,7 @@ def save_duration_plot():
     plt.ylabel(y_label)
     title = f"{y_label} as a function of {X_LABEL}"
     plt.title(title)
-    fig_path = (join(PLOTS_FOLDER, join(PLOTS_FOLDER, f"{title}.png")),)
+    fig_path = (join(PLOTS_FOLDER, join(PLOTS_FOLDER, f"{title}.png")), )
     plt.savefig(fig_path, bbox_inches="tight", pad_inches=0)
     print(f"Saved a plot in {fig_path}")
     plt.clf()
@@ -165,9 +169,9 @@ def save_stat_table(stat_name: str) -> None:
     df = DataFrame()
     for curr_metric_name in metric_names:
         for curr_group_size in group_size_to_score_stats:
-            df.loc[curr_group_size, curr_metric_name] = group_size_to_score_stats[
-                curr_group_size
-            ][curr_metric_name]
+            df.loc[curr_group_size,
+                   curr_metric_name] = group_size_to_score_stats[
+                       curr_group_size][curr_metric_name]
     df = df.sort_index()
     df = df.round(3)
     df.to_csv(join(TABLES_FOLDER, f"{stat_name}.csv"))
