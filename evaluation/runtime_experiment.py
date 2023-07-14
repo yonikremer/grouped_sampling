@@ -8,6 +8,7 @@ import torch
 from datasets import get_dataset_config_names
 from torch import inference_mode
 import pandas as pd
+# noinspection PyProtectedMember
 from torch._C._profiler import ProfilerActivity
 from torch.profiler import profile
 
