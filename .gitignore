@@ -157,7 +157,7 @@ mercury_demo/input_*.ipynb
 # api key
 evaluation/comet_ml_api_key.txt
 pypi_api_token.txt
-human-eval/human_eval/comet_ml_api_key.txt
+human_eval_project/human_eval/comet_ml_api_key.txt
 
 # sub projects
 /tests/supported_model_names.txt
