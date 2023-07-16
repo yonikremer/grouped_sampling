@@ -6,11 +6,11 @@ from comet_ml import API, APIExperiment
 from matplotlib import pyplot as plt
 from pandas import DataFrame
 
+from cometml_key import get_comet_api_key
 from evaluation import (
     BERT_SCORES,
     STAT_NAME_TO_FUNC,
     WORKSPACE,
-    get_comet_api_key,
     get_project_name,
 )
 

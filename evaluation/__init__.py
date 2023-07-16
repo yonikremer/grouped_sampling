@@ -9,14 +9,6 @@ from transformers import GenerationConfig
 
 from src.grouped_sampling import BatchPipeLine
 
-try:
-    # noinspection PyUnresolvedReferences
-    from kaggle_secrets import UserSecretsClient
-except ImportError:
-    using_kaggle = False
-else:  # if we are using kaggle, we need to set the api key
-    using_kaggle = True
-
 
 STAT_NAME_TO_FUNC: Tuple[Tuple[str, Callable], ...] = (
     ("mean", lambda x: x.mean()),

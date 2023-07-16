@@ -11,10 +11,10 @@ from pandas import DataFrame, concat
 from evaluation import (
     BERT_SCORES,
     STAT_NAME_TO_FUNC,
-    get_comet_api_key,
     get_project_name,
     lang_code_to_name,
 )
+from cometml_key import get_comet_api_key
 
 
 class ExperimentManager:
