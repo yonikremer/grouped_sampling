@@ -229,7 +229,7 @@ class TestBatchPipeLine:
         logits, last_non_padding_indecies = pipeline.tokens_batch_to_logit_matrices(
             padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
-        output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens(
+        output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens_return_one(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
@@ -289,7 +289,7 @@ class TestBatchPipeLine:
         logits, last_non_padding_indecies = pipeline.tokens_batch_to_logit_matrices(
             padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
-        output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens(
+        output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens_return_one(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,

@@ -222,7 +222,7 @@ class BatchPipeLine:
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
         logits, last_non_padding_indecies = self.tokens_batch_to_logit_matrices(
             padded_tokens, output_length)
-        output_tokens = self.logit_to_token_pipeline.logits_to_tokens(
+        output_tokens = self.logit_to_token_pipeline.logits_to_tokens_return_one(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,

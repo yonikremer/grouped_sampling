@@ -44,7 +44,7 @@ class TestLogitVectorToTokenPipeLine:
         last_non_padding = torch.tensor([2, 2], device="cuda")
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig(), 0)
         output_length = 3
-        token_ids = pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
+        token_ids = pipeline.logits_to_tokens_return_one(input_ids, batch, output_length, last_non_padding)
         assert isinstance(token_ids, Tensor)
         assert token_ids.shape == torch.Size([2, output_length])
         assert token_ids.dtype == long
@@ -66,7 +66,7 @@ class TestLogitVectorToTokenPipeLine:
         last_non_padding = torch.full((batch_size,), 2, dtype=torch.long, device="cuda")
         pipeline = LogitVectorToTokenPipeLine(GenerationConfig(), padding_id)
         start_mem = torch.cuda.memory_allocated()
-        pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
+        pipeline.logits_to_tokens_return_one(input_ids, batch, output_length, last_non_padding)
         end_mem = torch.cuda.memory_allocated()
         assert end_mem == start_mem
 
@@ -89,7 +89,7 @@ class TestLogitVectorToTokenPipeLine:
         )
         last_non_padding = torch.tensor([2, 2], device="cuda")
         output_length = 3
-        token_ids = pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
+        token_ids = pipeline.logits_to_tokens_return_one(input_ids, batch, output_length, last_non_padding)
         assert isinstance(token_ids, Tensor)
         assert token_ids.shape == torch.Size([2, output_length])
         assert token_ids.dtype == long
@@ -103,7 +103,7 @@ class TestLogitVectorToTokenPipeLine:
         )
         last_non_padding = torch.tensor([2], device="cuda")
         output_length = 3
-        token_ids = pipeline.logits_to_tokens(input_ids, batch, output_length, last_non_padding)
+        token_ids = pipeline.logits_to_tokens_return_one(input_ids, batch, output_length, last_non_padding)
         assert isinstance(token_ids, Tensor)
         assert token_ids.shape == torch.Size([1, output_length])
         assert token_ids.dtype == long

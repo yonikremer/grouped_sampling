@@ -43,7 +43,7 @@ class LogitVectorToTokenPipeLine:
         self.pad_token_id = pad_token_id
 
     @inference_mode()
-    def logits_to_tokens(
+    def logits_to_tokens_return_one(
         self,
         input_ids: Tensor,
         logits: Tensor,
