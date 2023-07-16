@@ -149,7 +149,7 @@ class TestBatchPipeLine:
         pipeline = BatchPipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 5
-        result = pipeline.genearte_batch(prompts, output_length)
+        result = pipeline.genearte_batch_return_one(prompts, output_length)
         assert isinstance(result, list)
         assert len(result) == len(prompts)
         for output in result:
@@ -170,7 +170,7 @@ class TestBatchPipeLine:
         prompts = []
         output_length = 5
         expected_output = []
-        assert pipeline.genearte_batch(
+        assert pipeline.genearte_batch_return_one(
             prompts, output_length) == expected_output
 
     # Tests that the function returns a list of empty strings for a batch of
@@ -180,7 +180,7 @@ class TestBatchPipeLine:
         prompts = ["Hello", "How are you?"]
         output_length = 0
         expected_output = ["", ""]
-        assert pipeline.genearte_batch(
+        assert pipeline.genearte_batch_return_one(
             prompts, output_length) == expected_output
 
     # Tests that the function returns a list of empty strings for an empty
@@ -190,7 +190,7 @@ class TestBatchPipeLine:
         prompts = [""]
         output_length = 5
         with pytest.raises(ValueError):
-            pipeline.genearte_batch(prompts, output_length)
+            pipeline.genearte_batch_return_one(prompts, output_length)
 
     # Tests that the function raises a ValueError if the prompts contain an
     # empty string
@@ -199,7 +199,7 @@ class TestBatchPipeLine:
         prompts = ["Hello", ""]
         output_length = 5
         with pytest.raises(ValueError):
-            pipeline.genearte_batch(prompts, output_length)
+            pipeline.genearte_batch_return_one(prompts, output_length)
 
     #  Tests that the function raises a ValueError if output_length is negative
     def test_negative_output_length(self):
@@ -207,7 +207,7 @@ class TestBatchPipeLine:
         prompts = ["Hello", "How are you?"]
         output_length = -1
         with pytest.raises(ValueError):
-            pipeline.genearte_batch(prompts, output_length)
+            pipeline.genearte_batch_return_one(prompts, output_length)
 
     # Tests that the function raises a ValueError if output_length is not an
     # integer
@@ -216,7 +216,7 @@ class TestBatchPipeLine:
         prompts = ["Hello", "How are you?"]
         output_length = 1.5
         with pytest.raises(TypeError):  # noinspection PyTypeChecker
-            pipeline.genearte_batch(prompts, output_length)
+            pipeline.genearte_batch_return_one(prompts, output_length)
 
     @inference_mode()
     def test_step_by_step_pipeline(self):
@@ -244,14 +244,14 @@ class TestBatchPipeLine:
         prompts = ["Hello", "How are you?"]
         output_length = 1000000
         with pytest.raises(ValueError):
-            pipeline.genearte_batch(prompts, output_length)
+            pipeline.genearte_batch_return_one(prompts, output_length)
 
     # test that genearte_batch works correctrly when it gets a string as input
     def test_string_input(self):
         pipeline = BatchPipeLine("gpt2")
         prompt = "Hello"
         output_length = 5
-        result = pipeline.genearte_batch(prompt, output_length)
+        result = pipeline.genearte_batch_return_one(prompt, output_length)
         assert isinstance(result, list)
         assert len(result) == 1
         for output in result:
@@ -337,7 +337,7 @@ class TestBatchPipeLine:
             pipeline.device.type == "cuda"
         ), f"device is not cuda: {pipeline.device.type}"
         prompt = "Hello"
-        pipeline.genearte_batch(prompt, 5)
+        pipeline.genearte_batch_return_one(prompt, 5)
 
     # noinspection PyTypeChecker
     def test_init_wrong_types(self):
@@ -353,7 +353,7 @@ class TestBatchPipeLine:
         number_of_prompts = 1024
         prompts = ["Hello"] * number_of_prompts
         output_length = 5
-        result = pipeline.genearte_batch(prompts, output_length)
+        result = pipeline.genearte_batch_return_one(prompts, output_length)
         assert isinstance(result, list)
         assert len(result) == number_of_prompts
         for output in result:
@@ -380,11 +380,11 @@ class TestBatchPipeLine:
         prompts = [
             self.random_prompt(64) for _ in range(
                 my_pipeline.max_batch_size * 2)]
-        my_pipeline.genearte_batch(prompts, 10)
+        my_pipeline.genearte_batch_return_one(prompts, 10)
         mid_memory = torch.cuda.memory_allocated()
         prompts = [
             self.random_prompt(64) for _ in range(
                 my_pipeline.max_batch_size * 2)]
-        my_pipeline.genearte_batch(prompts, 10)
+        my_pipeline.genearte_batch_return_one(prompts, 10)
         end_memory = torch.cuda.memory_allocated()
         assert end_memory == mid_memory, f"{end_memory} != {mid_memory}"

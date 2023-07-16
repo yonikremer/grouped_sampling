@@ -63,7 +63,7 @@ def generate(prompts: List[str], max_batch_size: int, max_prompt_length: int):
         record_shapes=True,
         profile_memory=True,
     ) as profiler:
-        pipeline.genearte_batch(prompts, output_length)
+        pipeline.genearte_batch_return_one(prompts, output_length)
     print(profiler.key_averages().table(sort_by="self_cuda_memory_usage"))
     end_time = time.time()
     duration_seconds = end_time - start_time
