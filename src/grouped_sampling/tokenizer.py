@@ -2,7 +2,7 @@ import json
 import os
 from functools import lru_cache
 from json import JSONDecodeError
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 
 import requests
 from huggingface_hub.utils import (
@@ -13,8 +13,8 @@ from huggingface_hub.utils import (
 from transformers import PreTrainedTokenizer, AutoTokenizer, PreTrainedTokenizerFast
 
 
-def get_padding_id(tokenizer: PreTrainedTokenizer |
-                   PreTrainedTokenizerFast) -> int:
+def get_padding_id(tokenizer: Union[PreTrainedTokenizer,
+                   PreTrainedTokenizerFast]) -> int:
     if hasattr(
             tokenizer,
             "pad_token_id") and tokenizer.pad_token_id is not None:
@@ -157,7 +157,7 @@ def get_tokenizer_name(
 
 def get_tokenizer(
     model_name: str,
-) -> PreTrainedTokenizer | PreTrainedTokenizerFast:
+) -> Union[PreTrainedTokenizer, PreTrainedTokenizerFast]:
     """
     Returns a tokenizer based on the model name
     Args:

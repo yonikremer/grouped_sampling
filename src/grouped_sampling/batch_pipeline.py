@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor, long, inference_mode, full, argmax, int8, eq, ones_like
@@ -191,7 +191,7 @@ class BatchPipeLine:
     @inference_mode()
     def genearte_batch(
         self,
-        prompts: List[str] | str,
+        prompts: Union[List[str], str],
         output_length: int,
     ) -> List[str]:
         """

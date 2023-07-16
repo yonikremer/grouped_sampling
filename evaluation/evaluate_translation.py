@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from warnings import warn
 
 from evaluate import TranslationEvaluator
@@ -39,7 +39,7 @@ def sub_experiment_half(
     my_evaluator.METRIC_KWARGS = {"lang": out_lang_code}
     my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
     # noinspection PyTypeChecker
-    scores: Dict[str, List[float] | Any] = my_evaluator.compute(
+    scores: Dict[str, Union[List[float], Any]] = my_evaluator.compute(
         model_or_pipeline=generator,
         data=sub_set_half,
         input_column=in_lang_code,

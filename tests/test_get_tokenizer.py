@@ -23,7 +23,7 @@ Flow:
 - The function then returns the obtained tokenizer.
 
 Outputs:
-- raw_tokenizer (PreTrainedTokenizer | PreTrainedTokenizerFast): The obtained tokenizer.
+- raw_tokenizer (Union[PreTrainedTokenizer, PreTrainedTokenizerFast]): The obtained tokenizer.
 
 Additional aspects:
 - The function uses the 'get_tokenizer_name' function to obtain the name of the tokenizer based on the model name.

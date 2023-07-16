@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple, Union
 
 import matplotlib.pyplot as plt
 from comet_ml import Experiment
@@ -65,14 +65,14 @@ class ExperimentManager:
 
     def log_sub_experiment(
         self,
-        bert_scores: Dict[str, List[float] | Any],
+        bert_scores: Dict[str, Union[List[float], Any]],
         input_lang_code: str,
         output_lang_code: str,
         sub_set: Dataset,
     ) -> None:
         """
         Args:
-        bert_scores: Dict[str, List[float] | Any]
+        bert_scores: Dict[str, Union[List[float], Any]]
             with keys "f1", "precision", "recall"
             values of shape (number of examples in the sub-experiment,) and type float
         input_lang_code: The name of the input language in this sub experiment half
