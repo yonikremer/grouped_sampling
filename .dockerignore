@@ -182,4 +182,8 @@ cython_debug/
 /evaluation
 /.deepsource.toml
 *.ipynb
-
+human_eval_project/human_eval/data/HumanEvalData.csv
+human_eval_project/human_eval/data/example_problem.jsonl
+human_eval_project/human_eval/data/example_samples.jsonl
+human_eval_project/human_eval/samples.jsonl
+human_eval_project/human_eval/samples.jsonl_results.jsonl
