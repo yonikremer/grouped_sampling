@@ -189,7 +189,7 @@ class BatchPipeLine:
             raise ValueError("strings should not contain empty strings")
 
     @inference_mode()
-    def genearte_batch_return_one(
+    def generate_batch_return_one(
         self,
         prompts: Union[List[str], str],
         output_length: int,
@@ -215,7 +215,7 @@ class BatchPipeLine:
             outputs: List[str] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
                 batch = prompts[i: i + self.max_batch_size]
-                outputs.extend(self.genearte_batch_return_one(batch, output_length))
+                outputs.extend(self.generate_batch_return_one(batch, output_length))
                 torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
