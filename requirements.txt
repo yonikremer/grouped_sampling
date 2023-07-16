@@ -18,3 +18,4 @@ fire
 build
 toml
 twine
+packaging
