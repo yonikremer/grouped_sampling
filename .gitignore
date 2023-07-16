@@ -164,3 +164,8 @@ human_eval_project/human_eval/comet_ml_api_key.txt
 
 #offload
 /tests/offload/
+human_eval_project/data/HumanEvalData.csv
+human_eval_project/data/example_problem.jsonl
+human_eval_project/human_eval/data/example_samples.jsonl
+human_eval_project/human_eval/samples.jsonl
+human_eval_project/human_eval/samples.jsonl_results.jsonl
