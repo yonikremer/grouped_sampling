@@ -70,14 +70,15 @@ class LogitVectorToTokenPipeLine:
             size=(batch_size, 1),
             fill_value=self.pad_token_id,
             dtype=torch.long,
-            device=logits.device
+            device=logits.device,
         )
         dim1_indecies = torch.arange(batch_size)
         current_tokens = torch.cat([input_ids, extra_padding], dim=1)
         for i in range(output_length):
             # noinspection PyTypeChecker
             logits[:, i, :] = self.logit_wrapper(
-                input_ids=current_tokens, scores=logits[:, i, :])
+                input_ids=current_tokens, scores=logits[:, i, :]
+            )
             if self.do_sample:
                 probs = softmax(logits[:, i, :], dim=-1)
                 answer[:, i] = multinomial(probs, num_samples=1).squeeze(-1)

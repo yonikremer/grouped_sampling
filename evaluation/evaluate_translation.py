@@ -45,11 +45,7 @@ def sub_experiment_half(
         input_column=in_lang_code,
         label_column=out_lang_code,
     )
-    manager.log_sub_experiment(
-        scores,
-        in_lang_code,
-        out_lang_code,
-        sub_set_half)
+    manager.log_sub_experiment(scores, in_lang_code, out_lang_code, sub_set_half)
 
 
 def run_experiment(

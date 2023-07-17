@@ -8,6 +8,7 @@ except ImportError:
 else:  # if we are using kaggle, we need to set the api key
     using_kaggle = True
 
+
 def get_comet_api_key() -> str:
     """
     Returns the Comet API key from the file "final_project/evaluate/comet_api_key.txt"

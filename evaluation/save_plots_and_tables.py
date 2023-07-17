@@ -32,16 +32,15 @@ def experiment_filter(exp: APIExperiment) -> bool:
 
 def get_relevant_experiments() -> List[APIExperiment]:
     all_experiments: List[APIExperiment] = api.get_experiments(
-        workspace=WORKSPACE, project_name=get_project_name(
-            debug=False), pattern=None)
+        workspace=WORKSPACE, project_name=get_project_name(debug=False), pattern=None
+    )
     unsorted_relevant_experiments = (
         exp for exp in all_experiments if experiment_filter(exp)
     )
     return sorted(unsorted_relevant_experiments, key=get_duration)
 
 
-def get_parameter(experiment: APIExperiment,
-                  parameter_name: str) -> Optional[str]:
+def get_parameter(experiment: APIExperiment, parameter_name: str) -> Optional[str]:
     """Gets a parameter from an APIExperiment."""
     summary: List[dict] = experiment.get_parameters_summary()
     for curr_param in summary:
@@ -68,8 +67,7 @@ def get_score_stat(experiment: APIExperiment, stat: str) -> Dict[str, float]:
         metric_stat_name: str = f"general_{curr_metric_name}_{stat}"
         metric_values = filter_dict_by_name(summary, metric_stat_name)
         for curr_metric_value in metric_values:
-            score_stat[curr_metric_name] = float(
-                curr_metric_value["valueCurrent"])
+            score_stat[curr_metric_name] = float(curr_metric_value["valueCurrent"])
     return score_stat
 
 
@@ -120,8 +118,7 @@ def save_stat_plot(stat_name: str) -> None:
     if len(group_size_to_score_stats) > 0:
         save_plot_from_data(group_size_to_score_stats, stat_name)
     else:
-        raise RuntimeError(
-            f"Could not find any experiments with the stat {stat_name}.")
+        raise RuntimeError(f"Could not find any experiments with the stat {stat_name}.")
 
 
 def get_duration(exp: APIExperiment) -> float:
@@ -131,8 +128,9 @@ def get_duration(exp: APIExperiment) -> float:
 
 
 def save_duration_plot():
-    group_size_to_duration = {get_group_size(exp): get_duration(
-        exp) for exp in get_relevant_experiments()}
+    group_size_to_duration = {
+        get_group_size(exp): get_duration(exp) for exp in get_relevant_experiments()
+    }
     plt.autoscale(True)
     curr_figure = plt.gcf()
     curr_figure.clear()
@@ -160,8 +158,7 @@ def save_stat_table(stat_name: str) -> None:
         if len(curr_exp_stats) > 0:
             group_size_to_score_stats[group_size] = curr_exp_stats
     if len(group_size_to_score_stats) <= 0:
-        raise RuntimeError(
-            f"Could not find any experiments with the stat {stat_name}.")
+        raise RuntimeError(f"Could not find any experiments with the stat {stat_name}.")
     df = DataFrame()
     for curr_metric_name in metric_names:
         for curr_group_size in group_size_to_score_stats:

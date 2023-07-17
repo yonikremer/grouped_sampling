@@ -54,8 +54,7 @@ class TestGetModel:
         assert isinstance(
             model, Module
         ), "The model is not an instance of torch.nn.Module"
-        assert hasattr(
-            model, "config"), "The model does not have a config attribute"
+        assert hasattr(model, "config"), "The model does not have a config attribute"
         assert isinstance(
             model.config, PretrainedConfig
         ), "The model config is not an instance of PretrainedConfig"
@@ -63,8 +62,7 @@ class TestGetModel:
             assert not model.config.use_cache, "The model config use_cache is not False"
         else:
             print("The model config does not have a use_cache attribute")
-        assert hasattr(
-            model, "device"), "The model does not have a device attribute"
+        assert hasattr(model, "device"), "The model does not have a device attribute"
         assert isinstance(
             model.device, torch.device
         ), "The model device is not an instance of torch.device"
@@ -103,9 +101,7 @@ class TestGetModel:
         model_name = "gpt2"
         model = get_model(model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        input_ids = tokenizer(
-            "Hello, my dog is cute",
-            return_tensors="pt")["input_ids"]
+        input_ids = tokenizer("Hello, my dog is cute", return_tensors="pt")["input_ids"]
         input_ids = input_ids.cuda()
         output1 = model(input_ids)
         logits1 = output1.logits
@@ -124,19 +120,16 @@ class TestGetModel:
         model = get_model(model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         prompts = ["Hello, my dog is cute"] * 2
-        input_ids_batch = tokenizer(prompts, return_tensors="pt")[
-            "input_ids"].cuda()
+        input_ids_batch = tokenizer(prompts, return_tensors="pt")["input_ids"].cuda()
         with torch.no_grad():
             output_batch = model(input_ids_batch)
         logits_batch = output_batch.logits
-        input_ids = tokenizer(prompts[0], return_tensors="pt")[
-            "input_ids"].cuda()
+        input_ids = tokenizer(prompts[0], return_tensors="pt")["input_ids"].cuda()
         with torch.no_grad():
             output = model(input_ids)
         logits = output.logits
         assert torch.equal(logits_batch[0], logits_batch[1])
-        assert logits_batch.shape == (
-            2, input_ids.shape[1], model.config.vocab_size)
+        assert logits_batch.shape == (2, input_ids.shape[1], model.config.vocab_size)
         assert logits.shape == (1, input_ids.shape[1], model.config.vocab_size)
         assert logits.dtype == logits_batch.dtype
         for i in range(input_ids.shape[1]):

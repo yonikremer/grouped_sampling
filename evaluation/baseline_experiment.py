@@ -22,11 +22,8 @@ disable_progress_bars()
 
 METRIC_NAME = "bertscore"
 metric: EvaluationModule = load(
-    METRIC_NAME,
-    cache_dir=os.path.join(
-        os.path.dirname(__file__),
-        "metrics",
-        "cache"))
+    METRIC_NAME, cache_dir=os.path.join(os.path.dirname(__file__), "metrics", "cache")
+)
 
 
 def process_sub_set_half(
@@ -38,12 +35,8 @@ def process_sub_set_half(
         f"Translate {input_lang_name} to {output_lang_name}: \n {input_lang_name}: "
     )
     postfix = f"\n {output_lang_name}: "
-    inputs = [
-        prefix +
-        x["translation"][in_lang_code] +
-        postfix for x in sub_set_half]
-    references: List[str] = [x["translation"][out_lang_code]
-                             for x in sub_set_half]
+    inputs = [prefix + x["translation"][in_lang_code] + postfix for x in sub_set_half]
+    references: List[str] = [x["translation"][out_lang_code] for x in sub_set_half]
     return inputs, references
 
 
@@ -56,8 +49,7 @@ def sub_experiment_half(
 ) -> None:
     inputs: List[str]
     references: List[str]
-    inputs, references = process_sub_set_half(
-        sub_set_half, in_lang_code, out_lang_code)
+    inputs, references = process_sub_set_half(sub_set_half, in_lang_code, out_lang_code)
     raw_predictions: List[List[Dict[str, str]]] = pipeline(
         inputs,
         num_beams=1,
@@ -83,11 +75,7 @@ def sub_experiment_half(
 
     # noinspection PyTypeChecker
 
-    manager.log_sub_experiment(
-        scores,
-        in_lang_code,
-        out_lang_code,
-        sub_set_half)
+    manager.log_sub_experiment(scores, in_lang_code, out_lang_code, sub_set_half)
 
 
 def run_experiment(
