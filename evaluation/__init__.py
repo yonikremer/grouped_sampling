@@ -7,7 +7,7 @@ from warnings import warn
 from datasets import Dataset, load_dataset
 from transformers import GenerationConfig
 
-from src.grouped_sampling import BatchPipeLine
+from src.grouped_sampling import ReturnOnePipeLine
 
 
 STAT_NAME_TO_FUNC: Tuple[Tuple[str, Callable], ...] = (
@@ -85,14 +85,14 @@ def process_translation_data(
     return subset_part1, subset_part2, language_code1, language_code2
 
 
-def create_pipeline(max_batch_size: int) -> BatchPipeLine:
+def create_pipeline(max_batch_size: int) -> ReturnOnePipeLine:
     """Creates a text pipeline from the experiment_arguments.json file"""
     experiment_parameters = get_experiment_parameters()
     model_name = experiment_parameters.pop("model_name")
     generation_config = GenerationConfig.from_pretrained(model_name)
     for key, value in experiment_parameters.items():
         setattr(generation_config, key, value)
-    pipeline = BatchPipeLine(
+    pipeline = ReturnOnePipeLine(
         model_name=model_name,
         load_in_8bit=True,
         generation_config=generation_config,

@@ -10,7 +10,7 @@ from src.grouped_sampling.model import get_model
 from src.grouped_sampling.tokenizer import get_tokenizer
 
 
-class BatchPipeLine:
+class ReturnOnePipeLine:
     def __init__(
         self,
         model_name: str,
@@ -20,7 +20,7 @@ class BatchPipeLine:
         max_batch_size: int = 128,
     ):
         """
-        Create a new BatchEndToEndSingleSequencePipeLine.
+        Create a new ReturnOnePipeLine.
         Args:
             model_name: str. The name of the model to load from huggingfacehub.
             load_in_8bit: bool. If True, the model will be loaded in 8bit mode, which is faster but less accurate.

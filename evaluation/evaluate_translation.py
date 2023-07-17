@@ -16,7 +16,7 @@ from evaluation import (
     disable_progress_bars,
     get_experiment_parameters,
 )
-from src.grouped_sampling import BatchPipeLine
+from src.grouped_sampling import ReturnOnePipeLine
 
 disable_progress_bars()
 
@@ -26,7 +26,7 @@ def sub_experiment_half(
     sub_set_half: Dataset,
     in_lang_code: str,
     out_lang_code: str,
-    generator: BatchPipeLine,
+    generator: ReturnOnePipeLine,
     manager: ExperimentManager,
 ) -> None:
     input_lang_name, output_lang_name = lang_code_to_name(
@@ -49,7 +49,7 @@ def sub_experiment_half(
 
 
 def run_experiment(
-    pipeline: BatchPipeLine,
+    pipeline: ReturnOnePipeLine,
     my_evaluator: TranslationEvaluator,
     sub_sut_names: List[str],
     debug: bool,

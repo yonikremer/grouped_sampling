@@ -1,2 +1,2 @@
-from .batch_pipeline import BatchPipeLine
+from .return_one_pipeline import ReturnOnePipeLine
 from .tokenizer import get_tokenizer
