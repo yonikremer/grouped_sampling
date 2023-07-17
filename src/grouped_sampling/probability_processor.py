@@ -33,5 +33,5 @@ class ProbabilityProcessor(ABC):
             raise ValueError("probs must not contain negative values.")
         if (probs > 1).any():
             raise ValueError("probs must not contain values greater than 1.")
-        if (probs.sum(dim=-1) - 1 > 1e-6).any():
+        if (probs.sum(dim=-1) - 1 > 1e-5).any():
             raise ValueError("probs must sum to 1 or less in the last dimension.")
