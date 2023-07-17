@@ -54,7 +54,7 @@ class LogitVectorToTokenPipeLine:
         Convert a batch of logit matrices to tokens.
         args:
             input_ids: Tensor of shape (batch_size, input_seq_len) with the input sequences.
-            batch: Tesnor of shape (batch_size, output_seq_len, vocab_size).
+            logits: Tesnor of shape (batch_size, output_seq_len, vocab_size).
             output_length: int. The length of the output sequences.
             last_non_padding_indecies: Tensor of shape (batch_size)
                 with the index of the last non-padding token in each sequence.
