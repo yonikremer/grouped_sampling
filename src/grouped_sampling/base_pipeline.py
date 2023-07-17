@@ -9,11 +9,11 @@ from src.grouped_sampling.model import get_model
 
 class BasePipeLine:
     def __init__(
-            self,
-            model_name: str,
-            load_in_8bit: bool = False,
-            model_kwargs: Optional[dict] = None,
-            max_batch_size: int = 128,
+        self,
+        model_name: str,
+        load_in_8bit: bool = False,
+        model_kwargs: Optional[dict] = None,
+        max_batch_size: int = 128,
     ):
         """
         Create a new BasePipeLine.
@@ -60,9 +60,9 @@ class BasePipeLine:
         self.max_total_len = self.model.config.max_position_embeddings
 
     def tokens_batch_to_logit_matrices(
-            self,
-            padded_tokens: Tensor,
-            output_length: int,
+        self,
+        padded_tokens: Tensor,
+        output_length: int,
     ) -> Tuple[Tensor, Tensor]:
         """
         Given a batch of prompts where each prompt is a sequence of tokens, and an output_length,
@@ -106,7 +106,7 @@ class BasePipeLine:
             dtype=all_logits.dtype,
         )
         for i, index in enumerate(last_non_pad_indices):
-            relavent_logits[i, :, :] = all_logits[i, index: index + output_length]
+            relavent_logits[i, :, :] = all_logits[i, index : index + output_length]
         return relavent_logits, last_non_pad_indices
 
     def _validate_output_length(self, output_length: int) -> None:
@@ -129,9 +129,9 @@ class BasePipeLine:
             raise ValueError("strings should not contain empty strings")
 
     def tokenize_and_pad(
-            self,
-            prompts: List[str],
-            output_length: int,
+        self,
+        prompts: List[str],
+        output_length: int,
     ) -> Tensor:
         """A helper function that converts a list of strings to a padded tensor of tokens."""
         prompt_tokens: Tensor = self.tokenizer.batch_encode_plus(

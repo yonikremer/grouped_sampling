@@ -115,4 +115,6 @@ class TestEndToEndProbabilityProcessor:
             [[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]], device="cuda:0"
         )
         output_tensor = processor(probs)
-        assert torch.allclose(output_tensor.sum(dim=-1), torch.ones_like(output_tensor.sum(dim=-1)))
+        assert torch.allclose(
+            output_tensor.sum(dim=-1), torch.ones_like(output_tensor.sum(dim=-1))
+        )
