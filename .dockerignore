@@ -179,3 +179,5 @@ human_eval_project/data/example_problem.jsonl
 human_eval_project/data/example_samples.jsonl
 human_eval_project/human_eval/samples.jsonl
 human_eval_project/human_eval/samples.jsonl_results.jsonl
+comet_ml_api_key.txt
+build_and_push.sh
