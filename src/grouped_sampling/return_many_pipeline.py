@@ -75,7 +75,9 @@ class ReturnManyPipeLine(BasePipeLine):
             logits.div_(self.temperature)
         probs = logits.softmax(dim=-1)
         probs = self.probablity_processor(probs).view(-1, vocab_size)
-        if not torch.isclose(probs.sum(dim=-1), torch.ones_like(probs.sum(dim=-1))).any():
+        if not torch.isclose(
+            probs.sum(dim=-1), torch.ones_like(probs.sum(dim=-1))
+        ).any():
             raise RuntimeError(
                 "The probabilities do not sum to 1.0. This is a bug in the code."
             )
@@ -89,10 +91,10 @@ class ReturnManyPipeLine(BasePipeLine):
 
     @inference_mode()
     def generate_return_many(
-            self,
-            prompts: List[str],
-            output_length: int,
-            num_return_sequences: int,
+        self,
+        prompts: List[str],
+        output_length: int,
+        num_return_sequences: int,
     ) -> List[List[str]]:
         """"""
         self._validate_num_return_sequences(num_return_sequences)
@@ -108,15 +110,17 @@ class ReturnManyPipeLine(BasePipeLine):
         if len(prompts) > self.max_batch_size:
             outputs: List[List[str]] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i: i + self.max_batch_size]
-                outputs.extend(self.generate_return_many(batch, output_length, num_return_sequences))
+                batch = prompts[i : i + self.max_batch_size]
+                outputs.extend(
+                    self.generate_return_many(
+                        batch, output_length, num_return_sequences
+                    )
+                )
                 torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits, _ = self.tokens_batch_to_logit_matrices(
-            padded_tokens, output_length
-        )
+        logits, _ = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
         tokens = self.logits_to_tokens_return_many(logits, num_return_sequences)
         return [
             self.tokenizer.batch_decode(tokens[i, :, :], skip_special_tokens=True)
