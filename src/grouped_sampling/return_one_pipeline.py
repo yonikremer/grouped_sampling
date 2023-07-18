@@ -79,7 +79,7 @@ class ReturnOnePipeLine(BasePipeLine):
         if len(prompts) > self.max_batch_size:
             outputs: List[str] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i : i + self.max_batch_size]
+                batch = prompts[i: i + self.max_batch_size]
                 outputs.extend(self.generate_batch_return_one(batch, output_length))
                 torch.cuda.empty_cache()
             return outputs

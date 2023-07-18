@@ -40,7 +40,7 @@ class TopPProbabilityProcessor(ProbabilityProcessor):
         # Remove tokens with cumulative top_p above the threshold
         sorted_indices_to_remove = cumulative_probs <= (1 - self.top_p)
         # Keep at least min_tokens_to_keep
-        sorted_indices_to_remove[..., -self.minimum_tokens_to_keep :] = 0
+        sorted_indices_to_remove[..., -self.minimum_tokens_to_keep:] = 0
 
         # scatter sorted tensors to original indexing
         indices_to_remove = sorted_indices_to_remove.scatter(

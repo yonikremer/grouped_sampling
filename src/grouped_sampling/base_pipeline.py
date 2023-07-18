@@ -106,7 +106,7 @@ class BasePipeLine:
             dtype=all_logits.dtype,
         )
         for i, index in enumerate(last_non_pad_indices):
-            relavent_logits[i, :, :] = all_logits[i, index : index + output_length]
+            relavent_logits[i, :, :] = all_logits[i, index: index + output_length]
         return relavent_logits, last_non_pad_indices
 
     def _validate_output_length(self, output_length: int) -> None:

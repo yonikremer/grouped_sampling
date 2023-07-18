@@ -110,7 +110,7 @@ class ReturnManyPipeLine(BasePipeLine):
         if len(prompts) > self.max_batch_size:
             outputs: List[List[str]] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i : i + self.max_batch_size]
+                batch = prompts[i: i + self.max_batch_size]
                 outputs.extend(
                     self.generate_return_many(
                         batch, output_length, num_return_sequences
