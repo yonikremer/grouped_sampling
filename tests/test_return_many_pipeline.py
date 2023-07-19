@@ -4,6 +4,7 @@ import pytest
 
 import torch
 
+from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling.return_many_pipeline import ReturnManyPipeLine
 
 """
@@ -28,6 +29,10 @@ Fields:
 
 
 class TestLogitsToTokensReturnMany:
+    @staticmethod
+    def setup_method():
+        fix_ld_library_path()
+
     pipeline = ReturnManyPipeLine("gpt2")
 
     #  Tests with valid input for logits and num_return_sequences
