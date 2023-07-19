@@ -2,14 +2,12 @@
 import os
 import random
 from typing import Callable
-from warnings import warn
 
 import numpy as np
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import inference_mode, cuda
-from torch.cuda import OutOfMemoryError
 from torch.nn import Module
 from transformers import AutoTokenizer, PretrainedConfig
 
