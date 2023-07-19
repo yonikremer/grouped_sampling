@@ -130,7 +130,7 @@ def validate_output_tokens(
         raise ValueError("output_tokens should be valid token ids")
 
 
-class TestBatchPipeLine:
+class TestReturnOnePipeLine:
     @staticmethod
     def setup_method():
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
