@@ -2,12 +2,14 @@
 import os
 import random
 from typing import Callable
+from warnings import warn
 
 import numpy as np
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import inference_mode, cuda
+from torch.cuda import OutOfMemoryError
 from torch.nn import Module
 from transformers import AutoTokenizer, PretrainedConfig
 
@@ -146,3 +148,9 @@ class TestGetModel:
     def test_opt_dont_use_cache(self):
         model = get_model("facebook/opt-125m")
         assert not model.config.use_cache, "The model config use_cache is not False"
+
+    def test_huge_model(self):
+        warn("This test may take a while")
+        warn("I am using a 15B model because I only have 4GB of VRAM, if you have more, use a bigger model for this test")
+        with pytest.raises(OutOfMemoryError):
+            get_model("WizardLM/WizardCoder-15B-V1.0")
