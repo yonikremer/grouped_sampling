@@ -13,7 +13,6 @@ class ReturnOnePipeLine(BasePipeLine):
     def __init__(
         self,
         model_name: str,
-        load_in_8bit: bool = False,
         model_kwargs: Optional[dict] = None,
         generation_config: Optional[GenerationConfig] = None,
         max_batch_size: int = 128,
@@ -22,7 +21,6 @@ class ReturnOnePipeLine(BasePipeLine):
         Create a new ReturnOnePipeLine.
         Args:
             model_name: str. The name of the model to load from huggingfacehub.
-            load_in_8bit: bool. If True, the model will be loaded in 8bit mode, which is faster but less accurate.
             model_kwargs: Optional dict. Additional arguments to pass to the model's from_pretrained method.
                 If None, no additional arguments will be passed.
             generation_config: Optional GenerationConfig. The generation config for the model.
@@ -36,7 +34,6 @@ class ReturnOnePipeLine(BasePipeLine):
         """
         super().__init__(
             model_name=model_name,
-            load_in_8bit=load_in_8bit,
             model_kwargs=model_kwargs,
             max_batch_size=max_batch_size,
         )

@@ -94,7 +94,7 @@ def create_pipeline(max_batch_size: int) -> ReturnOnePipeLine:
         setattr(generation_config, key, value)
     pipeline = ReturnOnePipeLine(
         model_name=model_name,
-        load_in_8bit=True,
+        model_kwargs={"load_in_8bits": True},
         generation_config=generation_config,
         max_batch_size=max_batch_size,
     )

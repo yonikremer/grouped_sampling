@@ -141,7 +141,10 @@ class TestLogitsToTokensReturnMany:
 
     # Tests pipeline with 8bit quantization
     def test_quantization(self):
-        pipeline = ReturnManyPipeLine("fxmarty/tiny-llama-fast-tokenizer", load_in_8bit=True)
+        pipeline = ReturnManyPipeLine(
+            "fxmarty/tiny-llama-fast-tokenizer",
+            model_kwargs={"load_in_8bit": True}
+        )
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 3

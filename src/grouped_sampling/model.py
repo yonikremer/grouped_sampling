@@ -9,14 +9,12 @@ from transformers import AutoModelForCausalLM
 @inference_mode()
 def get_model(
     model_name: str,
-    load_in_8bit: bool = False,
     **kwargs,
 ) -> OptimizedModule:
     """
     Load a model from the huggingface model hub, and compile it for faster inference.
     args:
         model_name: the name of the model to load.
-        load_in_8bit: if True, the model will be loaded in 8bit mode, which is faster but less accurate.
         **kwargs: additional arguments to pass to the model's from_pretrained method.
     returns:
         the loaded model OptimizedModule.
@@ -24,10 +22,8 @@ def get_model(
         huggingface_hub.utils.RepositoryNotFoundError if the model is not found.
         torch.cuda.OutOfMemoryError if the model uses too much memory.
     """
-    using_8bit = load_in_8bit and cuda.is_available()
     full_model_kwargs = {
         "pretrained_model_name_or_path": model_name,
-        "load_in_8bit": using_8bit,
         "resume_download": True,
         "device_map": "auto",
         **kwargs,

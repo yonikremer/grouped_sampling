@@ -11,7 +11,6 @@ class BasePipeLine:
     def __init__(
         self,
         model_name: str,
-        load_in_8bit: bool = False,
         model_kwargs: Optional[dict] = None,
         max_batch_size: int = 128,
     ):
@@ -19,7 +18,6 @@ class BasePipeLine:
         Create a new BasePipeLine.
         Args:
             model_name: str. The name of the model to load from huggingfacehub.
-            load_in_8bit: bool. If True, the model will be loaded in 8bit mode, which is faster but less accurate.
             model_kwargs: Optional dict. Additional arguments to pass to the model's from_pretrained method.
                 If None, no additional arguments will be passed.
             max_batch_size: int. The maximum batch size to use.
@@ -31,8 +29,6 @@ class BasePipeLine:
         """
         if not isinstance(model_name, str):
             raise TypeError(f"model_name should be a string, got {type(model_name)}")
-        if not isinstance(load_in_8bit, bool):
-            raise TypeError(f"load_in_8bit should be a bool, got {type(load_in_8bit)}")
         if model_kwargs is not None and not isinstance(model_kwargs, dict):
             raise TypeError(
                 f"model_kwargs should be a dict or None, got {type(model_kwargs)}"
@@ -46,14 +42,11 @@ class BasePipeLine:
                 f"max_batch_size should be at least 1, got {max_batch_size}"
             )
         self.max_batch_size = max_batch_size
-        if not load_in_8bit:
-            torch.set_float32_matmul_precision("high")
         self.tokenizer = get_tokenizer(model_name)
         if model_kwargs is None:
             model_kwargs = {}
         self.model = get_model(
             model_name=model_name,
-            load_in_8bit=load_in_8bit,
             **model_kwargs,
         )
         self.device: torch.device = self.model.device

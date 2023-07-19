@@ -57,11 +57,6 @@ class TestBasePipeLine:
         with pytest.raises(TypeError):
             BasePipeLine(123)  # type: ignore
 
-    #  Tests that the class raises a TypeError if load_in_8bit is not a bool
-    def test_load_in_8bit_type_error(self):
-        with pytest.raises(TypeError):
-            BasePipeLine("gpt2", load_in_8bit=123)  # type: ignore
-
     #  Tests that the class raises a TypeError if model_kwargs is not a dict or None
     def test_model_kwargs_type_error(self):
         with pytest.raises(TypeError):

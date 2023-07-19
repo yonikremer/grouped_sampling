@@ -14,7 +14,6 @@ class ReturnManyPipeLine(BasePipeLine):
     def __init__(
         self,
         model_name: str,
-        load_in_8bit: bool = False,
         model_kwargs: Optional[dict] = None,
         max_batch_size: int = 128,
         top_p: float = 1.0,
@@ -24,7 +23,6 @@ class ReturnManyPipeLine(BasePipeLine):
     ):
         super(ReturnManyPipeLine, self).__init__(
             model_name=model_name,
-            load_in_8bit=load_in_8bit,
             model_kwargs=model_kwargs,
             max_batch_size=max_batch_size,
         )
