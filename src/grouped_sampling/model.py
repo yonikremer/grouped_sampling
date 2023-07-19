@@ -30,10 +30,9 @@ def get_model(
         "pretrained_model_name_or_path": model_name,
         "load_in_8bit": using_8bit,
         "resume_download": True,
+        "device_map": "auto",
         **kwargs,
     }
-    if using_8bit:
-        full_model_kwargs["device_map"] = "auto"
     try:
         model = AutoModelForCausalLM.from_pretrained(**full_model_kwargs)
     # If the model doesn't support exists
