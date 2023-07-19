@@ -145,6 +145,6 @@ class TestLogitsToTokensReturnMany:
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 3
-        result = pipeline.generate_return_many(
+        pipeline.generate_return_many(
             [prompt], output_length, num_return_sequences
         )
