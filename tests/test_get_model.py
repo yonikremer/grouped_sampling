@@ -50,6 +50,7 @@ class TestGetModel:
     @staticmethod
     def setup_method():
         fix_ld_library_path()
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     @staticmethod
     def validate_model(model):
