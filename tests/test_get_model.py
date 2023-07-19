@@ -149,3 +149,7 @@ class TestGetModel:
     def test_opt_dont_use_cache(self):
         model = get_model("facebook/opt-125m")
         assert not model.config.use_cache, "The model config use_cache is not False"
+
+    def test_4bits_quantization(self):
+        model = get_model("facebook/opt-125m", load_in_4bit=True)
+        self.validate_model(model)
