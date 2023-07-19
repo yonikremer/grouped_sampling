@@ -138,3 +138,13 @@ class TestLogitsToTokensReturnMany:
             self.pipeline.generate_return_many(
                 prompts, output_length, num_return_sequences
             )
+
+    # Tests pipeline with 8bit quantization
+    def test_quantization(self):
+        pipeline = ReturnManyPipeLine("fxmarty/tiny-llama-fast-tokenizer", load_in_8bit=True)
+        prompt = "Hello, how are you?"
+        output_length = 10
+        num_return_sequences = 3
+        result = pipeline.generate_return_many(
+            [prompt], output_length, num_return_sequences
+        )
