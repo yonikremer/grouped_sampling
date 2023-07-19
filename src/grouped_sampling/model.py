@@ -45,13 +45,6 @@ def get_model(
             + str(error),
             response=None,
         )
-    if cuda.is_available():
-        try:
-            model = model.cuda()
-        except OutOfMemoryError:
-            warn("The model is too large for your GPU, using the CPU instead.")
-    else:
-        warn("CUDA is not avilable, using the CPU instead")
     model = model.eval()
     if hasattr(model, "config") and hasattr(model.config, "use_cache"):
         model.config.use_cache = False
