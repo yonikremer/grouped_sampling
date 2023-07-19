@@ -3,7 +3,6 @@ from torch import cuda, inference_mode
 
 # noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
-from torch.cuda import OutOfMemoryError
 from transformers import AutoModelForCausalLM
 
 
@@ -21,7 +20,9 @@ def get_model(
         **kwargs: additional arguments to pass to the model's from_pretrained method.
     returns:
         the loaded model OptimizedModule.
-    raises: huggingface_hub.utils.RepositoryNotFoundError if the model is not found.
+    raises:
+        huggingface_hub.utils.RepositoryNotFoundError if the model is not found.
+        torch.cuda.OutOfMemoryError if the model uses too much memory.
     """
     using_8bit = load_in_8bit and cuda.is_available()
     full_model_kwargs = {
