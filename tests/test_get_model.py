@@ -22,7 +22,6 @@ The objective of the 'get_model' function is to load a pre-trained model from th
 
 Inputs:
 - model_name (str): the name or path of the pre-trained model to load
-- load_in_8bit (bool): whether to use 8-bit quantization for the model (default False)
 - **kwargs: additional keyword arguments to pass to the 'from_pretrained' method of the 'AutoModelForCausalLM' class
 
 Flow:
@@ -93,6 +92,9 @@ class TestGetModel:
     #  Tests that the function loads the model in 8bit correctly
     def test_loads_model_in_8bit(self):
         model_name = "gpt2"
+        model = get_model(model_name, load_in_8bit=True)
+        self.validate_model(model)
+        model_name = "facebook/opt-125m"
         model = get_model(model_name, load_in_8bit=True)
         self.validate_model(model)
 
