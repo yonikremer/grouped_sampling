@@ -67,9 +67,6 @@ def generate(prompts: List[str], max_batch_size: int, max_prompt_length: int):
     print(profiler.key_averages().table(sort_by="self_cuda_memory_usage"))
     end_time = time.time()
     duration_seconds = end_time - start_time
-    del pipeline
-    torch.cuda.empty_cache()
-    gc.collect()
     return duration_seconds
 
 
