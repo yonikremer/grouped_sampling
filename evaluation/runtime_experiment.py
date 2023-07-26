@@ -2,21 +2,20 @@ import gc
 import os
 import time
 from os.path import abspath, dirname
-from typing import List, Iterable
+from typing import Iterable, List
 
+import pandas as pd
 import torch
 from datasets import get_dataset_config_names
 from torch import inference_mode
-import pandas as pd
-
-from torch.profiler import profile, ProfilerActivity
+from torch.profiler import ProfilerActivity, profile
 
 from evaluation import (
-    process_translation_data,
     DATASET_NAME,
-    lang_code_to_name,
     create_pipeline,
     get_experiment_parameters,
+    lang_code_to_name,
+    process_translation_data,
 )
 from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling import get_tokenizer
@@ -24,9 +23,8 @@ from src.grouped_sampling import get_tokenizer
 curr_dir = dirname(abspath(__file__))
 
 
-def prompt_engineering(
-    prompts: Iterable[str], input_language_code: str, output_language_code: str
-):
+def prompt_engineering(prompts: Iterable[str], input_language_code: str,
+                       output_language_code: str):
     input_language = lang_code_to_name(input_language_code)
     output_language = lang_code_to_name(output_language_code)
     return [
@@ -45,8 +43,7 @@ def get_prompts(debug: bool) -> List[str]:
     language_code2: str
     for sub_set_name in sub_set_names:
         subset_part, _, language_code1, language_code2 = process_translation_data(
-            sub_set_name, debug
-        )
+            sub_set_name, debug)
         prompts.extend(subset_part[language_code1])
         prompts.extend(subset_part[language_code2])
     return prompts
@@ -59,9 +56,9 @@ def generate(prompts: List[str], max_batch_size: int, max_prompt_length: int):
     pipeline.max_batch_size = max_batch_size
     start_time = time.time()
     with profile(
-        activities=[ProfilerActivity.CUDA],
-        record_shapes=True,
-        profile_memory=True,
+            activities=[ProfilerActivity.CUDA],
+            record_shapes=True,
+            profile_memory=True,
     ) as profiler:
         pipeline.generate_batch_return_one(prompts, output_length)
     print(profiler.key_averages().table(sort_by="self_cuda_memory_usage"))
@@ -78,19 +75,20 @@ def main(debug: bool = False):
     tokenizer = get_tokenizer(model_name)
     prompts: List[str] = get_prompts(debug=debug)
     batch_size_to_duration = {}
-    max_prompt_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
+    max_prompt_length = max(
+        len(tokenizer.encode(prompt)) for prompt in prompts)
     max_batch_size = 2
-    batch_size_to_duration[max_batch_size] = generate(
-        prompts, max_batch_size, max_prompt_length
-    )
-    optimal_batch_size = min(batch_size_to_duration, key=batch_size_to_duration.get)
+    batch_size_to_duration[max_batch_size] = generate(prompts, max_batch_size,
+                                                      max_prompt_length)
+    optimal_batch_size = min(batch_size_to_duration,
+                             key=batch_size_to_duration.get)
     print(f"Optimal batch size: {optimal_batch_size}")
     print(
         f"Duration for batch size {optimal_batch_size}: {batch_size_to_duration[optimal_batch_size]}"
     )
-    df = pd.DataFrame.from_dict(
-        batch_size_to_duration, orient="index", columns=["Duration"]
-    )
+    df = pd.DataFrame.from_dict(batch_size_to_duration,
+                                orient="index",
+                                columns=["Duration"])
     df.to_csv(f"{curr_dir}/batch_size_to_duration.csv")
     df.plot()
 
