@@ -9,9 +9,7 @@ from datasets import get_dataset_config_names
 from torch import inference_mode
 import pandas as pd
 
-# noinspection PyProtectedMember
-from torch._C._profiler import ProfilerActivity
-from torch.profiler import profile
+from torch.profiler import profile, ProfilerActivity
 
 from evaluation import (
     process_translation_data,
