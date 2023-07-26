@@ -122,7 +122,7 @@ def get_special_cases() -> Dict[str, str]:
         os.path.dirname(__file__), "model_to_tokenizer.json"
     )
     with open(special_cases_file) as f:
-        return json.loads(f.read())
+        return json.load(f)
 
 
 # noinspection PyProtectedMember
