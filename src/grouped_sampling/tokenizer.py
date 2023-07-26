@@ -169,7 +169,7 @@ def get_tokenizer(
             trust_remote_code=True,
             padding_side="right",
         )
-    except (OSError, EnvironmentError) as error:
+    except OSError as error:
         raise RepositoryNotFoundError(
             f"Model {model_name} not found in huggingfacehub. Local tokenizers are not supported yet.\n"
             f"If {model_name} is a tokenizers model, please make sure you are logged in.\n"
