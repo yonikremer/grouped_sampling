@@ -44,8 +44,7 @@ class TopPProbabilityProcessor(ProbabilityProcessor):
 
         # scatter sorted tensors to original indexing
         indices_to_remove = sorted_indices_to_remove.scatter(
-            dim=-1, index=sorted_indices, src=sorted_indices_to_remove
-        )
+            dim=-1, index=sorted_indices, src=sorted_indices_to_remove)
         probs.masked_fill_(indices_to_remove, 0)
         return probs
 

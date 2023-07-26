@@ -1,13 +1,14 @@
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 import torch
-from torch import Tensor, argmax, eq, int8, ones_like, full, long
+from torch import Tensor, argmax, eq, full, int8, long, ones_like
 
-from src.grouped_sampling.tokenizer import get_tokenizer
 from src.grouped_sampling.model import get_model
+from src.grouped_sampling.tokenizer import get_tokenizer
 
 
 class BasePipeLine:
+
     def __init__(
         self,
         model_name: str,
@@ -28,19 +29,18 @@ class BasePipeLine:
             TypeError: If one of the arguments is of the wrong type.
         """
         if not isinstance(model_name, str):
-            raise TypeError(f"model_name should be a string, got {type(model_name)}")
+            raise TypeError(
+                f"model_name should be a string, got {type(model_name)}")
         if model_kwargs is not None and not isinstance(model_kwargs, dict):
             raise TypeError(
                 f"model_kwargs should be a dict or None, got {type(model_kwargs)}"
             )
         if not isinstance(max_batch_size, int):
             raise TypeError(
-                f"max_batch_size should be an int, got {type(max_batch_size)}"
-            )
+                f"max_batch_size should be an int, got {type(max_batch_size)}")
         if max_batch_size < 1:
             raise ValueError(
-                f"max_batch_size should be at least 1, got {max_batch_size}"
-            )
+                f"max_batch_size should be at least 1, got {max_batch_size}")
         self.max_batch_size = max_batch_size
         self.tokenizer = get_tokenizer(model_name)
         if model_kwargs is None:
@@ -70,13 +70,14 @@ class BasePipeLine:
             raise ValueError("tokens should not require grad")
         if not isinstance(output_length, int):
             raise TypeError(
-                f"output_length should be an int, got {type(output_length)}"
-            )
+                f"output_length should be an int, got {type(output_length)}")
         if output_length <= 0:
-            raise ValueError(f"output_length should be positive, got {output_length}")
-        attenction_mask = ones_like(
-            padded_tokens, dtype=torch.long, device=self.device, requires_grad=False
-        )
+            raise ValueError(
+                f"output_length should be positive, got {output_length}")
+        attenction_mask = ones_like(padded_tokens,
+                                    dtype=torch.long,
+                                    device=self.device,
+                                    requires_grad=False)
         all_logits = self.model(
             output_attentions=False,
             output_hidden_states=False,
@@ -84,13 +85,12 @@ class BasePipeLine:
             attention_mask=attenction_mask,
         ).logits
         if all_logits.isnan().any():
-            raise RuntimeError(
-                f"Model returned NaN logits."
-                f" logits: {all_logits}"
-                f" tokens: {padded_tokens}"
-                f" attention_mask: {attenction_mask}"
-            )
-        padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
+            raise RuntimeError(f"Model returned NaN logits."
+                               f" logits: {all_logits}"
+                               f" tokens: {padded_tokens}"
+                               f" attention_mask: {attenction_mask}")
+        padding_int_tokens = eq(padded_tokens,
+                                self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
         batch_size = padded_tokens.shape[0]
         relavent_logits = torch.empty(
@@ -99,16 +99,17 @@ class BasePipeLine:
             dtype=all_logits.dtype,
         )
         for i, index in enumerate(last_non_pad_indices):
-            relavent_logits[i, :, :] = all_logits[i, index: index + output_length]
+            relavent_logits[i, :, :] = all_logits[i,
+                                                  index:index + output_length]
         return relavent_logits, last_non_pad_indices
 
     def _validate_output_length(self, output_length: int) -> None:
         if not isinstance(output_length, int):
             raise TypeError(
-                f"output_length should be an int, got {type(output_length)}"
-            )
+                f"output_length should be an int, got {type(output_length)}")
         if output_length <= 0:
-            raise ValueError(f"output_length should be positive, got {output_length}")
+            raise ValueError(
+                f"output_length should be positive, got {output_length}")
         if output_length >= self.max_total_len:
             raise ValueError(
                 f"output_length should be smaller than {self.max_total_len}, got {output_length}"

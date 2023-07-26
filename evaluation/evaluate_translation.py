@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-
 from typing import Any, Dict, List, Union
 from warnings import warn
 
-from evaluate import TranslationEvaluator
 from datasets import Dataset, get_dataset_config_names
+from evaluate import TranslationEvaluator
 
-from evaluation.experiment_manager import ExperimentManager
 from evaluation import (
-    lang_code_to_name,
-    process_translation_data,
     DATASET_NAME,
     create_pipeline,
     disable_progress_bars,
     get_experiment_parameters,
+    lang_code_to_name,
+    process_translation_data,
 )
+from evaluation.experiment_manager import ExperimentManager
 from src.grouped_sampling import ReturnOnePipeLine
 
 disable_progress_bars()
@@ -30,8 +29,7 @@ def sub_experiment_half(
     manager: ExperimentManager,
 ) -> None:
     input_lang_name, output_lang_name = lang_code_to_name(
-        in_lang_code
-    ), lang_code_to_name(out_lang_code)
+        in_lang_code), lang_code_to_name(out_lang_code)
     prefix = (
         f"Translate {input_lang_name} to {output_lang_name}: \n {input_lang_name}: "
     )
@@ -45,7 +43,8 @@ def sub_experiment_half(
         input_column=in_lang_code,
         label_column=out_lang_code,
     )
-    manager.log_sub_experiment(scores, in_lang_code, out_lang_code, sub_set_half)
+    manager.log_sub_experiment(scores, in_lang_code, out_lang_code,
+                               sub_set_half)
 
 
 def run_experiment(
@@ -103,16 +102,17 @@ def create_evaluator() -> TranslationEvaluator:
 def main(debug: bool = __debug__) -> None:
     if debug:
         # send a warning
-        warn("Running in debug mode, only a small subset of the data will be used")
+        warn(
+            "Running in debug mode, only a small subset of the data will be used"
+        )
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
     if debug:
         sub_sut_names = sub_sut_names[:1]
     curr_text_generator = create_pipeline(max_batch_size=32)
     curr_evaluator = create_evaluator()
     parameters = get_experiment_parameters()
-    run_experiment(
-        curr_text_generator, curr_evaluator, sub_sut_names, debug, parameters
-    )
+    run_experiment(curr_text_generator, curr_evaluator, sub_sut_names, debug,
+                   parameters)
 
 
 if __name__ == "__main__":
