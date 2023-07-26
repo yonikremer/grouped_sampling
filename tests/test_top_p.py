@@ -25,15 +25,15 @@ Fields:
 
 class TestTopPProbabilityProccesor:
     #  Tests that the class processes probabilities correctly when given valid inputs
-    @pytest.mark.parametrize("device", [torch.device("cpu"), torch.device("cuda")])
+    @pytest.mark.parametrize(
+        "device",
+        [torch.device("cpu"), torch.device("cuda")])
     def test_valid_input_processing(self, device):
         processor = TopPProbabilityProcessor(1, 0.5)
-        probs = torch.tensor(
-            [[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]], device=device
-        )
+        probs = torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]],
+                             device=device)
         expected_output = torch.tensor(
-            [[[0.0, 0.0, 0.3, 0.4], [0.4, 0.3, 0.0, 0.0]]], device=device
-        )
+            [[[0.0, 0.0, 0.3, 0.4], [0.4, 0.3, 0.0, 0.0]]], device=device)
         assert torch.allclose(processor(probs), expected_output)
 
     #  Tests that the class keeps the top p values for each vector in the last dimension such that their sum is top p or more
@@ -50,7 +50,8 @@ class TestTopPProbabilityProccesor:
         processor = TopPProbabilityProcessor(1, 0.5)
         probs = torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]])
         output = processor(probs)
-        assert (output > 0).sum(dim=-1).min() >= processor.minimum_tokens_to_keep
+        assert (output
+                > 0).sum(dim=-1).min() >= processor.minimum_tokens_to_keep
 
     #  Tests that the class keeps at least min_tokens_to_keep tokens
     @staticmethod
@@ -59,7 +60,8 @@ class TestTopPProbabilityProccesor:
         probs = torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]])
         output = processor(probs)
         assert (output.sum(dim=-1) >= processor.top_p).all()
-        assert (output > 0).sum(dim=-1).min() >= processor.minimum_tokens_to_keep
+        assert (output
+                > 0).sum(dim=-1).min() >= processor.minimum_tokens_to_keep
 
     #  Tests that the class raises a TypeError when top_p is not a float
     @staticmethod
@@ -85,15 +87,12 @@ class TestTopPProbabilityProccesor:
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
             processor(
-                torch.tensor(
-                    [
-                        [0.1, 0.2, 0.3, 0.4],
-                        [0.4, 0.3, 0.2, 0.1],
-                        [0.1, 0.2, 0.3, 0.4],
-                        [0.4, 0.3, 0.2, 0.1],
-                    ]
-                )
-            )
+                torch.tensor([
+                    [0.1, 0.2, 0.3, 0.4],
+                    [0.4, 0.3, 0.2, 0.1],
+                    [0.1, 0.2, 0.3, 0.4],
+                    [0.4, 0.3, 0.2, 0.1],
+                ]))
 
     #  Tests that the class raises a ValueError when probs is an empty tensor
     @staticmethod
@@ -108,8 +107,8 @@ class TestTopPProbabilityProccesor:
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
             processor(
-                torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, float("nan")]]])
-            )
+                torch.tensor([[[0.1, 0.2, 0.3, 0.4],
+                               [0.4, 0.3, 0.2, float("nan")]]]))
 
     #  Tests that the class raises a ValueError when probs contains Inf values
     @staticmethod
@@ -117,23 +116,23 @@ class TestTopPProbabilityProccesor:
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
             processor(
-                torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, float("inf")]]])
-            )
+                torch.tensor([[[0.1, 0.2, 0.3, 0.4],
+                               [0.4, 0.3, 0.2, float("inf")]]]))
 
     #  Tests that the class raises a ValueError when probs contains negative values
     @staticmethod
     def test_raises_value_error_when_probs_contains_negative_values():
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
-            processor(torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, -0.2, 0.1]]]))
+            processor(
+                torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, -0.2, 0.1]]]))
 
     # Tests that the class doesn't use any extra GPU memory
     @staticmethod
     def test_doesnt_use_extra_gpu_memory():
         processor = TopPProbabilityProcessor(1, 0.5)
-        probs = torch.tensor(
-            [[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]], device="cuda:0"
-        )
+        probs = torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]],
+                             device="cuda:0")
         with torch.cuda.device(0):
             start_memory = torch.cuda.memory_allocated(0)
             processor(probs)

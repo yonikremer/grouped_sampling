@@ -38,7 +38,8 @@ class TestGetTokenizer:
     @staticmethod
     def test_valid_model_name():
         tokenizer = get_tokenizer("bert-base-uncased")
-        assert isinstance(tokenizer, (PreTrainedTokenizer, PreTrainedTokenizerFast))
+        assert isinstance(tokenizer,
+                          (PreTrainedTokenizer, PreTrainedTokenizerFast))
 
     #  Tests that padding_side is set to 'right' when creating the tokenizer
     @staticmethod
@@ -57,4 +58,5 @@ class TestGetTokenizer:
     @staticmethod
     def test_llama_tokenizer():
         tokenizer = get_tokenizer("fxmarty/tiny-llama-fast-tokenizer")
-        assert isinstance(tokenizer, (PreTrainedTokenizer, PreTrainedTokenizerFast))
+        assert isinstance(tokenizer,
+                          (PreTrainedTokenizer, PreTrainedTokenizerFast))

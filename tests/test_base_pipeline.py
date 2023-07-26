@@ -37,8 +37,7 @@ class TestBasePipeLine:
         assert pipeline.tokenizer is not None
         assert pipeline.model is not None
         assert pipeline.device == torch.device(
-            "cuda:0" if torch.cuda.is_available() else "cpu"
-        )
+            "cuda:0" if torch.cuda.is_available() else "cpu")
         assert pipeline.max_total_len == 1024
 
     #  Tests that the tokens_batch_to_logit_matrices method returns the expected output
@@ -48,8 +47,7 @@ class TestBasePipeLine:
         prompts = ["Hello world!", "How are you?"]
         tokens = pipeline.tokenize_and_pad(prompts, 10)
         logits, last_non_pad_indices = pipeline.tokens_batch_to_logit_matrices(
-            tokens, 10
-        )
+            tokens, 10)
         assert logits.shape == (2, 10, pipeline.tokenizer.vocab_size)
         assert last_non_pad_indices.tolist() == [1, 3]
 
@@ -96,4 +94,5 @@ class TestBasePipeLine:
     def test_tokens_batch_to_logit_matrices_value_error_1():
         pipeline = BasePipeLine("gpt2")
         with pytest.raises(ValueError):
-            pipeline.tokens_batch_to_logit_matrices(torch.tensor([1, 2, 3]), 10)
+            pipeline.tokens_batch_to_logit_matrices(torch.tensor([1, 2, 3]),
+                                                    10)
