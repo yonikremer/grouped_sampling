@@ -1,5 +1,5 @@
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import cuda, inference_mode
+from torch import inference_mode
 
 # noinspection PyProtectedMember
 from torch._dynamo import OptimizedModule
