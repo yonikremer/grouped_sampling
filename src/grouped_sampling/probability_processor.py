@@ -14,7 +14,8 @@ class ProbabilityProcessor(ABC):
         """
         raise NotImplementedError
 
-    def _validate_probs(self, probs):
+    @staticmethod
+    def _validate_probs(probs):
         if not torch.is_tensor(probs):
             raise TypeError("probs must be a tensor")
         if probs.dim() != 3:

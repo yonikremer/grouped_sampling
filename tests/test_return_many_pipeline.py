@@ -51,7 +51,8 @@ class TestLogitsToTokensReturnMany:
         assert (output >= 0).all() and (output <= vocab_size - 1).all()
 
     #  Tests with top_p=0.5 and top_k=10
-    def test_top_p_and_top_k(self):
+    @staticmethod
+    def test_top_p_and_top_k():
         pipeline = ReturnManyPipeLine("gpt2", top_p=0.5, top_k=10)
         vocab_size = 20
         batch_size = 2
@@ -63,7 +64,8 @@ class TestLogitsToTokensReturnMany:
         assert (output >= 0).all() and (output <= vocab_size - 1).all()
 
     #  Tests with various edge cases
-    def test_edge_cases(self):
+    @staticmethod
+    def test_edge_cases():
         pipeline = ReturnManyPipeLine(
             "gpt2", top_p=0.01, top_k=0, minimum_tokens_to_keep=1, temperature=0.1
         )
@@ -140,7 +142,8 @@ class TestLogitsToTokensReturnMany:
             )
 
     # Tests pipeline with 8bit quantization
-    def test_quantization(self):
+    @staticmethod
+    def test_quantization():
         pipeline = ReturnManyPipeLine(
             "fxmarty/tiny-llama-fast-tokenizer",
             model_kwargs={"load_in_8bit": True}

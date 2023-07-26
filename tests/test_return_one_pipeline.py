@@ -140,7 +140,8 @@ class TestReturnOnePipeLine:
 
     # Tests that the function returns a list of output strings for a batch of
     # prompts with positive output length
-    def test_happy_path(self):
+    @staticmethod
+    def test_happy_path():
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 5
@@ -159,7 +160,8 @@ class TestReturnOnePipeLine:
             ), f"{len(output_tokens)} != {output_length}"
 
     #  Tests that the function returns an empty list for an empty batch
-    def test_empty_prompts(self):
+    @staticmethod
+    def test_empty_prompts():
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = []
         output_length = 5
@@ -171,7 +173,8 @@ class TestReturnOnePipeLine:
 
     # Tests that the function returns a list of empty strings for a batch of
     # prompts with output length 0
-    def test_empty_output_length(self):
+    @staticmethod
+    def test_empty_output_length():
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 0
@@ -183,7 +186,8 @@ class TestReturnOnePipeLine:
 
     # Tests that the function returns a list of empty strings for an empty
     # list of prompts
-    def test_empty_prompts_list(self):
+    @staticmethod
+    def test_empty_prompts_list():
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = [""]
         output_length = 5
@@ -192,7 +196,8 @@ class TestReturnOnePipeLine:
 
     # Tests that the function raises a ValueError if the prompts contain an
     # empty string
-    def test_empty_string_in_prompts(self):
+    @staticmethod
+    def test_empty_string_in_prompts():
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = ["Hello", ""]
         output_length = 5
@@ -200,7 +205,8 @@ class TestReturnOnePipeLine:
             pipeline.generate_batch_return_one(prompts, output_length)
 
     #  Tests that the function raises a ValueError if output_length is negative
-    def test_negative_output_length(self):
+    @staticmethod
+    def test_negative_output_length():
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = -1
@@ -209,7 +215,8 @@ class TestReturnOnePipeLine:
 
     # Tests that the function raises a ValueError if output_length is not an
     # integer
-    def test_non_integer_output_length(self):
+    @staticmethod
+    def test_non_integer_output_length():
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 1.5
@@ -238,7 +245,8 @@ class TestReturnOnePipeLine:
 
     # Tests that the function raises a ValueError if output_length is too
     # large
-    def test_huge_output_length(self):
+    @staticmethod
+    def test_huge_output_length():
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
         output_length = 1000000
@@ -246,7 +254,8 @@ class TestReturnOnePipeLine:
             pipeline.generate_batch_return_one(prompts, output_length)
 
     # test that genearte_batch works correctrly when it gets a string as input
-    def test_string_input(self):
+    @staticmethod
+    def test_string_input():
         pipeline = ReturnOnePipeLine("gpt2")
         prompt = "Hello"
         output_length = 5
@@ -268,7 +277,8 @@ class TestReturnOnePipeLine:
         pipeline = ReturnOnePipeLine("gpt2")
         self.validate_pipeline(pipeline)
 
-    def test_init_non_existing_model(self):
+    @staticmethod
+    def test_init_non_existing_model():
         with pytest.raises(RepositoryNotFoundError):
             ReturnOnePipeLine("non_existing_model")
 

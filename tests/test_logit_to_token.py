@@ -32,7 +32,8 @@ class TestLogitVectorToTokenPipeLine:
 
     # Tests that batch_to_tokens returns valid token ids with valid input_ids
     # and batch
-    def test_batch_to_tokens_valid_input(self):
+    @staticmethod
+    def test_batch_to_tokens_valid_input():
         input_ids = torch.tensor([[1, 2, 3, 0, 0], [4, 5, 6, 0, 0]], device="cuda")
         batch = torch.tensor(
             [
@@ -52,7 +53,8 @@ class TestLogitVectorToTokenPipeLine:
         assert token_ids.dtype == long
         assert token_ids.is_cuda
 
-    def test_memory_leak(self):
+    @staticmethod
+    def test_memory_leak():
         batch_size = 128
         vocab_size = 2048
         output_length = 100
@@ -73,7 +75,8 @@ class TestLogitVectorToTokenPipeLine:
         end_mem = torch.cuda.memory_allocated()
         assert end_mem == start_mem
 
-    def test_sampling(self):
+    @staticmethod
+    def test_sampling():
         generation_config = GenerationConfig.from_pretrained("gpt2")
         generation_config.do_sample = True
         generation_config.top_k = 50

@@ -142,11 +142,13 @@ class TestGetModel:
                 f"Index {i} does not match. got {logits_batch[0][i]} and {logits[0][i]}"
             )
 
-    def test_nonexistent_model(self):
+    @staticmethod
+    def test_nonexistent_model():
         with pytest.raises(RepositoryNotFoundError):
             get_model("nonexistent-model")
 
-    def test_opt_dont_use_cache(self):
+    @staticmethod
+    def test_opt_dont_use_cache():
         model = get_model("facebook/opt-125m")
         assert not model.config.use_cache, "The model config use_cache is not False"
 

@@ -37,21 +37,24 @@ class TestTopPProbabilityProccesor:
         assert torch.allclose(processor(probs), expected_output)
 
     #  Tests that the class keeps the top p values for each vector in the last dimension such that their sum is top p or more
-    def test_top_p_values_sum_to_top_p_or_more(self):
+    @staticmethod
+    def test_top_p_values_sum_to_top_p_or_more():
         processor = TopPProbabilityProcessor(1, 0.5)
         probs = torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]])
         output = processor(probs)
         assert (output.sum(dim=-1) >= processor.top_p).all()
 
     #  Tests that the class sets the rest of the values to 0
-    def test_rest_of_values_set_to_0(self):
+    @staticmethod
+    def test_rest_of_values_set_to_0():
         processor = TopPProbabilityProcessor(1, 0.5)
         probs = torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]])
         output = processor(probs)
         assert (output > 0).sum(dim=-1).min() >= processor.minimum_tokens_to_keep
 
     #  Tests that the class keeps at least min_tokens_to_keep tokens
-    def test_keeps_at_least_min_tokens_to_keep(self):
+    @staticmethod
+    def test_keeps_at_least_min_tokens_to_keep():
         processor = TopPProbabilityProcessor(2, 0.5)
         probs = torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]])
         output = processor(probs)
@@ -59,22 +62,26 @@ class TestTopPProbabilityProccesor:
         assert (output > 0).sum(dim=-1).min() >= processor.minimum_tokens_to_keep
 
     #  Tests that the class raises a TypeError when top_p is not a float
-    def test_raises_type_error_when_top_p_not_float(self):
+    @staticmethod
+    def test_raises_type_error_when_top_p_not_float():
         with pytest.raises(TypeError):
             TopPProbabilityProcessor(1, "not_a_float")  # type: ignore
 
     #  Tests that the class raises a ValueError when top_p is less than or equal to 0
-    def test_raises_value_error_when_top_p_less_than_or_equal_to_0(self):
+    @staticmethod
+    def test_raises_value_error_when_top_p_less_than_or_equal_to_0():
         with pytest.raises(ValueError):
             TopPProbabilityProcessor(1, 0)
 
     #  Tests that the class raises a ValueError when top_p is greater than or equal to 1
-    def test_raises_value_error_when_top_p_greater_than_or_equal_to_1(self):
+    @staticmethod
+    def test_raises_value_error_when_top_p_greater_than_or_equal_to_1():
         with pytest.raises(ValueError):
             TopPProbabilityProcessor(1, 1)
 
     #  Tests that the class raises a ValueError when probs is not a 3 dimensional tensor
-    def test_raises_value_error_when_probs_not_3_dimensional_tensor(self):
+    @staticmethod
+    def test_raises_value_error_when_probs_not_3_dimensional_tensor():
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
             processor(
@@ -89,13 +96,15 @@ class TestTopPProbabilityProccesor:
             )
 
     #  Tests that the class raises a ValueError when probs is an empty tensor
-    def test_raises_value_error_when_probs_empty_tensor(self):
+    @staticmethod
+    def test_raises_value_error_when_probs_empty_tensor():
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
             processor(torch.tensor([]))
 
     #  Tests that the class raises a ValueError when probs contains NaN values
-    def test_raises_value_error_when_probs_contains_nan_values(self):
+    @staticmethod
+    def test_raises_value_error_when_probs_contains_nan_values():
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
             processor(
@@ -103,7 +112,8 @@ class TestTopPProbabilityProccesor:
             )
 
     #  Tests that the class raises a ValueError when probs contains Inf values
-    def test_raises_value_error_when_probs_contains_inf_values(self):
+    @staticmethod
+    def test_raises_value_error_when_probs_contains_inf_values():
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
             processor(
@@ -111,13 +121,15 @@ class TestTopPProbabilityProccesor:
             )
 
     #  Tests that the class raises a ValueError when probs contains negative values
-    def test_raises_value_error_when_probs_contains_negative_values(self):
+    @staticmethod
+    def test_raises_value_error_when_probs_contains_negative_values():
         processor = TopPProbabilityProcessor(1, 0.5)
         with pytest.raises(ValueError):
             processor(torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, -0.2, 0.1]]]))
 
     # Tests that the class doesn't use any extra GPU memory
-    def test_doesnt_use_extra_gpu_memory(self):
+    @staticmethod
+    def test_doesnt_use_extra_gpu_memory():
         processor = TopPProbabilityProcessor(1, 0.5)
         probs = torch.tensor(
             [[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]], device="cuda:0"

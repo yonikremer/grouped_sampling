@@ -25,13 +25,15 @@ Fields:
 
 class TestEndToEndProbabilityProcessor:
     #  Tests that the class can be instantiated with default arguments
-    def test_default_arguments(self):
+    @staticmethod
+    def test_default_arguments():
         processor = EndToEndProbabilityProcessor()
         assert isinstance(processor, EndToEndProbabilityProcessor)
         assert len(processor.processors) == 0
 
     #  Tests that the class can be instantiated with valid arguments
-    def test_valid_arguments(self):
+    @staticmethod
+    def test_valid_arguments():
         processor = EndToEndProbabilityProcessor(
             minimum_tokens_to_keep=2, top_p=0.5, top_k=3
         )
@@ -44,7 +46,8 @@ class TestEndToEndProbabilityProcessor:
         assert isinstance(processor.processors[1], TopKProbabilityProcessor)
 
     #  Tests that the __call__ method returns the input tensor when no processors are applied
-    def test_no_processors(self):
+    @staticmethod
+    def test_no_processors():
         processor = EndToEndProbabilityProcessor()
         input_tensor = torch.tensor(
             [[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1], [0.1, 0.2, 0.3, 0.4]]]
@@ -53,7 +56,8 @@ class TestEndToEndProbabilityProcessor:
         assert torch.allclose(input_tensor, output_tensor)
 
     #  Tests that the __call__ method returns the expected tensor when applying TopPProbabilityProcessor
-    def test_top_p_processor(self):
+    @staticmethod
+    def test_top_p_processor():
         processor = EndToEndProbabilityProcessor(minimum_tokens_to_keep=2, top_p=0.5)
         input_tensor = torch.tensor(
             [[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1], [0.1, 0.2, 0.3, 0.4]]]
@@ -66,7 +70,8 @@ class TestEndToEndProbabilityProcessor:
         assert torch.allclose(expected_output, output_tensor)
 
     #  Tests that the __call__ method returns the expected tensor when applying TopKProbabilityProcessor
-    def test_top_k_processor(self):
+    @staticmethod
+    def test_top_k_processor():
         processor = EndToEndProbabilityProcessor(top_k=2)
         input_tensor = torch.tensor(
             [[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1], [0.1, 0.2, 0.3, 0.4]]]
@@ -79,7 +84,8 @@ class TestEndToEndProbabilityProcessor:
         assert torch.allclose(expected_output, output_tensor)
 
     #  Tests that the __call__ method returns the expected tensor when applying both TopPProbabilityProcessor and TopKProbabilityProcessor
-    def test_top_p_and_top_k_processors(self):
+    @staticmethod
+    def test_top_p_and_top_k_processors():
         processor = EndToEndProbabilityProcessor(
             minimum_tokens_to_keep=2, top_p=0.5, top_k=2
         )
@@ -94,7 +100,8 @@ class TestEndToEndProbabilityProcessor:
         assert torch.allclose(expected_output, output_tensor)
 
     # Tests that the class doesn't use any extra GPU memory
-    def test_doesnt_use_extra_gpu_memory(self):
+    @staticmethod
+    def test_doesnt_use_extra_gpu_memory():
         processor = EndToEndProbabilityProcessor(
             minimum_tokens_to_keep=2, top_p=0.5, top_k=2
         )
@@ -107,7 +114,8 @@ class TestEndToEndProbabilityProcessor:
             assert torch.cuda.memory_allocated(0) == start_memory
 
     # Tests that all the vectors in the output tensor sum to 1
-    def test_output_tensor_sums_to_1(self):
+    @staticmethod
+    def test_output_tensor_sums_to_1():
         processor = EndToEndProbabilityProcessor(
             minimum_tokens_to_keep=2, top_p=0.5, top_k=2
         )
