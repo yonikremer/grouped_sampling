@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode, cuda
+from torch import cuda, inference_mode
 from torch.nn import Module
 from transformers import AutoTokenizer, PretrainedConfig
 
@@ -44,6 +44,7 @@ Additional aspects:
 
 
 class TestGetModel:
+
     @staticmethod
     def setup_method():
         fix_ld_library_path()
@@ -52,9 +53,9 @@ class TestGetModel:
     @staticmethod
     def validate_model(model):
         assert isinstance(
-            model, Module
-        ), "The model is not an instance of torch.nn.Module"
-        assert hasattr(model, "config"), "The model does not have a config attribute"
+            model, Module), "The model is not an instance of torch.nn.Module"
+        assert hasattr(model,
+                       "config"), "The model does not have a config attribute"
         assert isinstance(
             model.config, PretrainedConfig
         ), "The model config is not an instance of PretrainedConfig"
@@ -62,7 +63,8 @@ class TestGetModel:
             assert not model.config.use_cache, "The model config use_cache is not False"
         else:
             print("The model config does not have a use_cache attribute")
-        assert hasattr(model, "device"), "The model does not have a device attribute"
+        assert hasattr(model,
+                       "device"), "The model does not have a device attribute"
         assert isinstance(
             model.device, torch.device
         ), "The model device is not an instance of torch.device"
@@ -86,7 +88,8 @@ class TestGetModel:
         model_name = "gpt2"
         kwargs = {"output_hidden_states": True}
         model = get_model(model_name, **kwargs)
-        assert model.config.output_hidden_states == kwargs["output_hidden_states"]
+        assert model.config.output_hidden_states == kwargs[
+            "output_hidden_states"]
         self.validate_model(model)
 
     #  Tests that the function loads the model in 8bit correctly
@@ -104,7 +107,8 @@ class TestGetModel:
         model_name = "gpt2"
         model = get_model(model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        input_ids = tokenizer("Hello, my dog is cute", return_tensors="pt")["input_ids"]
+        input_ids = tokenizer("Hello, my dog is cute",
+                              return_tensors="pt")["input_ids"]
         input_ids = input_ids.cuda()
         output1 = model(input_ids)
         logits1 = output1.logits
@@ -123,16 +127,19 @@ class TestGetModel:
         model = get_model(model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         prompts = ["Hello, my dog is cute"] * 2
-        input_ids_batch = tokenizer(prompts, return_tensors="pt")["input_ids"].cuda()
+        input_ids_batch = tokenizer(prompts,
+                                    return_tensors="pt")["input_ids"].cuda()
         with torch.no_grad():
             output_batch = model(input_ids_batch)
         logits_batch = output_batch.logits
-        input_ids = tokenizer(prompts[0], return_tensors="pt")["input_ids"].cuda()
+        input_ids = tokenizer(prompts[0],
+                              return_tensors="pt")["input_ids"].cuda()
         with torch.no_grad():
             output = model(input_ids)
         logits = output.logits
         assert torch.equal(logits_batch[0], logits_batch[1])
-        assert logits_batch.shape == (2, input_ids.shape[1], model.config.vocab_size)
+        assert logits_batch.shape == (2, input_ids.shape[1],
+                                      model.config.vocab_size)
         assert logits.shape == (1, input_ids.shape[1], model.config.vocab_size)
         assert logits.dtype == logits_batch.dtype
         for i in range(input_ids.shape[1]):
@@ -142,11 +149,13 @@ class TestGetModel:
                 f"Index {i} does not match. got {logits_batch[0][i]} and {logits[0][i]}"
             )
 
-    def test_nonexistent_model(self):
+    @staticmethod
+    def test_nonexistent_model():
         with pytest.raises(RepositoryNotFoundError):
             get_model("nonexistent-model")
 
-    def test_opt_dont_use_cache(self):
+    @staticmethod
+    def test_opt_dont_use_cache():
         model = get_model("facebook/opt-125m")
         assert not model.config.use_cache, "The model config use_cache is not False"
 

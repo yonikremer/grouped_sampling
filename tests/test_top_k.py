@@ -23,68 +23,62 @@ Fields:
 
 class TestTopKProbabilityProcessor:
     #  Tests that the function keeps the top k values for each row in the last dimension and sets the rest to 0 for a tensor of shape (batch_size, output_length, vocab_size) with all positive values
-    def test_top_k_positive_values(self):
+    @staticmethod
+    def test_top_k_positive_values():
         top_k = 3
         processor = TopKProbabilityProcessor(top_k)
-        probs = torch.tensor(
-            [
-                [[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]],
-                [[0.4, 0.3, 0.2, 0.1], [0.1, 0.2, 0.3, 0.4]],
-            ]
-        )
-        expected_output = torch.tensor(
-            [
-                [[0.0, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.0]],
-                [[0.4, 0.3, 0.2, 0.0], [0.0, 0.2, 0.3, 0.4]],
-            ]
-        )
+        probs = torch.tensor([
+            [[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]],
+            [[0.4, 0.3, 0.2, 0.1], [0.1, 0.2, 0.3, 0.4]],
+        ])
+        expected_output = torch.tensor([
+            [[0.0, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.0]],
+            [[0.4, 0.3, 0.2, 0.0], [0.0, 0.2, 0.3, 0.4]],
+        ])
         output = processor(probs)
         assert torch.allclose(output, expected_output)
 
     #  Tests that the function keeps the top k values for each row in the last dimension and sets the rest to 0 for a tensor of shape (batch_size, output_length, vocab_size) with some zero values
-    def test_top_k_some_zero_values(self):
+    @staticmethod
+    def test_top_k_some_zero_values():
         top_k = 2
         processor = TopKProbabilityProcessor(top_k)
-        probs = torch.tensor(
-            [
-                [[0.1, 0.2, 0.0, 0.4], [0.0, 0.3, 0.2, 0.1]],
-                [[0.4, 0.3, 0.2, 0.1], [0.1, 0.0, 0.3, 0.4]],
-            ]
-        )
-        expected_output = torch.tensor(
-            [[[0, 0.2, 0, 0.4], [0, 0.3, 0.2, 0]], [[0.4, 0.3, 0, 0], [0, 0, 0.3, 0.4]]]
-        )
+        probs = torch.tensor([
+            [[0.1, 0.2, 0.0, 0.4], [0.0, 0.3, 0.2, 0.1]],
+            [[0.4, 0.3, 0.2, 0.1], [0.1, 0.0, 0.3, 0.4]],
+        ])
+        expected_output = torch.tensor([[[0, 0.2, 0, 0.4], [0, 0.3, 0.2, 0]],
+                                        [[0.4, 0.3, 0, 0], [0, 0, 0.3, 0.4]]])
         output = processor(probs)
         assert torch.allclose(output, expected_output)
 
     #  Tests that the function raises a ValueError for a tensor with some negative values
-    def test_top_k_some_negative_values(self):
+    @staticmethod
+    def test_top_k_some_negative_values():
         top_k = 2
         processor = TopKProbabilityProcessor(top_k)
-        probs = torch.tensor(
-            [
-                [[0.1, -0.2, -0.3, 0.4], [0.0, -0.3, -0.2, 0.1]],
-                [[-0.4, -0.3, 0.2, 0.1], [0.1, -0.2, -0.3, 0.4]],
-            ]
-        )
+        probs = torch.tensor([
+            [[0.1, -0.2, -0.3, 0.4], [0.0, -0.3, -0.2, 0.1]],
+            [[-0.4, -0.3, 0.2, 0.1], [0.1, -0.2, -0.3, 0.4]],
+        ])
         with pytest.raises(ValueError):
             processor(probs)
 
     #  Tests that the function raises a ValueError for a tensor with some values greater than one
-    def test_top_k_some_values_greater_than_one(self):
+    @staticmethod
+    def test_top_k_some_values_greater_than_one():
         top_k = 2
         processor = TopKProbabilityProcessor(top_k)
-        probs = torch.tensor(
-            [
-                [[0.1, 1.2, 1.3, 0.4], [1.5, 0.3, 0.2, 0.1]],
-                [[1.4, 0.3, 0.2, 0.1], [0.1, 1.2, 1.3, 0.4]],
-            ]
-        )
+        probs = torch.tensor([
+            [[0.1, 1.2, 1.3, 0.4], [1.5, 0.3, 0.2, 0.1]],
+            [[1.4, 0.3, 0.2, 0.1], [0.1, 1.2, 1.3, 0.4]],
+        ])
         with pytest.raises(ValueError):
             processor(probs)
 
     #  Tests that the function raises a value error for a tensor with all values equal to 1
-    def test_top_k_all_values_equal_to_one(self):
+    @staticmethod
+    def test_top_k_all_values_equal_to_one():
         top_k = 2
         processor = TopKProbabilityProcessor(top_k)
         probs = torch.ones((2, 2, 4))
@@ -92,33 +86,32 @@ class TestTopKProbabilityProcessor:
             processor(probs)
 
     #  Tests that the function keeps the top k values for each row in the last dimension and sets the rest to 0 for a tensor of shape (batch_size, output_length, vocab_size) with some NaN values
-    def test_top_k_some_nan_values(self):
+    @staticmethod
+    def test_top_k_some_nan_values():
         top_k = 2
         processor = TopKProbabilityProcessor(top_k)
-        probs = torch.tensor(
-            [
-                [[0.1, float("nan"), 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]],
-                [[0.4, 0.3, 0.2, 0.1], [0.1, float("nan"), 0.3, 0.4]],
-            ]
-        )
+        probs = torch.tensor([
+            [[0.1, float("nan"), 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]],
+            [[0.4, 0.3, 0.2, 0.1], [0.1, float("nan"), 0.3, 0.4]],
+        ])
         with pytest.raises(ValueError):
             processor(probs)
 
     #  Tests that the function keeps the top k values for each row in the last dimension and sets the rest to 0 for a tensor of shape (batch_size, output_length, vocab_size) with some Inf values
-    def test_top_k_some_inf_values(self):
+    @staticmethod
+    def test_top_k_some_inf_values():
         top_k = 2
         processor = TopKProbabilityProcessor(top_k)
-        probs = torch.tensor(
-            [
-                [[0.1, float("inf"), 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]],
-                [[0.4, 0.3, 0.2, 0.1], [0.1, float("inf"), 0.3, 0.4]],
-            ]
-        )
+        probs = torch.tensor([
+            [[0.1, float("inf"), 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]],
+            [[0.4, 0.3, 0.2, 0.1], [0.1, float("inf"), 0.3, 0.4]],
+        ])
         with pytest.raises(ValueError):
             processor(probs)
 
     #  Tests that the function sets all values to 0 for a tensor of shape (batch_size, output_length, vocab_size) with all zero values
-    def test_top_k_all_zero_values(self):
+    @staticmethod
+    def test_top_k_all_zero_values():
         top_k = 2
         processor = TopKProbabilityProcessor(top_k)
         probs = torch.zeros((2, 2, 4))
@@ -127,30 +120,41 @@ class TestTopKProbabilityProcessor:
         assert torch.allclose(output, expected_output)
 
     #  Tests that the function sets all values to 0 for a tensor of shape (batch_size, output_length, vocab_size) with all NaN values
-    def test_top_k_all_nan_values(self):
+    @staticmethod
+    def test_top_k_all_nan_values():
         top_k = 2
         processor = TopKProbabilityProcessor(top_k)
-        probs = torch.tensor(
+        probs = torch.tensor([
             [
-                [
-                    [float("nan"), float("nan"), float("nan"), float("nan")],
-                    [float("nan"), float("nan"), float("nan"), float("nan")],
-                ],
-                [
-                    [float("nan"), float("nan"), float("nan"), float("nan")],
-                    [float("nan"), float("nan"), float("nan"), float("nan")],
-                ],
-            ]
-        )
+                [float("nan"),
+                 float("nan"),
+                 float("nan"),
+                 float("nan")],
+                [float("nan"),
+                 float("nan"),
+                 float("nan"),
+                 float("nan")],
+            ],
+            [
+                [float("nan"),
+                 float("nan"),
+                 float("nan"),
+                 float("nan")],
+                [float("nan"),
+                 float("nan"),
+                 float("nan"),
+                 float("nan")],
+            ],
+        ])
         with pytest.raises(ValueError):
             processor(probs)
 
     # Tests that the class doesn't use any extra GPU memory
-    def test_doesnt_use_extra_gpu_memory(self):
+    @staticmethod
+    def test_doesnt_use_extra_gpu_memory():
         processor = TopKProbabilityProcessor(2)
-        probs = torch.tensor(
-            [[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]], device="cuda:0"
-        )
+        probs = torch.tensor([[[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]],
+                             device="cuda:0")
         with torch.cuda.device(0):
             start_memory = torch.cuda.memory_allocated(0)
             processor(probs)
