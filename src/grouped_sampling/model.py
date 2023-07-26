@@ -1,8 +1,7 @@
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import inference_mode
 
-# noinspection PyProtectedMember
-from torch._dynamo import OptimizedModule
+from torch.nn import Module
 from transformers import AutoModelForCausalLM
 
 
@@ -10,7 +9,7 @@ from transformers import AutoModelForCausalLM
 def get_model(
     model_name: str,
     **kwargs,
-) -> OptimizedModule:
+) -> Module:
     """
     Load a model from the huggingface model hub, and compile it for faster inference.
     args:
@@ -42,5 +41,4 @@ def get_model(
     model = model.eval()
     if hasattr(model, "config") and hasattr(model.config, "use_cache"):
         model.config.use_cache = False
-    # noinspection PyTypeChecker
     return model
