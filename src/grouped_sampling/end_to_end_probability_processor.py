@@ -6,6 +6,7 @@ from src.grouped_sampling.top_p import TopPProbabilityProcessor
 
 
 class EndToEndProbabilityProcessor(ProbabilityProcessor):
+
     def __init__(
         self,
         minimum_tokens_to_keep: int = 1,
@@ -16,8 +17,7 @@ class EndToEndProbabilityProcessor(ProbabilityProcessor):
         self.processors = []
         if top_p != 1.0:
             self.processors.append(
-                TopPProbabilityProcessor(minimum_tokens_to_keep, top_p)
-            )
+                TopPProbabilityProcessor(minimum_tokens_to_keep, top_p))
         if top_k != 0:
             self.processors.append(TopKProbabilityProcessor(top_k))
 

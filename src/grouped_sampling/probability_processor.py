@@ -5,6 +5,7 @@ from torch import Tensor
 
 
 class ProbabilityProcessor(ABC):
+
     def __call__(self, probs: Tensor) -> Tensor:
         """
         Args:
@@ -23,8 +24,7 @@ class ProbabilityProcessor(ABC):
             )
         if min(probs.shape) == 0:
             raise ValueError(
-                f"probs must be a non empty tensor. Got {probs.shape} shape."
-            )
+                f"probs must be a non empty tensor. Got {probs.shape} shape.")
         if (torch.isnan(probs)).any():
             raise ValueError("probs must not contain NaN values.")
         if (torch.isinf(probs)).any():
@@ -37,5 +37,4 @@ class ProbabilityProcessor(ABC):
         if (probs_sum - 1 > 1e-4).any():
             raise ValueError(
                 "probs must sum to 1 or less in the last dimension."
-                f"\nGot {probs_sum}"
-            )
+                f"\nGot {probs_sum}")
