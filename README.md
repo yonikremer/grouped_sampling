@@ -1,61 +1,36 @@
 # A Single Usage Is All You Need
 
-## Awards:
+# Awards:
 
-### [Israeli Young Scientist and Developer Contest 2023](https://www.youngscientistsisrael.com/projects/dgymh-bqbvtsvt-shymvsh-y-yl-bmvdly-shph-sybtyym-causal-language-models) - 1st place
+## [FIRST PLACE in the Israeli Young Scientist and Developer Contest 2023](https://www.youngscientistsisrael.com/projects/dgymh-bqbvtsvt-shymvsh-y-yl-bmvdly-shph-sybtyym-causal-language-models)
 
-### The project will compete in [Regeneron ISEF 2023](https://www.societyforscience.org/isef/) in May
+## [Finalist at Regeneron International Science and Engineering Fair 2023](https://projectboard.world/isef/project/robo037-a-single-usage-is-all-you-need)
 
-### 5 credit points of high school credit in computer science
+## 5 high school credit points in data science. Grade: 99%
 
-# The research question:
-> Can we use generate n tokens using less than n calls to a Causal Language model?
-> If yes, How? 
-> How the text generated in this way differs from the text generated using n calls?
+# Abstarct:
 
+I developed and published an open-source efficient text-generation algorithm called grouped sampling to enable cheap
+and accessible AI text-generation services for everyone.
 
-# The Answer:
+Causal language models are state-of-the-art text generation models that power many popular products like chat-GPT.
+The naive text generation algorithm requires x usages of a causal language model to generate x words, 
+which makes it inefficient.
 
-You CAN generate n tokens with less than n calls to A Causal Language Model.
+Grouped sampling is an alternative algorithm that manipulates the input text before passing it to the model, 
 
-In fact, You can generate long texts with a single call to A Causal Language Model.
+forcing the model to predict the entire output at once. 
 
-The grouped sampling algorithm is more efficient than all existing algorithms.
+Grouped sampling only requires one use of a causal language model to generate text of any length, making it much more efficient.
 
-The algorithm succeeded more than the existing alternative in the experiments.
+I compared grouped sampling and the naive algorithm in translating TED talks.
 
-# Using Grouped Sampling:
+The naive algorithm required 33.049 GPU hours that costs $17.87.
 
-1. Make sure You have python 3 (3.10+ is recommended).
-2. Make sure You have a fast internet connection
-3. Run: `python -m pip install -q grouped-sampling`
-4. `from grouped_sampling.sampling_generator import GroupedSamplingPipeLine`
-5. Choose a Causal Language Model from huggingface hub
-6. Choose a group size, 
-The recommended group size is the upper limit for the length of the generated texts.
-A higher group size will cause unnecessary computations.
-A lower group size will cause lower performance both in runtime and text quality.
-7. `pipe = GroupedSamplingPipeLine(model_name=YOUR_MODEL_NAME, group_size=YOUR_GROUP_SIZE)`
-8. `answer = pipe(YOUR_TEXT)["generated_text"]`
+Grouped sampling required 0.028 GPU hours that costs $0.015.
 
+Grouped sampling translated more accurately by 5%-24%, measured using BERT scores.
 
-# Project OverView:
-
-## The project book:
-The project book is where I explain the project in great details.
-The book includes a detailed explanation of the technical background and the solution. 
-It is written in Hebrew in the file [documents/עבודה סופית לגמרי.pdf](documents/עבודה סופית לגמרי.pdf)
-
-## Other Documents:
-There are other documents I created for the project
-All of them are in Hebrew
-All are available in the documents folder
-1. A presentation.
-2. A poster.
-3. A project summary.
-
-## The code:
-
-### The Algorithm Itself:
-You can install it using `python -m pip install -q grouped-sampling`
-All of the code is under the src/grouped_sampling
+In conclusion, grouped sampling is an accurate and efficient text-generation technique. 
+ 
+It is 1180 times faster and cheaper to run than the naive algorithm.
