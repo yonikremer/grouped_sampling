@@ -314,9 +314,8 @@ class TestReturnOnePipeLine:
     @inference_mode()
     def validate_pipeline(pipeline):
         assert pipeline.tokenizer is not None, "tokenizer is None"
-        assert isinstance(pipeline.tokenizer, PreTrainedTokenizer) or isinstance(
-            pipeline.tokenizer, PreTrainedTokenizerFast
-        ), "tokenizer is not PreTrainedTokenizer or PreTrainedTokenizerFast"
+        assert isinstance(pipeline.tokenizer, (PreTrainedTokenizer, PreTrainedTokenizerFast)), \
+            "tokenizer is not PreTrainedTokenizer or PreTrainedTokenizerFast"
         assert pipeline.model is not None, "model is None"
         assert (
             pipeline.logit_to_token_pipeline is not None
