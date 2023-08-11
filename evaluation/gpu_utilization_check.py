@@ -1,12 +1,12 @@
-from threading import Thread, Event
+from threading import Event, Thread
 from typing import Callable
 from warnings import warn
 
 # noinspection PyUnresolvedReferences
 from nvidia_smi import (
-    nvmlInit,
     nvmlDeviceGetHandleByIndex,
     nvmlDeviceGetUtilizationRates,
+    nvmlInit,
 )
 
 
@@ -26,7 +26,8 @@ def check_gpu_utilization(func: Callable) -> Callable:
 
         # Start the GPU utilization checking thread
         stop_flag = Event()
-        utilization_thread = Thread(target=_check_utilization, args=(handle, stop_flag))
+        utilization_thread = Thread(target=_check_utilization,
+                                    args=(handle, stop_flag))
         utilization_thread.start()
 
         # Run the original function
@@ -41,7 +42,8 @@ def check_gpu_utilization(func: Callable) -> Callable:
     return wrapper
 
 
-def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event) -> None:
+def _check_utilization(handle: nvmlDeviceGetHandleByIndex,
+                       stop_flag: Event) -> None:
     """
     A thread that checks the GPU utilization every second
     during the execution of the wrapped function
