@@ -55,9 +55,7 @@ def build_version(new_version: str) -> None:
     if version_already_exists(new_version):
         return
     output_directory = os.path.join(PROJECT_DIR, "dist")
-    builder = build.ProjectBuilder(
-        srcdir=SOURCE_DIR,
-    )
+    builder = build.ProjectBuilder(srcdir=SOURCE_DIR, )
     builder.build(output_directory=output_directory, distribution="sdist")
     # return only when the build is finished
     while not version_already_exists(new_version):
@@ -83,9 +81,11 @@ def get_pypi_api_token() -> str:
     pypi_api_token_path = os.path.join(PROJECT_DIR, "pypi_api_token.txt")
     if not os.path.exists(pypi_api_token_path):
         pypi_api_token = input("Please enter your PyPI API token: ")
-        with open(pypi_api_token_path, "w", encoding="utf-8") as pypi_api_token_file:
+        with open(pypi_api_token_path, "w",
+                  encoding="utf-8") as pypi_api_token_file:
             pypi_api_token_file.write(pypi_api_token)
-    with open(pypi_api_token_path, "r", encoding="utf-8") as pypi_api_token_file:
+    with open(pypi_api_token_path, "r",
+              encoding="utf-8") as pypi_api_token_file:
         pypi_api_token = pypi_api_token_file.read().strip()
     return pypi_api_token
 

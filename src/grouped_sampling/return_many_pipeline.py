@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 
 import torch
 import tqdm
@@ -11,6 +11,7 @@ from src.grouped_sampling.end_to_end_probability_processor import (
 
 
 class ReturnManyPipeLine(BasePipeLine):
+
     def __init__(
         self,
         model_name: str,
@@ -35,7 +36,8 @@ class ReturnManyPipeLine(BasePipeLine):
                 f"minimum_tokens_to_keep should be an int, got {type(minimum_tokens_to_keep)}"
             )
         if not isinstance(temperature, float):
-            raise TypeError(f"temperature should be a float, got {type(temperature)}")
+            raise TypeError(
+                f"temperature should be a float, got {type(temperature)}")
         if top_p < 0.0:
             raise ValueError(f"top_p should be at least 0.0, got {top_p}")
         if top_k < 0:
@@ -45,7 +47,8 @@ class ReturnManyPipeLine(BasePipeLine):
                 f"minimum_tokens_to_keep should be at least 1, got {minimum_tokens_to_keep}"
             )
         if temperature <= 0.0:
-            raise ValueError(f"temperature should be positive, got {temperature}")
+            raise ValueError(
+                f"temperature should be positive, got {temperature}")
         self.temperature = temperature
         self.probablity_processor = EndToEndProbabilityProcessor(
             minimum_tokens_to_keep=minimum_tokens_to_keep,
@@ -73,9 +76,8 @@ class ReturnManyPipeLine(BasePipeLine):
             logits.div_(self.temperature)
         probs = logits.softmax(dim=-1)
         probs = self.probablity_processor(probs).view(-1, vocab_size)
-        if not torch.isclose(
-            probs.sum(dim=-1), torch.ones_like(probs.sum(dim=-1))
-        ).any():
+        if not torch.isclose(probs.sum(dim=-1),
+                             torch.ones_like(probs.sum(dim=-1))).any():
             raise RuntimeError(
                 "The probabilities do not sum to 1.0. This is a bug in the code."
             )
@@ -83,9 +85,11 @@ class ReturnManyPipeLine(BasePipeLine):
             raise RuntimeError(
                 f"probs has shape {probs.shape} but should have shape {(batch_size * output_seq_len, vocab_size)}"
             )
-        return multinomial(
-            probs, num_samples=num_return_sequences, replacement=True
-        ).view(batch_size, num_return_sequences, output_seq_len)
+        return multinomial(probs,
+                           num_samples=num_return_sequences,
+                           replacement=True).view(batch_size,
+                                                  num_return_sequences,
+                                                  output_seq_len)
 
     @inference_mode()
     def generate_return_many(
@@ -108,20 +112,21 @@ class ReturnManyPipeLine(BasePipeLine):
         if len(prompts) > self.max_batch_size:
             outputs: List[List[str]] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i: i + self.max_batch_size]
+                batch = prompts[i:i + self.max_batch_size]
                 outputs.extend(
-                    self.generate_return_many(
-                        batch, output_length, num_return_sequences
-                    )
-                )
+                    self.generate_return_many(batch, output_length,
+                                              num_return_sequences))
                 torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits, _ = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
-        tokens = self.logits_to_tokens_return_many(logits, num_return_sequences)
+        logits, _ = self.tokens_batch_to_logit_matrices(
+            padded_tokens, output_length)
+        tokens = self.logits_to_tokens_return_many(logits,
+                                                   num_return_sequences)
         return [
-            self.tokenizer.batch_decode(tokens[i, :, :], skip_special_tokens=True)
+            self.tokenizer.batch_decode(tokens[i, :, :],
+                                        skip_special_tokens=True)
             for i in range(len(prompts))
         ]
 

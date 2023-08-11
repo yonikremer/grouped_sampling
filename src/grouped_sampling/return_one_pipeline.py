@@ -1,8 +1,8 @@
 from typing import List, Optional, Union
 
 import torch
-from torch import inference_mode
 import tqdm
+from torch import inference_mode
 from transformers import GenerationConfig
 
 from src.grouped_sampling.base_pipeline import BasePipeLine
@@ -10,6 +10,7 @@ from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
 
 class ReturnOnePipeLine(BasePipeLine):
+
     def __init__(
         self,
         model_name: str,
@@ -38,13 +39,13 @@ class ReturnOnePipeLine(BasePipeLine):
             max_batch_size=max_batch_size,
         )
         if generation_config is not None and not isinstance(
-            generation_config, GenerationConfig
-        ):
+                generation_config, GenerationConfig):
             raise TypeError(
                 f"generation_config should be a GenerationConfig or None, got {type(generation_config)}"
             )
         if generation_config is None:
-            generation_config = GenerationConfig.from_model_config(self.model.config)
+            generation_config = GenerationConfig.from_model_config(
+                self.model.config)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
             generation_config=generation_config,
             pad_token_id=self.tokenizer.pad_token_id,
@@ -76,19 +77,20 @@ class ReturnOnePipeLine(BasePipeLine):
         if len(prompts) > self.max_batch_size:
             outputs: List[str] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i: i + self.max_batch_size]
-                outputs.extend(self.generate_batch_return_one(batch, output_length))
+                batch = prompts[i:i + self.max_batch_size]
+                outputs.extend(
+                    self.generate_batch_return_one(batch, output_length))
                 torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
         logits, last_non_padding_indecies = self.tokens_batch_to_logit_matrices(
-            padded_tokens, output_length
-        )
+            padded_tokens, output_length)
         output_tokens = self.logit_to_token_pipeline.logits_to_tokens_return_one(
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
             last_non_padding_indecies=last_non_padding_indecies,
         )
-        return self.tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+        return self.tokenizer.batch_decode(output_tokens,
+                                           skip_special_tokens=True)
