@@ -23,7 +23,6 @@ def get_model(
     """
     full_model_kwargs = {
         "pretrained_model_name_or_path": model_name,
-        "resume_download": True,
         "device_map": "auto",
         **kwargs,
     }
