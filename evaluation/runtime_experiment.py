@@ -1,10 +1,8 @@
-import gc
 import os
 import time
 from os.path import abspath, dirname
 from typing import List, Iterable
 
-import torch
 from datasets import get_dataset_config_names
 from torch import inference_mode
 import pandas as pd
