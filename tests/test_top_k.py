@@ -7,15 +7,15 @@ from src.grouped_sampling.top_k import TopKProbabilityProcessor
 Code Analysis
 
 Main functionalities:
-The TopKProbabilityProcessor class is used for processing probabilities by keeping only the top k values and setting the rest to 0. It inherits from the ProbabilityProccesor abstract class and overrides its __call__ method to implement the top-k processing. The class keeps the top k values for each row in the last dimension of the input tensor and sets the rest to 0. This is useful for tasks such as language modeling, where we want to generate the most likely next word given a sequence of previous words.
+The TopKProbabilityProcessor class is used for processing probabilities by keeping only the top k values and setting the rest to 0. It inherits from the ProbabilityProcessor abstract class and overrides its __call__ method to implement the top-k processing. The class keeps the top k values for each row in the last dimension of the input tensor and sets the rest to 0. This is useful for tasks such as language modeling, where we want to generate the most likely next word given a sequence of previous words.
 
 Methods:
-- __init__(self, top_k: int, device: torch.device): Constructor method that initializes the top_k field and calls the super constructor of ProbabilityProccesor to set the device field.
-- __call__(self, probs: torch.Tensor) -> torch.Tensor: Overrides the __call__ method of ProbabilityProccesor to implement the top-k processing. It takes a tensor of shape (batch_size, output_length, vocab_size) as input and returns a tensor of the same shape with the top k values for each row in the last dimension and the rest set to 0.
+- __init__(self, top_k: int, device: torch.device): Constructor method that initializes the top_k field and calls the super constructor of ProbabilityProcessor to set the device field.
+- __call__(self, probs: torch.Tensor) -> torch.Tensor: Overrides the __call__ method of ProbabilityProcessor to implement the top-k processing. It takes a tensor of shape (batch_size, output_length, vocab_size) as input and returns a tensor of the same shape with the top k values for each row in the last dimension and the rest set to 0.
 
 Fields:
 - top_k: An integer field that represents the number of top values to keep for each row in the last dimension of the input tensor.
-- device: A torch.device field that represents the device on which the tensor operations will be performed. It is inherited from the ProbabilityProccesor abstract class.
+- device: A torch.device field that represents the device on which the tensor operations will be performed. It is inherited from the ProbabilityProcessor abstract class.
 """
 
 
