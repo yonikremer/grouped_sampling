@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from warnings import warn
 
+import comet_ml
 from evaluate import load, EvaluationModule
 from datasets import Dataset, get_dataset_config_names
 from transformers import TextGenerationPipeline, AutoModelForCausalLM, AutoTokenizer
@@ -20,7 +21,7 @@ from evaluation import (
 
 disable_progress_bars()
 
-METRIC_NAME = "BERT_score"
+METRIC_NAME = "bertscore"
 metric: EvaluationModule = load(
     METRIC_NAME, cache_dir=os.path.join(os.path.dirname(__file__), "metrics", "cache")
 )
@@ -57,12 +58,8 @@ def sub_experiment_half(
         do_sample=True,
         temperature=1.0,
         top_p=1,
-        return_full_text=False,
         return_text=True,
-        return_tensors=False,
         repetition_penalty=1.2,
-        max_new_tokens=10000000000,
-        max_length=None,
     )
     predictions: List[str] = [x[0]["generated_text"] for x in raw_predictions]
     metric.add_batch(
@@ -155,7 +152,7 @@ def main(debug: bool = __debug__) -> None:
     if debug:
         # send a warning
         warn("Running in debug mode, only a small subset of the data will be used")
-    sub_sut_names = get_dataset_config_names(DATASET_NAME)
+    sub_sut_names = get_dataset_config_names(DATASET_NAME, trust_remote_code=True)
     if debug:
         sub_sut_names = sub_sut_names[:1]
     evaluated_pipeline, parameters = create_hugging_face_pipeline(debug)
@@ -168,4 +165,4 @@ def main(debug: bool = __debug__) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(False)
