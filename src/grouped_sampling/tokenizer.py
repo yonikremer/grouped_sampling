@@ -65,6 +65,7 @@ def is_valid_model_name(model_name: str) -> bool:
     """Returns True if the model name is valid"""
     if "output" in model_name:
         return False
+    # noinspection SpellCheckingInspection
     if model_name in {
         ".",
         "model_medium_300_hf",
