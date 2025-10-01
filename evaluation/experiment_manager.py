@@ -74,7 +74,7 @@ class ExperimentManager:
         Args:
         bert_scores: Dict[str, Union[List[float], Any]]
             with keys "f1", "precision", "recall"
-            values of shape (number of examples in the sub-experiment,) and type float
+            values of shape (number of examples in the sub-experiment) and type float
         input_lang_code: The name of the input language in this sub experiment half
         output_lang_code: The name of the output language in this sub experiment half
         sub_set: The dataset that was used for this sub experiment half
