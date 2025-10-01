@@ -7,6 +7,7 @@ from src.grouped_sampling.tokenizer import get_tokenizer, get_padding_id
 
 
 def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:
+    # noinspection SpellCheckingInspection
     tokenizer_names = [
         "gpt2",
         "gpt2-medium",
