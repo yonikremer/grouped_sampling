@@ -172,4 +172,4 @@ human_eval_project/human_eval/data/example_samples.jsonl
 human_eval_project/human_eval/samples.jsonl
 human_eval_project/human_eval/samples.jsonl_results.jsonl
 
-.idea
+.idea!/vllm/
