@@ -36,7 +36,7 @@ class LogitVectorToTokenPipeLine:
         mixin = GenerationMixin()
         mixin.generation_config = generation_config_copy
         # noinspection PyProtectedMember
-        self.logit_wrapper: LogitsProcessorList = mixin._get_logits_warper(
+        self.logit_wrapper: LogitsProcessorList = mixin._get_logits_processor(
             generation_config_copy
         )
         self.do_sample = generation_config_copy.do_sample
