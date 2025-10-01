@@ -7,3 +7,4 @@ toml~=0.10.2
 setuptools
 black[jupyter]
 pylint
+evaluate

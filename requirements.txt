@@ -3,7 +3,7 @@ transformers
 numpy
 requests
 pandas
-sentencepiece~=0.1.97
+sentencepiece
 bitsandbytes
 tqdm
 datasets
