@@ -275,10 +275,6 @@ class TestReturnOnePipeLine:
     @inference_mode()
     def test_init_8bits_model(self):
         import bitsandbytes
-
-        assert (
-            bitsandbytes.COMPILED_WITH_CUDA
-        ), "bitsandbytes was not compiled with CUDA"
         pipeline = ReturnOnePipeLine("fxmarty/tiny-llama-fast-tokenizer")
         prompts = ["Hello", "How are you?"]
         output_length = 5
@@ -287,6 +283,10 @@ class TestReturnOnePipeLine:
         logits, last_non_padding_indecies = pipeline.tokens_batch_to_logit_matrices(
             padded_tokens, output_length
         )
+        # assert that the output is on cuda
+        assert (
+            logits.device.type == "cuda"
+        ), f"device is not cuda: {logits.device.type}"
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens_return_one(
             input_ids=padded_tokens,
