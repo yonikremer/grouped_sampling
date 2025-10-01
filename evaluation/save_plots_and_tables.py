@@ -26,13 +26,13 @@ plt.autoscale(False)
 
 
 def experiment_filter(exp: APIExperiment) -> bool:
-    # return true if the experiment have a tag that says "third part"
+    # return true if the experiment has a tag that says "third part"
     return "third part" in exp.get_tags()
 
 
 def get_relevant_experiments() -> List[APIExperiment]:
     all_experiments: List[APIExperiment] = api.get_experiments(
-        workspace=WORKSPACE, project_name=get_project_name(debug=False), pattern=None
+        workspace=WORKSPACE, project_name=get_project_name(debug=False)
     )
     unsorted_relevant_experiments = (
         exp for exp in all_experiments if experiment_filter(exp)
@@ -109,12 +109,7 @@ def save_plot_from_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
 
 
 def save_stat_plot(stat_name: str) -> None:
-    group_size_to_score_stats: Dict[int, Dict[str, float]] = {}
-    for exp in get_relevant_experiments():
-        group_size: int = get_group_size(exp)
-        curr_exp_stats: Dict[str, float] = get_score_stat(exp, stat_name)
-        if len(curr_exp_stats) > 0:
-            group_size_to_score_stats[group_size] = curr_exp_stats
+    group_size_to_score_stats = get_stat_dict(stat_name)
     if len(group_size_to_score_stats) > 0:
         save_plot_from_data(group_size_to_score_stats, stat_name)
     else:
@@ -151,12 +146,7 @@ def save_duration_plot():
 
 
 def save_stat_table(stat_name: str) -> None:
-    group_size_to_score_stats: Dict[int, Dict[str, float]] = {}
-    for exp in get_relevant_experiments():
-        group_size: int = get_group_size(exp)
-        curr_exp_stats: Dict[str, float] = get_score_stat(exp, stat_name)
-        if len(curr_exp_stats) > 0:
-            group_size_to_score_stats[group_size] = curr_exp_stats
+    group_size_to_score_stats = get_stat_dict(stat_name)
     if len(group_size_to_score_stats) <= 0:
         raise RuntimeError(f"Could not find any experiments with the stat {stat_name}.")
     df = DataFrame()
@@ -168,6 +158,19 @@ def save_stat_table(stat_name: str) -> None:
     df = df.sort_index()
     df = df.round(3)
     df.to_csv(join(TABLES_FOLDER, f"{stat_name}.csv"))
+
+
+def get_stat_dict(stat_name):
+    """
+    Returns a dictionary mapping group size to a dictionary of metric name to score.
+    """
+    group_size_to_score_stats: Dict[int, Dict[str, float]] = {}
+    for exp in get_relevant_experiments():
+        group_size: int = get_group_size(exp)
+        curr_exp_stats: Dict[str, float] = get_score_stat(exp, stat_name)
+        if len(curr_exp_stats) > 0:
+            group_size_to_score_stats[group_size] = curr_exp_stats
+    return group_size_to_score_stats
 
 
 if __name__ == "__main__":
