@@ -20,7 +20,7 @@ from evaluation import (
 
 disable_progress_bars()
 
-METRIC_NAME = "bertscore"
+METRIC_NAME = "BERT_score"
 metric: EvaluationModule = load(
     METRIC_NAME, cache_dir=os.path.join(os.path.dirname(__file__), "metrics", "cache")
 )

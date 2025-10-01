@@ -47,7 +47,7 @@ class ReturnManyPipeLine(BasePipeLine):
         if temperature <= 0.0:
             raise ValueError(f"temperature should be positive, got {temperature}")
         self.temperature = temperature
-        self.probablity_processor = EndToEndProbabilityProcessor(
+        self.probability_processor = EndToEndProbabilityProcessor(
             minimum_tokens_to_keep=minimum_tokens_to_keep,
             top_p=top_p,
             top_k=top_k,
@@ -62,7 +62,7 @@ class ReturnManyPipeLine(BasePipeLine):
         """
         Convert a batch of logit matrices to tokens.
         args:
-            logits: Tesnor of shape (batch_size, output_seq_len, vocab_size).
+            logits: Tensor of shape (batch_size, output_seq_len, vocab_size).
             num_return_sequences: int. The number of sequences to return for each input sequence.
         Returns:
             A Tensor of shape (batch_size, num_return_sequences, output_seq_len)
@@ -72,7 +72,7 @@ class ReturnManyPipeLine(BasePipeLine):
         if self.temperature != 1.0:
             logits.div_(self.temperature)
         probs = logits.softmax(dim=-1)
-        probs = self.probablity_processor(probs).view(-1, vocab_size)
+        probs = self.probability_processor(probs).view(-1, vocab_size)
         if not torch.isclose(
             probs.sum(dim=-1), torch.ones_like(probs.sum(dim=-1))
         ).any():

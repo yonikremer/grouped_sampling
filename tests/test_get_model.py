@@ -69,11 +69,11 @@ class TestGetModel:
         if cuda.is_available():
             assert (
                 model.device.type == "cuda"
-            ), "CUDA is avilable and the model device is not utilizing it"
+            ), "CUDA is available and the model device is not utilizing it"
         else:
             assert (
                 model.device.type == "cpu"
-            ), "CUDA is not avilable and the model device is not on the CPU"
+            ), "CUDA is not available and the model device is not on the CPU"
         assert isinstance(model, Callable), "The model is not callable"
 
     #  Tests that the function returns a PreTrainedModel object

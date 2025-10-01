@@ -9,7 +9,7 @@ from src.grouped_sampling.top_p import TopPProbabilityProcessor
 Code Analysis
 
 Main functionalities:
-The TopPProbabilityProccesor class is used to process probabilities by keeping only the top p values and setting the rest to 0. The class keeps the top values for each vector in the last dimension such that their sum is top p or more. This is useful in natural language processing tasks such as language modeling and text generation, where the model needs to generate text that is coherent and grammatically correct.
+The TopPProbabilityProcessor class is used to process probabilities by keeping only the top p values and setting the rest to 0. The class keeps the top values for each vector in the last dimension such that their sum is top p or more. This is useful in natural language processing tasks such as language modeling and text generation, where the model needs to generate text that is coherent and grammatically correct.
 
 Methods:
 - __init__(self, minimum_tokens_to_keep: int, top_p: float, device: torch.device): Constructor method that initializes the class with the minimum number of tokens to keep, top p value, and device.
@@ -23,7 +23,7 @@ Fields:
 """
 
 
-class TestTopPProbabilityProccesor:
+class TestTopPProbabilityProcessor:
     #  Tests that the class processes probabilities correctly when given valid inputs
     @pytest.mark.parametrize("device", [torch.device("cpu"), torch.device("cuda")])
     def test_valid_input_processing(self, device):

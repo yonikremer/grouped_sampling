@@ -74,33 +74,33 @@ class BasePipeLine:
             )
         if output_length <= 0:
             raise ValueError(f"output_length should be positive, got {output_length}")
-        attenction_mask = ones_like(
+        attention_mask = ones_like(
             padded_tokens, dtype=torch.long, device=self.device, requires_grad=False
         )
         all_logits = self.model(
             output_attentions=False,
             output_hidden_states=False,
             input_ids=padded_tokens,
-            attention_mask=attenction_mask,
+            attention_mask=attention_mask,
         ).logits
         if all_logits.isnan().any():
             raise RuntimeError(
                 f"Model returned NaN logits."
                 f" logits: {all_logits}"
                 f" tokens: {padded_tokens}"
-                f" attention_mask: {attenction_mask}"
+                f" attention_mask: {attention_mask}"
             )
         padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
         batch_size = padded_tokens.shape[0]
-        relavent_logits = torch.empty(
+        relevant_logits = torch.empty(
             (batch_size, output_length, all_logits.shape[-1]),
             device=self.device,
             dtype=all_logits.dtype,
         )
         for i, index in enumerate(last_non_pad_indices):
-            relavent_logits[i, :, :] = all_logits[i, index: index + output_length]
-        return relavent_logits, last_non_pad_indices
+            relevant_logits[i, :, :] = all_logits[i, index: index + output_length]
+        return relevant_logits, last_non_pad_indices
 
     def _validate_output_length(self, output_length: int) -> None:
         if not isinstance(output_length, int):

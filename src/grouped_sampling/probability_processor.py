@@ -10,7 +10,7 @@ class ProbabilityProcessor(ABC):
         Args:
             probs: Tensor of shape (batch_size, output_length, vocab_size).
         Returns:
-            A Tensor of shape (batch_size, output_length, vocab_size) with the proccessed probs.
+            A Tensor of shape (batch_size, output_length, vocab_size) with the processed probs.
         """
         raise NotImplementedError
 

@@ -9,7 +9,7 @@ from src.grouped_sampling.top_k import TopKProbabilityProcessor
 Code Analysis
 
 Main functionalities:
-The TopKProbabilityProccesor class is used for processing probabilities by keeping only the top k values and setting the rest to 0. It inherits from the ProbabilityProccesor abstract class and overrides its __call__ method to implement the top-k processing. The class keeps the top k values for each row in the last dimension of the input tensor and sets the rest to 0. This is useful for tasks such as language modeling, where we want to generate the most likely next word given a sequence of previous words.
+The TopKProbabilityProcessor class is used for processing probabilities by keeping only the top k values and setting the rest to 0. It inherits from the ProbabilityProccesor abstract class and overrides its __call__ method to implement the top-k processing. The class keeps the top k values for each row in the last dimension of the input tensor and sets the rest to 0. This is useful for tasks such as language modeling, where we want to generate the most likely next word given a sequence of previous words.
 
 Methods:
 - __init__(self, top_k: int, device: torch.device): Constructor method that initializes the top_k field and calls the super constructor of ProbabilityProccesor to set the device field.

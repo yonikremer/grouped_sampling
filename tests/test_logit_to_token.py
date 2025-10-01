@@ -24,7 +24,7 @@ Fields:
 
 
 class TestLogitVectorToTokenPipeLine:
-    exapmle_input_ids = LongTensor([1, 2, 3]).cuda()
+    example_input_ids = LongTensor([1, 2, 3]).cuda()
     example_logits_vector = FloatTensor([0.1, 0.2, 0.7]).cuda()
     example_logits_vectors = FloatTensor(
         [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.1, 0.4]]

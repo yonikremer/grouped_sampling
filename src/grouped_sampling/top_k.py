@@ -5,7 +5,7 @@ from src.grouped_sampling.probability_processor import ProbabilityProcessor
 
 class TopKProbabilityProcessor(ProbabilityProcessor):
     """
-    A class for proccessing probabilities by keeping only the top k values.
+    A class for processing probabilities by keeping only the top k values.
     And setting the rest to 0.
     The class keeps the top k values for each row in the last dimension.
     And sets the rest to 0.
@@ -26,9 +26,9 @@ class TopKProbabilityProcessor(ProbabilityProcessor):
         if self.top_k == probs.shape[-1]:
             return probs
         self._validate_probs(probs)
-        topk_vals, topk_inds = probs.topk(self.top_k, dim=-1)
+        topk_vals, topk_indexes = probs.topk(self.top_k, dim=-1)
         zeros_tensor = torch.zeros_like(probs, device=probs.device)
-        zeros_tensor.scatter_(-1, topk_inds, topk_vals)
+        zeros_tensor.scatter_(-1, topk_indexes, topk_vals)
         return zeros_tensor
 
     def _validate_probs(self, probs):

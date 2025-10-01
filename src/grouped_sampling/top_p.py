@@ -6,7 +6,7 @@ from src.grouped_sampling.probability_processor import ProbabilityProcessor
 
 class TopPProbabilityProcessor(ProbabilityProcessor):
     """
-    A class for proccessing probabilities by keeping only the top p values.
+    A class for processing probabilities by keeping only the top p values.
     And setting the rest to 0.
     The class keeps the top values for each vector in the last dimension such that their sum is top p or more.
     """

@@ -44,7 +44,7 @@ Fields:
 
 
 def validate_logits(
-    pipeleine: ReturnOnePipeLine,
+    pipeline: ReturnOnePipeLine,
     logits: Tensor,
     output_length: int,
 ) -> None:
@@ -58,13 +58,13 @@ def validate_logits(
         raise ValueError(
             f"logits should have {output_length} columns, got {logits.shape[1]}"
         )
-    if logits.shape[2] != pipeleine.tokenizer.vocab_size:
+    if logits.shape[2] != pipeline.tokenizer.vocab_size:
         raise ValueError(
-            f"logits should have {pipeleine.tokenizer.vocab_size} columns, got {logits.shape[2]}"
+            f"logits should have {pipeline.tokenizer.vocab_size} columns, got {logits.shape[2]}"
         )
-    if logits.device != pipeleine.device:
+    if logits.device != pipeline.device:
         raise ValueError(
-            f"logits should be on device {pipeleine.device}, got {logits.device}"
+            f"logits should be on device {pipeline.device}, got {logits.device}"
         )
     if logits.dtype != float32:
         raise ValueError(f"logits should have dtype {float32}, got {logits[0].dtype}")
@@ -224,7 +224,7 @@ class TestReturnOnePipeLine:
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
         assert not padded_tokens.requires_grad
-        logits, last_non_padding_indecies = pipeline.tokens_batch_to_logit_matrices(
+        logits, last_non_padding_indexes = pipeline.tokens_batch_to_logit_matrices(
             padded_tokens, output_length
         )
         validate_logits(pipeline, logits, output_length)
@@ -232,7 +232,7 @@ class TestReturnOnePipeLine:
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
-            last_non_padding_indecies=last_non_padding_indecies,
+            last_non_padding_indexes=last_non_padding_indexes,
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
 
@@ -245,7 +245,7 @@ class TestReturnOnePipeLine:
         with pytest.raises(ValueError):
             pipeline.generate_batch_return_one(prompts, output_length)
 
-    # test that genearte_batch works correctrly when it gets a string as input
+    # test that generate_batch works correctly when it gets a string as input
     def test_string_input(self):
         pipeline = ReturnOnePipeLine("gpt2")
         prompt = "Hello"
@@ -292,7 +292,7 @@ class TestReturnOnePipeLine:
             input_ids=padded_tokens,
             logits=logits,
             output_length=output_length,
-            last_non_padding_indecies=last_non_padding_indecies,
+            last_non_padding_indexes=last_non_padding_indecies,
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
         # self.validate_pipeline(pipeline)
@@ -344,7 +344,7 @@ class TestReturnOnePipeLine:
         with pytest.raises(TypeError):
             ReturnOnePipeLine("gpt2", generation_config=1)
 
-    def test_generrate_huge_batch(self):
+    def test_generate_huge_batch(self):
         pipeline = ReturnOnePipeLine("gpt2", max_batch_size=128)
         number_of_prompts = 1024
         prompts = ["Hello"] * number_of_prompts
