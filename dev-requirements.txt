@@ -4,6 +4,6 @@ build~=0.10.0
 twine~=4.0.2
 hatchling
 toml~=0.10.2
-setuptools~=67.5.1
+setuptools
 black[jupyter]
 pylint
