@@ -1,4 +1,4 @@
-"""A script that publish a new version of the library to PyPI."""
+"""A script that publishes a new version of the library to PyPI."""
 
 import os
 
