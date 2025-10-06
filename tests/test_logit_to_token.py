@@ -1,24 +1,10 @@
 import torch
-from torch import LongTensor, FloatTensor, long, Tensor
+from torch import LongTensor, FloatTensor, Tensor
 from transformers import GenerationConfig
+import pytest
+from unittest.mock import patch, MagicMock
 
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
-
-"""
-Code Analysis
-
-Main functionalities:
-The LogitVectorToTokenPipeLine class is responsible for converting a batch of logit matrices to tokens. It prepares a generation config for the pipeline, initializes a LogitsProcessorList, and applies Softmax normalization of logits if do_sample is True. The batch_to_tokens method takes input_ids, a list_batch of Tensors with shape (output_seq_len, vocab_size) with the logits for every sequence in the batch, and output_length, and returns a Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
-
-Methods:
-- prepare_generation_config: prepares a generation config for the LogitVectorToTokenPipeLine.
-- __init__: initializes the LogitVectorToTokenPipeLine class and applies Softmax normalization of logits if do_sample is True.
-- batch_to_tokens: converts a batch of logit matrices to tokens.
-
-Fields:
-- logit_wrapper: a LogitsProcessorList that wraps the logits processors.
-- do_sample: a boolean that indicates whether to use sampling or not.
-"""
 
 
 class TestLogitVectorToTokenPipeLine:
@@ -31,7 +17,6 @@ class TestLogitVectorToTokenPipeLine:
     # Tests that batch_to_tokens returns valid token ids with valid input_ids
     # and batch
     def test_batch_to_tokens_valid_input(self):
-        input_ids = torch.tensor([[1, 2, 3, 0, 0], [4, 5, 6, 0, 0]], device="cuda")
         batch = torch.tensor(
             [
                 [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
@@ -39,15 +24,14 @@ class TestLogitVectorToTokenPipeLine:
             ],
             device="cuda",
         )
-        last_non_padding = torch.tensor([2, 2], device="cuda")
-        pipeline = LogitVectorToTokenPipeLine(GenerationConfig(), 0)
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         output_length = 3
         token_ids = pipeline.logits_to_tokens_return_one(
-            input_ids, batch, output_length, last_non_padding
+            batch
         )
         assert isinstance(token_ids, Tensor)
         assert token_ids.shape == torch.Size([2, output_length])
-        assert token_ids.dtype == long
+        assert token_ids.dtype == torch.long
         assert token_ids.is_cuda
 
     def test_memory_leak(self):
@@ -61,12 +45,12 @@ class TestLogitVectorToTokenPipeLine:
         assert all(isinstance(x, list) for x in nested_list_input_ids)
         input_ids = torch.tensor(nested_list_input_ids, device="cuda")
         assert input_ids.shape == torch.Size([batch_size, output_length + 2])
-        batch = torch.randn((batch_size, vocab_size, output_length), device="cuda")
-        last_non_padding = torch.full((batch_size,), 2, dtype=torch.long, device="cuda")
-        pipeline = LogitVectorToTokenPipeLine(GenerationConfig(), padding_id)
+        last_non_padding_value = 2
+        batch = torch.randn((batch_size, vocab_size, output_length + last_non_padding_value + 1), device="cuda")
+        pipeline = LogitVectorToTokenPipeLine(GenerationConfig())
         start_mem = torch.cuda.memory_allocated()
         pipeline.logits_to_tokens_return_one(
-            input_ids, batch, output_length, last_non_padding
+            batch
         )
         end_mem = torch.cuda.memory_allocated()
         assert end_mem == start_mem
@@ -74,13 +58,12 @@ class TestLogitVectorToTokenPipeLine:
     def test_sampling(self):
         generation_config = GenerationConfig.from_pretrained("gpt2")
         generation_config.do_sample = True
-        generation_config.top_k = 50
+        generation_config.top_k = 2
         generation_config.top_p = 0.95
         generation_config.temperature = 0.7
         generation_config.num_return_sequences = 1
-        pipeline = LogitVectorToTokenPipeLine(generation_config, 0)
+        pipeline = LogitVectorToTokenPipeLine(generation_config)
         # Batch size 2:
-        input_ids = torch.tensor([[1, 2, 3, 0, 0], [4, 5, 6, 0, 0]], device="cuda")
         batch = torch.tensor(
             [
                 [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
@@ -88,27 +71,93 @@ class TestLogitVectorToTokenPipeLine:
             ],
             device="cuda",
         )
-        last_non_padding = torch.tensor([2, 2], device="cuda")
         output_length = 3
         token_ids = pipeline.logits_to_tokens_return_one(
-            input_ids, batch, output_length, last_non_padding
+            batch
         )
         assert isinstance(token_ids, Tensor)
         assert token_ids.shape == torch.Size([2, output_length])
-        assert token_ids.dtype == long
+        assert token_ids.dtype == torch.int32
         assert token_ids.is_cuda
 
         # Batch size 1:
-        input_ids = torch.tensor([[1, 2, 3, 0, 0]], device="cuda")
         batch = torch.tensor(
             [[[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]],
             device="cuda",
         )
-        last_non_padding = torch.tensor([2], device="cuda")
         output_length = 3
         token_ids = pipeline.logits_to_tokens_return_one(
-            input_ids, batch, output_length, last_non_padding
+            batch
         )
         assert isinstance(token_ids, Tensor)
         assert token_ids.shape == torch.Size([1, output_length])
-        assert token_ids.dtype == long
+        assert token_ids.dtype == torch.int32
+
+    def test_beam_search_raises(self):
+        config = GenerationConfig(num_beams=2)
+        with pytest.raises(ValueError, match="Beam search is not supported."):
+            LogitVectorToTokenPipeLine(config, 0)
+
+    @patch("src.grouped_sampling.logits_vec_to_token.flashinfer.sampling.top_k_top_p_sampling_from_logits")
+    def test_sample_logits_top_k_only(self, mock_sampling):
+        config = GenerationConfig(do_sample=True, top_k=2, top_p=None)
+        pipeline = LogitVectorToTokenPipeLine(config, 0)
+        logits = torch.randn(4, 10)
+        mock_sampling.return_value = torch.tensor([1, 2, 3, 4])
+        result = pipeline.sample_logits(logits)
+        mock_sampling.assert_called_once_with(logits=logits.contiguous(), top_k=2, top_p=None, generator=pipeline.rng)
+        assert torch.equal(result, torch.tensor([1, 2, 3, 4]))
+
+    @patch("src.grouped_sampling.logits_vec_to_token.flashinfer.sampling.top_k_top_p_sampling_from_logits")
+    def test_sample_logits_top_p_only(self, mock_sampling):
+        config = GenerationConfig(do_sample=True, top_k=None, top_p=0.8)
+        pipeline = LogitVectorToTokenPipeLine(config, 0)
+        logits = torch.randn(4, 10)
+        mock_sampling.return_value = torch.tensor([4, 3, 2, 1])
+        result = pipeline.sample_logits(logits)
+        mock_sampling.assert_called_once_with(logits=logits.contiguous(), top_k=None, top_p=0.8, generator=pipeline.rng)
+        assert torch.equal(result, torch.tensor([4, 3, 2, 1]))
+
+    @patch("src.grouped_sampling.logits_vec_to_token.flashinfer.sampling.top_k_top_p_sampling_from_logits")
+    def test_sample_logits_top_k_and_top_p(self, mock_sampling):
+        config = GenerationConfig(do_sample=True, top_k=3, top_p=0.7)
+        pipeline = LogitVectorToTokenPipeLine(config, 0)
+        logits = torch.randn(4, 10)
+        mock_sampling.return_value = torch.tensor([0, 1, 2, 3])
+        result = pipeline.sample_logits(logits)
+        mock_sampling.assert_called_once_with(logits=logits.contiguous(), top_k=3, top_p=0.7, generator=pipeline.rng)
+        assert torch.equal(result, torch.tensor([0, 1, 2, 3]))
+
+    @patch("src.grouped_sampling.logits_vec_to_token.flashinfer.sampling.top_k_top_p_sampling_from_logits")
+    def test_sample_logits_top_k_and_top_p_none(self, mock_sampling):
+        config = GenerationConfig(do_sample=True, top_k=None, top_p=None)
+        pipeline = LogitVectorToTokenPipeLine(config, 0)
+        logits = torch.randn(4, 10)
+        mock_sampling.return_value = torch.tensor([9, 8, 7, 6])
+        result = pipeline.sample_logits(logits)
+        mock_sampling.assert_called_once_with(logits=logits.contiguous(), top_k=None, top_p=None, generator=pipeline.rng)
+        assert torch.equal(result, torch.tensor([9, 8, 7, 6]))
+
+    def test_sample_logits_argmax(self):
+        config = GenerationConfig(do_sample=False)
+        pipeline = LogitVectorToTokenPipeLine(config, 0)
+        logits = torch.tensor([[0.1, 0.5, 0.4], [0.2, 0.1, 0.7]])
+        result = pipeline.sample_logits(logits)
+        assert torch.equal(result, torch.tensor([1, 2]))
+
+    def test_top_p_zero_top_k_one_forces_argmax(self):
+        config = GenerationConfig(do_sample=True, top_k=1, top_p=0)
+        pipeline = LogitVectorToTokenPipeLine(config, 0)
+        logits = torch.tensor([[0.1, 0.5, 0.4], [0.2, 0.1, 0.7]])
+        result = pipeline.sample_logits(logits)
+        assert torch.equal(result, torch.tensor([1, 2]))
+
+    @patch("src.grouped_sampling.logits_vec_to_token.flashinfer.sampling.top_k_top_p_sampling_from_logits")
+    def test_sample_logits_actual_flashinfer(self, mock_sampling):
+        config = GenerationConfig(do_sample=True, top_k=5, top_p=0.9)
+        pipeline = LogitVectorToTokenPipeLine(config, 0)
+        logits = torch.randn(2, 10)
+        mock_sampling.return_value = torch.tensor([2, 7])
+        result = pipeline.sample_logits(logits)
+        mock_sampling.assert_called_once_with(logits=logits.contiguous(), top_k=5, top_p=0.9, generator=pipeline.rng)
+        assert torch.equal(result, torch.tensor([2, 7]))

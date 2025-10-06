@@ -44,11 +44,10 @@ class TestBasePipeLine:
         pipeline = BasePipeLine("gpt2")
         prompts = ["Hello world!", "How are you?"]
         tokens = pipeline.tokenize_and_pad(prompts, 10)
-        logits, last_non_pad_indices = pipeline.tokens_batch_to_logit_matrices(
+        logits = pipeline.tokens_batch_to_logit_matrices(
             tokens, 10
         )
         assert logits.shape == (2, 10, pipeline.tokenizer.vocab_size)
-        assert last_non_pad_indices.tolist() == [1, 3]
 
     #  Tests that the class raises a TypeError if model_name is not a string
     def test_model_name_type_error(self):

@@ -222,15 +222,12 @@ class TestReturnOnePipeLine:
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
         assert not padded_tokens.requires_grad
-        logits, last_non_padding_indexes = pipeline.tokens_batch_to_logit_matrices(
+        logits = pipeline.tokens_batch_to_logit_matrices(
             padded_tokens, output_length
         )
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens_return_one(
-            input_ids=padded_tokens,
             logits=logits,
-            output_length=output_length,
-            last_non_padding_indexes=last_non_padding_indexes,
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
 
@@ -277,7 +274,7 @@ class TestReturnOnePipeLine:
         output_length = 5
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
-        logits, last_non_padding_indexes = pipeline.tokens_batch_to_logit_matrices(
+        logits = pipeline.tokens_batch_to_logit_matrices(
             padded_tokens, output_length
         )
         # assert that the output is on cuda
@@ -286,10 +283,7 @@ class TestReturnOnePipeLine:
         ), f"device is not cuda: {logits.device.type}"
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens_return_one(
-            input_ids=padded_tokens,
             logits=logits,
-            output_length=output_length,
-            last_non_padding_indexes=last_non_padding_indexes,
         )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
         # self.validate_pipeline(pipeline)

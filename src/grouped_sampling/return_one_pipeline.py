@@ -11,11 +11,12 @@ from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
 class ReturnOnePipeLine(BasePipeLine):
     def __init__(
-        self,
-        model_name: str,
-        model_kwargs: Optional[dict] = None,
-        generation_config: Optional[GenerationConfig] = None,
-        max_batch_size: int = 128,
+            self,
+            model_name: str,
+            model_kwargs: Optional[dict] = None,
+            generation_config: Optional[GenerationConfig] = None,
+            max_batch_size: int = 128,
+            seed: Optional[int] = 0
     ):
         """
         Create a new ReturnOnePipeLine.
@@ -26,6 +27,7 @@ class ReturnOnePipeLine(BasePipeLine):
             generation_config: Optional GenerationConfig. The generation config for the model.
                 If None, the method would create a generation config from the model's config.
             max_batch_size: int. The maximum batch size to use.
+            seed: Optional int. The seed to use for sampling.
         Returns:
             A new BatchEndToEndSingleSequencePipeLine.
         Raises:
@@ -38,7 +40,7 @@ class ReturnOnePipeLine(BasePipeLine):
             max_batch_size=max_batch_size,
         )
         if generation_config is not None and not isinstance(
-            generation_config, GenerationConfig
+                generation_config, GenerationConfig
         ):
             raise TypeError(
                 f"generation_config should be a GenerationConfig or None, got {type(generation_config)}"
@@ -47,14 +49,14 @@ class ReturnOnePipeLine(BasePipeLine):
             generation_config = GenerationConfig.from_model_config(self.model.config)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
             generation_config=generation_config,
-            pad_token_id=self.tokenizer.pad_token_id,
+            seed=seed,
         )
 
     @inference_mode()
     def generate_batch_return_one(
-        self,
-        prompts: Union[List[str], str],
-        output_length: int,
+            self,
+            prompts: Union[List[str], str],
+            output_length: int,
     ) -> List[str]:
         """
         Given a batch of prompts and output length, generates a list of output strings.
@@ -82,13 +84,13 @@ class ReturnOnePipeLine(BasePipeLine):
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits, last_non_padding_indexes = self.tokens_batch_to_logit_matrices(
+        logits = self.tokens_batch_to_logit_matrices(
             padded_tokens, output_length
         )
+        assert logits.shape[0] == len(prompts)
+        assert logits.shape[1] == output_length
+        assert logits.shape[2] == self.model.config.vocab_size
         output_tokens = self.logit_to_token_pipeline.logits_to_tokens_return_one(
-            input_ids=padded_tokens,
             logits=logits,
-            output_length=output_length,
-            last_non_padding_indexes=last_non_padding_indexes,
         )
         return self.tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
