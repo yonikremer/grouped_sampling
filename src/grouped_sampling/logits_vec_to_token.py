@@ -42,9 +42,9 @@ class LogitVectorToTokenPipeLine:
             # return the token with maximum probability
             return argmax(logits, dim=-1)
         if not logits.is_contiguous():
-            logits = logits.contiguous() / self.temperature
+            logits = logits.contiguous()
         return flashinfer.sampling.top_k_top_p_sampling_from_logits(
-            logits=logits,
+            logits=logits / self.temperature,
             top_k=self.top_k,
             top_p=self.top_p,
             generator=self.rng
