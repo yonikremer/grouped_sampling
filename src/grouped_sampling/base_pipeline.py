@@ -53,10 +53,10 @@ class BasePipeLine:
         self.max_total_len = self.model.config.max_position_embeddings
 
     def tokens_batch_to_logit_matrices(
-        self,
-        padded_tokens: Tensor,
-        output_length: int,
-    ) -> Tuple[Tensor, Tensor]:
+            self,
+            padded_tokens: Tensor,
+            output_length: int,
+    ) -> Tensor:
         """
         Given a batch of prompts where each prompt is a sequence of tokens, and an output_length,
         returns the logits matrices of shape (batch_size, output_length, vocab_size)
@@ -100,7 +100,7 @@ class BasePipeLine:
         )
         for i, index in enumerate(last_non_pad_indices):
             relevant_logits[i, :, :] = all_logits[i, index: index + output_length]
-        return relevant_logits, last_non_pad_indices
+        return relevant_logits
 
     def _validate_output_length(self, output_length: int) -> None:
         if not isinstance(output_length, int):
@@ -122,9 +122,9 @@ class BasePipeLine:
             raise ValueError("strings should not contain empty strings")
 
     def tokenize_and_pad(
-        self,
-        prompts: List[str],
-        output_length: int,
+            self,
+            prompts: List[str],
+            output_length: int,
     ) -> Tensor:
         """A helper function that converts a list of strings to a padded tensor of tokens."""
         prompt_tokens: Tensor = self.tokenizer.batch_encode_plus(
