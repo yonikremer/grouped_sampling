@@ -85,8 +85,8 @@ class LogitVectorToTokenPipeLine:
             A Tensor of shape (batch_size, num_return_sequences, output_seq_len)
                 with num_return_sequences generated output sequences for each prompt in the tokens.
         """
-        if num_return_sequences < 0:
-            raise ValueError(f"num_return_sequences should be >= 0, got {num_return_sequences}")
+        if num_return_sequences <= 0:
+            raise ValueError(f"num_return_sequences must be positive, got {num_return_sequences}")
         if not self.do_sample:
             raise ValueError("""
             logits_to_tokens_return_many is only supported when do_sample is True.
@@ -96,7 +96,19 @@ class LogitVectorToTokenPipeLine:
             raise ValueError(f"logits should not be empty, got {logits.size()}")
         batch_size = logits.size(0)
         output_length = logits.size(1)
-        output = torch.zeros((batch_size, num_return_sequences, output_length), device=logits.device, dtype=torch.long)
-        for i in range(num_return_sequences):
-            output[:, i, :] = self.logits_to_tokens_return_one(logits)
-        return output
+        vocab_size = logits.size(2)
+        logits = logits.reshape(batch_size * output_length, vocab_size)
+        if not logits.is_contiguous():
+            logits = logits.contiguous()
+        # from each logit vector I want to sample num_return_sequences tokens
+        # so the indices should have each value from 0 to batch_size * output_length, output_length times
+        indices = torch.arange(0, batch_size * output_length, device=logits.device).repeat_interleave(num_return_sequences)
+        sampled_tokens = flashinfer.sampling.top_k_top_p_sampling_from_logits(
+            logits=logits / self.temperature,
+            top_k=self.top_k,
+            top_p=self.top_p,
+            generator=self.rng,
+            indices=indices
+        )
+        sampled_tokens = sampled_tokens.reshape(batch_size, num_return_sequences, output_length)
+        return sampled_tokens
