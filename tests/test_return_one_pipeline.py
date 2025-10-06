@@ -1,4 +1,3 @@
-import os
 import random
 import string
 
@@ -13,7 +12,6 @@ from transformers import (
     GenerationConfig,
 )
 
-from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling.return_one_pipeline import (
     ReturnOnePipeLine,
 )
@@ -129,13 +127,6 @@ def validate_output_tokens(
 
 
 class TestReturnOnePipeLine:
-    @staticmethod
-    def setup_method():
-        os.environ["TOKENIZERS_PARALLELISM"] = "false"
-        fix_ld_library_path()
-        # noinspection PyUnresolvedReferences
-        torch._dynamo.config.verbose = True
-
     # Tests that the function returns a list of output strings for a batch of
     # prompts with positive output length
     def test_happy_path(self):

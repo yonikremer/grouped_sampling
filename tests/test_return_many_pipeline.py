@@ -2,7 +2,6 @@ import pytest
 
 import torch
 
-from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling.return_many_pipeline import ReturnManyPipeLine
 
 """
@@ -27,49 +26,7 @@ Fields:
 
 
 class TestLogitsToTokensReturnMany:
-    @staticmethod
-    def setup_method():
-        fix_ld_library_path()
-
-    pipeline = ReturnManyPipeLine("gpt2")
-
-    #  Tests with valid input for logits and num_return_sequences
-    @pytest.mark.parametrize(
-        "batch_size, output_length, vocab_size, num_return_sequences",
-        [(1, 1, 1, 1), (2, 3, 4, 5), (10, 20, 30, 40), (100, 200, 300, 400)],
-    )
-    def test_valid_input(
-            self, batch_size, output_length, vocab_size, num_return_sequences
-    ):
-        logits = torch.randn(batch_size, output_length, vocab_size)
-        output = self.pipeline.logits_to_tokens_return_many(
-            logits, num_return_sequences
-        )
-        assert output.shape == (batch_size, num_return_sequences, output_length)
-        assert (output >= 0).all() and (output <= vocab_size - 1).all()
-
-    #  Tests with top_p=0.5 and top_k=10
-    def test_top_p_and_top_k(self):
-        pipeline = ReturnManyPipeLine("gpt2", top_p=0.5, top_k=10)
-        vocab_size = 20
-        batch_size = 2
-        output_length = 3
-        logits = torch.randn(batch_size, output_length, vocab_size)
-        num_return_sequences = 2
-        output = pipeline.logits_to_tokens_return_many(logits, num_return_sequences)
-        assert output.shape == (batch_size, num_return_sequences, output_length)
-        assert (output >= 0).all() and (output <= vocab_size - 1).all()
-
-    #  Tests with various edge cases
-    def test_edge_cases(self):
-        pipeline = ReturnManyPipeLine(
-            "gpt2", top_p=0.01, top_k=0, minimum_tokens_to_keep=1, temperature=0.1
-        )
-        logits = torch.randn(1, 1, 1)
-        num_return_sequences = 1
-        output = pipeline.logits_to_tokens_return_many(logits, num_return_sequences)
-        assert output.shape == (1, 1, 1)
-        assert (output == 0).all()
+    pipeline = ReturnManyPipeLine("gpt2", top_k=50, top_p=0.9)
 
     #  Tests that generate_return_many returns a single sequence for a single prompt with valid inputs
     def test_generate_return_many_single_prompt_single_sequence(self):

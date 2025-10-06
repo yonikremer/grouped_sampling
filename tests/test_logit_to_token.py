@@ -2,7 +2,7 @@ import torch
 from torch import LongTensor, FloatTensor, Tensor
 from transformers import GenerationConfig
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
@@ -161,3 +161,95 @@ class TestLogitVectorToTokenPipeLine:
         result = pipeline.sample_logits(logits)
         mock_sampling.assert_called_once_with(logits=logits.contiguous(), top_k=5, top_p=0.9, generator=pipeline.rng)
         assert torch.equal(result, torch.tensor([2, 7]))
+
+    def test_logits_to_tokens_return_many(self):
+        generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.95, temperature=1.0)
+        pipeline = LogitVectorToTokenPipeLine(generation_config)
+        batch = torch.tensor(
+            [
+                [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
+                [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
+            ],
+            device="cuda",
+        )
+        num_return_sequences = 4
+        output = pipeline.logits_to_tokens_return_many(batch, num_return_sequences)
+        assert isinstance(output, torch.Tensor)
+        assert output.shape == (2, num_return_sequences, 3)
+        assert output.dtype in [torch.int32, torch.long]
+        assert output.is_cuda
+
+    def test_logits_to_tokens_return_many_single_batch(self):
+        generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.95, temperature=1.0)
+        pipeline = LogitVectorToTokenPipeLine(generation_config)
+        batch = torch.tensor(
+            [[[0.1, 0.2, 0.7], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]]],
+            device="cuda",
+        )
+        num_return_sequences = 3
+        output = pipeline.logits_to_tokens_return_many(batch, num_return_sequences)
+        assert output.shape == (1, num_return_sequences, 3)
+        assert output.is_cuda
+
+    def test_logits_to_tokens_return_many_single_token(self):
+        generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.95, temperature=1.0)
+        pipeline = LogitVectorToTokenPipeLine(generation_config)
+        batch = torch.tensor(
+            [
+                [[0.1, 0.9, 0.0]],
+                [[0.2, 0.3, 0.5]],
+            ],
+            device="cuda",
+        )
+        num_return_sequences = 2
+        output = pipeline.logits_to_tokens_return_many(batch, num_return_sequences)
+        assert output.shape == (2, num_return_sequences, 1)
+        assert output.is_cuda
+
+    def test_logits_to_tokens_return_many_one_return_sequence(self):
+        generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.95, temperature=1.0)
+        pipeline = LogitVectorToTokenPipeLine(generation_config)
+        batch = torch.tensor(
+            [
+                [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3]],
+            ],
+            device="cuda",
+        )
+        num_return_sequences = 1
+        output = pipeline.logits_to_tokens_return_many(batch, num_return_sequences)
+        assert output.shape == (1, 1, 2)
+        assert output.is_cuda
+
+    def test_logits_to_tokens_return_many_zero_return_sequence(self):
+        generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.95, temperature=1.0)
+        pipeline = LogitVectorToTokenPipeLine(generation_config)
+        batch = torch.tensor(
+            [
+                [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3]],
+            ],
+            device="cuda",
+        )
+        num_return_sequences = 0
+        output = pipeline.logits_to_tokens_return_many(batch, num_return_sequences)
+        assert output.shape == (1, 0, 2)
+        assert output.is_cuda
+
+    def test_logits_to_tokens_return_many_empty_batch(self):
+        generation_config = GenerationConfig(do_sample=True, top_k=2, top_p=0.95, temperature=1.0)
+        pipeline = LogitVectorToTokenPipeLine(generation_config)
+        batch = torch.empty((0, 2, 3), device="cuda")
+        num_return_sequences = 2
+        with pytest.raises(ValueError, match="logits should not be empty"):
+            pipeline.logits_to_tokens_return_many(batch, num_return_sequences)
+
+    def test_logits_to_tokens_return_many_raises_if_not_sampling(self):
+        generation_config = GenerationConfig(do_sample=False)
+        pipeline = LogitVectorToTokenPipeLine(generation_config)
+        batch = torch.tensor(
+            [
+                [[0.1, 0.2, 0.7], [0.3, 0.4, 0.3]],
+            ],
+            device="cuda",
+        )
+        with pytest.raises(ValueError, match="logits_to_tokens_return_many is only supported when do_sample is True"):
+            pipeline.logits_to_tokens_return_many(batch, 2)

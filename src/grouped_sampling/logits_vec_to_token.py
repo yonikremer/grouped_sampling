@@ -1,5 +1,6 @@
 from typing import Optional
 
+import torch
 from torch import Tensor, argmax, inference_mode, Generator
 from transformers import (
     GenerationConfig
@@ -18,6 +19,7 @@ class LogitVectorToTokenPipeLine:
         self.do_sample = generation_config.do_sample
         self.top_p = generation_config.top_p
         self.top_k = generation_config.top_k
+        self.temperature = generation_config.temperature
         if self.top_p == 0 or self.top_k == 1:
             self.do_sample = False
         self.rng = Generator(device='cuda')
@@ -40,7 +42,7 @@ class LogitVectorToTokenPipeLine:
             # return the token with maximum probability
             return argmax(logits, dim=-1)
         if not logits.is_contiguous():
-            logits = logits.contiguous()
+            logits = logits.contiguous() / self.temperature
         return flashinfer.sampling.top_k_top_p_sampling_from_logits(
             logits=logits,
             top_k=self.top_k,
@@ -59,8 +61,6 @@ class LogitVectorToTokenPipeLine:
             logits: Tensor of shape (batch_size, output_seq_len, vocab_size).
         Returns:
             A Tensor of shape (batch_size, output_seq_len) with the tokens for every sequence in the batch.
-        Raises:
-            ValueError: If the output length and last_non_padding_indexes are incompatible with the number of logits in the batch.
         """
         batch_size = logits.size(0)
         output_length = logits.size(1)
@@ -69,3 +69,34 @@ class LogitVectorToTokenPipeLine:
         sampled_tokens = self.sample_logits(output_logits)
         sampled_tokens = sampled_tokens.reshape(batch_size, output_length)
         return sampled_tokens
+
+    @inference_mode()
+    def logits_to_tokens_return_many(
+            self,
+            logits: Tensor,
+            num_return_sequences: int,
+    ) -> Tensor:
+        """
+        Convert a batch of logit matrices to tokens.
+        args:
+            logits: Tensor of shape (batch_size, output_seq_len, vocab_size).
+            num_return_sequences: int. The number of sequences to return for each input sequence.
+        Returns:
+            A Tensor of shape (batch_size, num_return_sequences, output_seq_len)
+                with num_return_sequences generated output sequences for each prompt in the tokens.
+        """
+        if num_return_sequences < 0:
+            raise ValueError(f"num_return_sequences should be >= 0, got {num_return_sequences}")
+        if not self.do_sample:
+            raise ValueError("""
+            logits_to_tokens_return_many is only supported when do_sample is True.
+            return many with greedy decoding does not make sense, it would return the same output multiple times.
+            """)
+        if any(s == 0 for s in logits.size()):
+            raise ValueError(f"logits should not be empty, got {logits.size()}")
+        batch_size = logits.size(0)
+        output_length = logits.size(1)
+        output = torch.zeros((batch_size, num_return_sequences, output_length), device=logits.device, dtype=torch.long)
+        for i in range(num_return_sequences):
+            output[:, i, :] = self.logits_to_tokens_return_one(logits)
+        return output
