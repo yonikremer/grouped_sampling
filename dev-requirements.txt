@@ -8,3 +8,5 @@ setuptools
 black[jupyter]
 pylint
 evaluate
+snakeviz
+vllm
