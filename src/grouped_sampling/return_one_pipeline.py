@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 
 import torch
-from torch import inference_mode
+from torch import no_grad
 import tqdm
 from transformers import GenerationConfig
 
@@ -55,7 +55,7 @@ class ReturnOnePipeLine(BasePipeLine):
             seed=seed,
         )
 
-    @inference_mode()
+    @no_grad()
     def generate_batch_return_one(
             self,
             prompts: Union[List[str], str],
