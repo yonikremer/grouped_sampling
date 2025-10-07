@@ -4,7 +4,7 @@ import string
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode, Tensor, float32, long
+from torch import inference_mode, Tensor, float32, long, no_grad
 from transformers import (
     AutoConfig,
     PreTrainedTokenizer,
@@ -62,8 +62,8 @@ def validate_logits(
         raise ValueError(
             f"logits should be on device {pipeline.device}, got {logits.device}"
         )
-    if logits.dtype != float32:
-        raise ValueError(f"logits should have dtype {float32}, got {logits[0].dtype}")
+    if logits.dtype != pipeline.model.dtype:
+        raise ValueError(f"logits should have the same dtype as model, got {logits.dtype} != {pipeline.model.dtype}")
 
 
 def validate_padded_tokens(pipeline: ReturnOnePipeLine, padded_tokens: Tensor) -> None:
@@ -205,7 +205,7 @@ class TestReturnOnePipeLine:
         with pytest.raises(TypeError):  # noinspection PyTypeChecker
             pipeline.generate_batch_return_one(prompts, output_length)
 
-    @inference_mode()
+    @no_grad()
     def test_step_by_step_pipeline(self):
         pipeline = ReturnOnePipeLine("gpt2")
         prompts = ["Hello", "How are you?"]
@@ -258,7 +258,7 @@ class TestReturnOnePipeLine:
         with pytest.raises(RepositoryNotFoundError):
             ReturnOnePipeLine("non_existing_model")
 
-    @inference_mode()
+    @no_grad()
     def test_init_8bits_model(self):
         pipeline = ReturnOnePipeLine("fxmarty/tiny-llama-fast-tokenizer")
         prompts = ["Hello", "How are you?"]
@@ -293,7 +293,7 @@ class TestReturnOnePipeLine:
         self.validate_pipeline(pipeline)
 
     @staticmethod
-    @inference_mode()
+    @no_grad()
     def validate_pipeline(pipeline):
         assert pipeline.tokenizer is not None, "tokenizer is None"
         assert isinstance(pipeline.tokenizer, (PreTrainedTokenizer, PreTrainedTokenizerFast)), \
@@ -350,7 +350,7 @@ class TestReturnOnePipeLine:
         letters = string.ascii_lowercase + string.ascii_uppercase + string.digits + " "
         return "".join(random.choice(letters) for _ in range(length))
 
-    @inference_mode()
+    @no_grad()
     def test_gpu_memory_is_freed(self):
         random.seed(0)
         my_pipeline = ReturnOnePipeLine("fxmarty/tiny-llama-fast-tokenizer")
