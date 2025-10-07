@@ -10,6 +10,9 @@ from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
 
 class ReturnOnePipeLine(BasePipeLine):
+    """
+    A pipeline for generating a single sequence for each prompt using grouped sampling.
+    """
     def __init__(
             self,
             model_name: str,

@@ -10,6 +10,9 @@ from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
 
 class ReturnManyPipeLine(BasePipeLine):
+    """
+    A pipeline for generating multiple sequences for each prompt using grouped sampling.
+    """
     def __init__(
             self,
             model_name: str,
@@ -58,7 +61,15 @@ class ReturnManyPipeLine(BasePipeLine):
             output_length: int,
             num_return_sequences: int,
     ) -> List[List[str]]:
-        """"""
+        """
+        Generates a pre-determined number of responses for each propmt
+        Arguments:
+            prompts: a list of strings - the prompts to generate responses for.
+            output_length: int the number of tokens to generate for each prompt.
+            num_return_sequences: int the number of responses to generate for each prompt.
+        Returns:
+            A list of lists of strings - the responses for each prompt.
+        """
         self._validate_num_return_sequences(num_return_sequences)
         if isinstance(prompts, str):
             prompts = [prompts]
