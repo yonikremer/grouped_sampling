@@ -1,8 +1,8 @@
-from typing import Optional, List
+from typing import List, Optional
 
 import torch
 import tqdm
-from torch import inference_mode, Tensor
+from torch import Tensor, inference_mode
 from transformers import GenerationConfig
 
 from src.grouped_sampling.base_pipeline import BasePipeLine
@@ -13,15 +13,16 @@ class ReturnManyPipeLine(BasePipeLine):
     """
     A pipeline for generating multiple sequences for each prompt using grouped sampling.
     """
+
     def __init__(
-            self,
-            model_name: str,
-            model_kwargs: Optional[dict] = None,
-            max_batch_size: int = 128,
-            top_p: float = 1.0,
-            top_k: int = 0,
-            temperature: float = 1.0,
-            seed: Optional[int] = 0
+        self,
+        model_name: str,
+        model_kwargs: Optional[dict] = None,
+        max_batch_size: int = 128,
+        top_p: float = 1.0,
+        top_k: int = 0,
+        temperature: float = 1.0,
+        seed: Optional[int] = 0,
     ):
         super(ReturnManyPipeLine, self).__init__(
             model_name=model_name,
@@ -33,33 +34,34 @@ class ReturnManyPipeLine(BasePipeLine):
         if not isinstance(top_k, int):
             raise TypeError(f"top_k should be an int, got {type(top_k)}")
         if not isinstance(temperature, float):
-            raise TypeError(f"temperature should be a float, got {type(temperature)}")
+            raise TypeError(
+                f"temperature should be a float, got {type(temperature)}")
         if top_p < 0.0:
             raise ValueError(f"top_p should be at least 0.0, got {top_p}")
         if top_k < 0:
             raise ValueError(f"top_k should be at least 0, got {top_k}")
         if temperature <= 0.0:
-            raise ValueError(f"temperature should be positive, got {temperature}")
+            raise ValueError(
+                f"temperature should be positive, got {temperature}")
         self.temperature = temperature
         if top_p == 0 or top_k == 1:
-            raise ValueError(
-                """
+            raise ValueError("""
                 return many pipeline does not support top_p=0 or top_k=1 (greedy decoding)
                 Because greedy decoding does not return multiple sequences.
                 """)
-        generation_config = GenerationConfig(
-            top_p=top_p, top_k=top_k, temperature=temperature, do_sample=True
-        )
+        generation_config = GenerationConfig(top_p=top_p,
+                                             top_k=top_k,
+                                             temperature=temperature,
+                                             do_sample=True)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
-            generation_config=generation_config, seed=seed
-        )
+            generation_config=generation_config, seed=seed)
 
     @inference_mode()
     def generate_return_many_tokens(
-            self,
-            prompts: Tensor,
-            output_length: int,
-            num_return_sequences: int,
+        self,
+        prompts: Tensor,
+        output_length: int,
+        num_return_sequences: int,
     ) -> Tensor:
         """
         Generates a pre-determined number of responses for each prompt
@@ -71,34 +73,40 @@ class ReturnManyPipeLine(BasePipeLine):
             Tensor with the generated tokens, size (batch_size, num_return_sequences, output_length).
         """
         if output_length <= 0 or num_return_sequences <= 0:
-            raise ValueError(f"output_length and num_return_sequences must be positive, got {output_length} and {num_return_sequences}")
+            raise ValueError(
+                f"output_length and num_return_sequences must be positive, got {output_length} and {num_return_sequences}"
+            )
         if prompts.dim() != 2:
             raise ValueError(
-                f"prompts should be a 2D tensor, got {prompts.dim()}D tensor"
-            )
+                f"prompts should be a 2D tensor, got {prompts.dim()}D tensor")
         prompts.requires_grad = False
         batch_size, max_input_length = prompts.size()
         if batch_size > self.max_batch_size:
-            outputs: Tensor = torch.zeros(batch_size, num_return_sequence, output_length, dtype=prompts.dtype, device=prompts.device)
+            outputs: Tensor = torch.zeros(
+                batch_size,
+                num_return_sequence,
+                output_length,
+                dtype=prompts.dtype,
+                device=prompts.device,
+            )
             for i in tqdm.tqdm(range(0, batch_size, self.max_batch_size)):
-                curr_batch = prompts[i: i + self.max_batch_size, :]
-                outputs[i: i + self.max_batch_size, :, :] = self.generate_return_many_tokens(
-                    curr_batch,
-                    output_length,
-                    num_return_sequences
-                )
+                curr_batch = prompts[i:i + self.max_batch_size, :]
+                outputs[i:i + self.max_batch_size, :, :] = (
+                    self.generate_return_many_tokens(curr_batch, output_length,
+                                                     num_return_sequences))
                 torch.cuda.empty_cache()
             return outputs
         logits = self.tokens_batch_to_logit_matrices(prompts, output_length)
-        tokens = self.logit_to_token_pipeline.logits_to_tokens_return_many(logits, num_return_sequences)
+        tokens = self.logit_to_token_pipeline.logits_to_tokens_return_many(
+            logits, num_return_sequences)
         return tokens
 
     @inference_mode()
     def generate_return_many(
-            self,
-            prompts: List[str],
-            output_length: int,
-            num_return_sequences: int,
+        self,
+        prompts: List[str],
+        output_length: int,
+        num_return_sequences: int,
     ) -> List[List[str]]:
         """
         Generates a pre-determined number of responses for each prompt
@@ -122,21 +130,22 @@ class ReturnManyPipeLine(BasePipeLine):
         if len(prompts) > self.max_batch_size:
             outputs: List[List[str]] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i: i + self.max_batch_size]
+                batch = prompts[i:i + self.max_batch_size]
                 outputs.extend(
-                    self.generate_return_many(
-                        batch, output_length, num_return_sequences
-                    )
-                )
+                    self.generate_return_many(batch, output_length,
+                                              num_return_sequences))
                 torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
-        tokens = self.logit_to_token_pipeline.logits_to_tokens_return_many(logits, num_return_sequences)
+        logits = self.tokens_batch_to_logit_matrices(padded_tokens,
+                                                     output_length)
+        tokens = self.logit_to_token_pipeline.logits_to_tokens_return_many(
+            logits, num_return_sequences)
         assert tokens.dtype in {torch.int32, torch.int64, torch.long}
         return [
-            self.tokenizer.batch_decode(tokens[i, :, :], skip_special_tokens=True)
+            self.tokenizer.batch_decode(tokens[i, :, :],
+                                        skip_special_tokens=True)
             for i in range(len(prompts))
         ]
 

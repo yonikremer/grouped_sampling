@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 """Benchmark offline inference throughput."""
 import argparse
+import cProfile
 import dataclasses
 import json
 import os
@@ -9,49 +10,51 @@ import random
 import time
 import warnings
 from typing import Any, Optional, Union
-import cProfile
 
 import torch
 from tqdm import tqdm
-from transformers import (AutoModelForCausalLM, AutoTokenizer,
-                          PreTrainedTokenizerBase)
-
-from benchmark.output import RequestOutput
-from benchmark.datasets import (AIMODataset, BurstGPTDataset,
-                                      InstructCoderDataset,
-                                      PrefixRepetitionRandomDataset,
-                                      RandomDataset, SampleRequest,
-                                      ShareGPTDataset, SonnetDataset)
-from benchmark.lib.utils import (convert_to_pytorch_benchmark_format,
-                                       write_to_json)
-from src.grouped_sampling import ReturnManyPipeLine
-
+from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase
 from vllm.engine.arg_utils import EngineArgs
+
+from benchmark.datasets import (
+    AIMODataset,
+    BurstGPTDataset,
+    InstructCoderDataset,
+    PrefixRepetitionRandomDataset,
+    RandomDataset,
+    SampleRequest,
+    ShareGPTDataset,
+    SonnetDataset,
+)
+from benchmark.lib.utils import convert_to_pytorch_benchmark_format, write_to_json
+from benchmark.output import RequestOutput
+from src.grouped_sampling import ReturnManyPipeLine
 
 
 def run_vllm(
-        requests: list[SampleRequest],
-        n: int,
-        engine_args: EngineArgs,
-        do_profile: bool,
+    requests: list[SampleRequest],
+    n: int,
+    engine_args: EngineArgs,
+    do_profile: bool,
 ) -> tuple[float, Optional[list[RequestOutput]]]:
     from vllm import LLM, SamplingParams
-    from vllm.inputs import TokensPrompt, TextPrompt
+    from vllm.inputs import TextPrompt, TokensPrompt
+
     llm = LLM(**dataclasses.asdict(engine_args))
     assert all(
         llm.llm_engine.model_config.max_model_len >= (
-                request.prompt_len + request.expected_output_len)
+            request.prompt_len + request.expected_output_len)
         for request in requests), (
-        "Please ensure that max_model_len is greater than the sum of"
-        " prompt_len and expected_output_len for all requests.")
+            "Please ensure that max_model_len is greater than the sum of"
+            " prompt_len and expected_output_len for all requests.")
     # Add the requests to the engine.
     prompts: list[Union[TextPrompt, TokensPrompt]] = []
     sampling_params: list[SamplingParams] = []
     for request in requests:
         prompts.append(
             TokensPrompt(prompt_token_ids=request.prompt["prompt_token_ids"])
-            if "prompt_token_ids" in request.prompt else \
-                TextPrompt(prompt=request.prompt))
+            if "prompt_token_ids" in request.prompt else TextPrompt(
+                prompt=request.prompt))
         sampling_params.append(
             SamplingParams(
                 n=n,
@@ -65,9 +68,7 @@ def run_vllm(
     start = time.perf_counter()
     if do_profile:
         llm.start_profile()
-    outputs = llm.generate(prompts,
-                           sampling_params,
-                           use_tqdm=True)
+    outputs = llm.generate(prompts, sampling_params, use_tqdm=True)
     if do_profile:
         llm.stop_profile()
     end = time.perf_counter()
@@ -75,12 +76,12 @@ def run_vllm(
 
 
 def run_hf(
-        requests: list[SampleRequest],
-        model: str,
-        tokenizer: PreTrainedTokenizerBase,
-        n: int,
-        max_batch_size: int,
-        trust_remote_code: bool,
+    requests: list[SampleRequest],
+    model: str,
+    tokenizer: PreTrainedTokenizerBase,
+    n: int,
+    max_batch_size: int,
+    trust_remote_code: bool,
 ) -> float:
     llm = AutoModelForCausalLM.from_pretrained(
         model, dtype=torch.float16, trust_remote_code=trust_remote_code)
@@ -108,13 +109,15 @@ def run_hf(
             next_prompt_len = requests[i + 1].prompt_len
             next_output_len = requests[i + 1].expected_output_len
             if (max(max_prompt_len, next_prompt_len) +
-                max(max_output_len, next_output_len)) <= 2048:
+                    max(max_output_len, next_output_len)) <= 2048:
                 # We can add more requests to the batch.
                 continue
 
         # Generate the sequences.
-        input_ids = tokenizer(batch, return_tensors="pt",
-                              padding=True, padding_side='left').input_ids
+        input_ids = tokenizer(batch,
+                              return_tensors="pt",
+                              padding=True,
+                              padding_side="left").input_ids
         llm_outputs = llm.generate(
             input_ids=input_ids.cuda(),
             do_sample=True,
@@ -137,21 +140,28 @@ def run_hf(
 
 
 def run_grouped_sampling(
-        requests: list[SampleRequest],
-        model: str,
-        n: int,
-        max_batch_size: int,
+    requests: list[SampleRequest],
+    model: str,
+    n: int,
+    max_batch_size: int,
 ) -> float:
-    pipeline = ReturnManyPipeLine(model_name=model, seed=0, temperature=1.0, top_p=1.0, max_batch_size=max_batch_size)
+    pipeline = ReturnManyPipeLine(
+        model_name=model,
+        seed=0,
+        temperature=1.0,
+        top_p=1.0,
+        max_batch_size=max_batch_size,
+    )
     start = time.perf_counter()
     profiler = cProfile.Profile()
     profiler.enable()
     max_output_len = max(r.expected_output_len for r in requests)
     prompts = [r.prompt for r in requests]
-    _output_strings = pipeline.generate_return_many(prompts=prompts, output_length=max_output_len, num_return_sequences=n)
+    _output_strings = pipeline.generate_return_many(
+        prompts=prompts, output_length=max_output_len, num_return_sequences=n)
     end = time.perf_counter()
     profiler.disable()
-    profiler.dump_stats('benchmark/my_profile_data.prof')
+    profiler.dump_stats("benchmark/my_profile_data.prof")
     return end - start
 
 
@@ -166,7 +176,8 @@ def save_to_pytorch_benchmark_format(args: argparse.Namespace,
         extra_info={
             k: results[k]
             for k in ["elapsed_time", "num_requests", "total_num_tokens"]
-        })
+        },
+    )
     if pt_records:
         # Don't use JSON suffix here as we don't want CI to pick it up
         pt_file = f"{os.path.splitext(args.output_json)[0]}.pytorch.json"
@@ -192,8 +203,9 @@ def get_requests(args, tokenizer):
     elif args.dataset_name == "sharegpt":
         dataset_cls = ShareGPTDataset
     elif args.dataset_name == "sonnet":
-        assert tokenizer.chat_template or tokenizer.default_chat_template, (
-            "Tokenizer/model must have chat template for sonnet dataset.")
+        assert (
+            tokenizer.chat_template or tokenizer.default_chat_template
+        ), "Tokenizer/model must have chat template for sonnet dataset."
         dataset_cls = SonnetDataset
         sample_kwargs["prefix_len"] = args.prefix_len
         sample_kwargs["return_prompt_formatted"] = True
@@ -202,15 +214,15 @@ def get_requests(args, tokenizer):
     elif args.dataset_name == "hf":
         if args.dataset_path in InstructCoderDataset.SUPPORTED_DATASET_PATHS:
             dataset_cls = InstructCoderDataset
-            common_kwargs['dataset_split'] = "train"
+            common_kwargs["dataset_split"] = "train"
         elif args.dataset_path in ConversationDataset.SUPPORTED_DATASET_PATHS:
             dataset_cls = ConversationDataset
-            common_kwargs['dataset_subset'] = args.hf_subset
-            common_kwargs['dataset_split'] = args.hf_split
+            common_kwargs["dataset_subset"] = args.hf_subset
+            common_kwargs["dataset_split"] = args.hf_split
         elif args.dataset_path in AIMODataset.SUPPORTED_DATASET_PATHS:
             dataset_cls = AIMODataset
-            common_kwargs['dataset_subset'] = None
-            common_kwargs['dataset_split'] = "train"
+            common_kwargs["dataset_subset"] = None
+            common_kwargs["dataset_split"] = "train"
     elif args.dataset_name == "prefix_repetition":
         dataset_cls = PrefixRepetitionRandomDataset
         sample_kwargs["prefix_len"] = args.prefix_repetition_prefix_len
@@ -236,8 +248,10 @@ def filter_requests_for_dp(requests, data_parallel_size):
     global_rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
     data_parallel_rank = global_rank // (world_size // data_parallel_size)
-    return [r for i, r in enumerate(requests)
-            if i % data_parallel_size == data_parallel_rank]
+    return [
+        r for i, r in enumerate(requests)
+        if i % data_parallel_size == data_parallel_rank
+    ]
 
 
 def validate_args(args):
@@ -250,7 +264,8 @@ def validate_args(args):
         warnings.warn(
             "The '--dataset' argument will be deprecated in the next release. "
             "Please use '--dataset-name' and '--dataset-path' instead.",
-            stacklevel=2)
+            stacklevel=2,
+        )
         args.dataset_path = args.dataset
 
     if not getattr(args, "tokenizer", None):
@@ -262,14 +277,11 @@ def validate_args(args):
         raise ValueError(f"Unsupported backend: {args.backend}")
 
     # === Dataset Configuration ===
-    if (
-            not args.dataset
-            and not args.dataset_path
-            and args.dataset_name not in {"prefix_repetition"}
-    ):
+    if (not args.dataset and not args.dataset_path
+            and args.dataset_name not in {"prefix_repetition"}):
         print(
             "When dataset path is not set, it will default to random dataset")
-        args.dataset_name = 'random'
+        args.dataset_name = "random"
         if args.input_len is None:
             raise ValueError("input_len must be provided for a random dataset")
 
@@ -279,43 +291,54 @@ def validate_args(args):
     if args.dataset_name != "hf" and (
             getattr(args, "hf_subset", None) is not None
             or getattr(args, "hf_split", None) is not None):
-        warnings.warn("--hf-subset and --hf-split will be ignored \
+        warnings.warn(
+            "--hf-subset and --hf-split will be ignored \
                 since --dataset-name is not 'hf'.",
-                      stacklevel=2)
+            stacklevel=2,
+        )
     elif args.dataset_name == "hf":
         if args.dataset_path in (InstructCoderDataset.SUPPORTED_DATASET_PATHS
-                                   | AIMODataset.SUPPORTED_DATASET_PATHS):
-            assert args.backend == "vllm", f"{args.dataset_path} needs to use vllm as the backend."  # noqa: E501
+                                 | AIMODataset.SUPPORTED_DATASET_PATHS):
+            assert (
+                args.backend == "vllm"
+            ), f"{args.dataset_path} needs to use vllm as the backend."  # noqa: E501
         else:
             raise ValueError(
                 f"{args.dataset_path} is not supported by hf dataset.")
 
     # --random-range-ratio: only used when dataset_name is 'random'
-    if args.dataset_name != 'random' and args.random_range_ratio is not None:
-        warnings.warn("--random-range-ratio will be ignored since \
+    if args.dataset_name != "random" and args.random_range_ratio is not None:
+        warnings.warn(
+            "--random-range-ratio will be ignored since \
                 --dataset-name is not 'random'.",
-                      stacklevel=2)
+            stacklevel=2,
+        )
 
     # --prefix-len: only used when dataset_name is 'random', 'sonnet', or not
     # set.
-    if args.dataset_name not in {"random", "sonnet", None
-                                 } and args.prefix_len is not None:
-        warnings.warn("--prefix-len will be ignored since --dataset-name\
+    if (args.dataset_name not in {"random", "sonnet", None}
+            and args.prefix_len is not None):
+        warnings.warn(
+            "--prefix-len will be ignored since --dataset-name\
                  is not 'random', 'sonnet', or not set.",
-                      stacklevel=2)
+            stacklevel=2,
+        )
 
     # === Backend-specific Validations ===
     if args.backend == "hf" and args.hf_max_batch_size is None:
         raise ValueError("HF max batch size is required for HF backend")
-    if args.backend not in {"hf", "grouped-sampling"} and args.hf_max_batch_size is not None:
+    if (args.backend not in {"hf", "grouped-sampling"}
+            and args.hf_max_batch_size is not None):
         raise ValueError("HF max batch size is only for HF backend.")
 
 
 def add_cli_args(parser: argparse.ArgumentParser):
-    parser.add_argument("--backend",
-                        type=str,
-                        choices=["vllm", "hf", "grouped-sampling"],
-                        default="vllm")
+    parser.add_argument(
+        "--backend",
+        type=str,
+        choices=["vllm", "hf", "grouped-sampling"],
+        default="vllm",
+    )
     parser.add_argument(
         "--dataset-name",
         type=str,
@@ -324,28 +347,34 @@ def add_cli_args(parser: argparse.ArgumentParser):
             "prefix_repetition"
         ],
         help="Name of the dataset to benchmark on.",
-        default="sharegpt")
+        default="sharegpt",
+    )
     parser.add_argument(
         "--dataset",
         type=str,
         default=None,
         help="Path to the ShareGPT dataset, will be deprecated in\
             the next release. The dataset is expected to "
-             "be a json in form of list[dict[..., conversations: "
-             "list[dict[..., value: <prompt_or_response>]]]]")
+        "be a json in form of list[dict[..., conversations: "
+        "list[dict[..., value: <prompt_or_response>]]]]",
+    )
     parser.add_argument("--dataset-path",
                         type=str,
                         default=None,
                         help="Path to the dataset")
-    parser.add_argument("--input-len",
-                        type=int,
-                        default=None,
-                        help="Input prompt length for each request")
-    parser.add_argument("--output-len",
-                        type=int,
-                        default=None,
-                        help="Output length for each request. Overrides the "
-                             "output length from the dataset.")
+    parser.add_argument(
+        "--input-len",
+        type=int,
+        default=None,
+        help="Input prompt length for each request",
+    )
+    parser.add_argument(
+        "--output-len",
+        type=int,
+        default=None,
+        help="Output length for each request. Overrides the "
+        "output length from the dataset.",
+    )
     parser.add_argument("--n",
                         type=int,
                         default=1,
@@ -354,30 +383,36 @@ def add_cli_args(parser: argparse.ArgumentParser):
                         type=int,
                         default=1000,
                         help="Number of prompts to process.")
-    parser.add_argument("--hf-max-batch-size",
-                        type=int,
-                        default=None,
-                        help="Maximum batch size for HF backend.")
     parser.add_argument(
-        '--output-json',
+        "--hf-max-batch-size",
+        type=int,
+        default=None,
+        help="Maximum batch size for HF backend.",
+    )
+    parser.add_argument(
+        "--output-json",
         type=str,
         default=None,
-        help='Path to save the throughput results in JSON format.')
-    parser.add_argument("--disable-frontend-multiprocessing",
-                        action='store_true',
-                        default=False,
-                        help="Disable decoupled async engine frontend.")
+        help="Path to save the throughput results in JSON format.",
+    )
+    parser.add_argument(
+        "--disable-frontend-multiprocessing",
+        action="store_true",
+        default=False,
+        help="Disable decoupled async engine frontend.",
+    )
     parser.add_argument(
         "--disable-detokenize",
         action="store_true",
         help=("Do not detokenize the response (i.e. do not include "
-              "detokenization time in the measurement)"))
+              "detokenization time in the measurement)"),
+    )
     parser.add_argument(
         "--prefix-len",
         type=int,
         default=0,
         help="Number of fixed prefix tokens before the random "
-             "context in a request (default: 0).",
+        "context in a request (default: 0).",
     )
     # random dataset
     parser.add_argument(
@@ -385,9 +420,9 @@ def add_cli_args(parser: argparse.ArgumentParser):
         type=float,
         default=0.0,
         help="Range ratio for sampling input/output length, "
-             "used only for RandomDataset. Must be in the range [0, 1) to define "
-             "a symmetric sampling range "
-             "[length * (1 - range_ratio), length * (1 + range_ratio)].",
+        "used only for RandomDataset. Must be in the range [0, 1) to define "
+        "a symmetric sampling range "
+        "[length * (1 - range_ratio), length * (1 + range_ratio)].",
     )
 
     # hf dtaset
@@ -404,7 +439,8 @@ def add_cli_args(parser: argparse.ArgumentParser):
         action="store_true",
         default=False,
         help="Use Torch Profiler. The env variable "
-             "VLLM_TORCH_PROFILER_DIR must be set to enable profiler.")
+        "VLLM_TORCH_PROFILER_DIR must be set to enable profiler.",
+    )
 
     # prefix repetition dataset
     prefix_repetition_group = parser.add_argument_group(
@@ -414,28 +450,28 @@ def add_cli_args(parser: argparse.ArgumentParser):
         type=int,
         default=None,
         help="Number of prefix tokens per request, used only for prefix "
-             "repetition dataset.",
+        "repetition dataset.",
     )
     prefix_repetition_group.add_argument(
         "--prefix-repetition-suffix-len",
         type=int,
         default=None,
         help="Number of suffix tokens per request, used only for prefix "
-             "repetition dataset. Total input length is prefix_len + suffix_len.",
+        "repetition dataset. Total input length is prefix_len + suffix_len.",
     )
     prefix_repetition_group.add_argument(
         "--prefix-repetition-num-prefixes",
         type=int,
         default=None,
         help="Number of prefixes to generate, used only for prefix repetition "
-             "dataset. Prompts per prefix is num_requests // num_prefixes.",
+        "dataset. Prompts per prefix is num_requests // num_prefixes.",
     )
     prefix_repetition_group.add_argument(
         "--prefix-repetition-output-len",
         type=int,
         default=None,
         help="Number of output tokens per request, used only for prefix "
-             "repetition dataset.",
+        "repetition dataset.",
     )
     _parser = EngineArgs.add_cli_args(parser)
 
@@ -447,26 +483,34 @@ def main(args: argparse.Namespace):
     random.seed(0)
     # Sample the requests.
     tokenizer = AutoTokenizer.from_pretrained(
-        args.tokenizer, trust_remote_code=args.trust_remote_code, padding_side="left"
-    )
+        args.tokenizer,
+        trust_remote_code=args.trust_remote_code,
+        padding_side="left")
     requests = get_requests(args, tokenizer)
     request_outputs: Optional[list[RequestOutput]] = None
     if args.backend == "vllm":
         elapsed_time, request_outputs = run_vllm(
-            requests, args.n, EngineArgs.from_cli_args(args),
+            requests,
+            args.n,
+            EngineArgs.from_cli_args(args),
             do_profile=args.profile)
     elif args.backend == "hf":
         if args.profile:
             raise NotImplementedError(
                 "Profiling not implemented yet for backend='hf'.")
-        elapsed_time = run_hf(requests, args.model, tokenizer, args.n,
-                              args.hf_max_batch_size, args.trust_remote_code,
-                              )
+        elapsed_time = run_hf(
+            requests,
+            args.model,
+            tokenizer,
+            args.n,
+            args.hf_max_batch_size,
+            args.trust_remote_code,
+        )
     elif args.backend == "grouped-sampling":
-        elapsed_time = run_grouped_sampling(requests, args.model, args.n, args.hf_max_batch_size)
+        elapsed_time = run_grouped_sampling(requests, args.model, args.n,
+                                            args.hf_max_batch_size)
     else:
         raise ValueError(f"Unknown backend: {args.backend}")
-
 
     total_num_tokens = sum(r.prompt_len + r.expected_output_len
                            for r in requests)
@@ -496,4 +540,3 @@ if __name__ == "__main__":
     add_cli_args(parser)
     args = parser.parse_args()
     main(args)
-

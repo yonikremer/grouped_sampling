@@ -30,7 +30,6 @@ import numpy as np
 from PIL import Image
 from transformers import PreTrainedTokenizerBase
 from typing_extensions import deprecated
-
 from vllm.utils import PlaceholderModule
 
 try:
@@ -56,7 +55,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
 # -----------------------------------------------------------------------------
 # Data Classes
 # -----------------------------------------------------------------------------
@@ -67,6 +65,7 @@ class SampleRequest:
     """
     Represents a single inference request for benchmarking.
     """
+
     prompt: Union[str, list[str]]
     prompt_len: int
     expected_output_len: int
@@ -83,9 +82,9 @@ class BenchmarkDataset(ABC):
     IS_MULTIMODAL = False
 
     def __init__(
-            self,
-            dataset_path: Optional[str] = None,
-            random_seed: int = DEFAULT_SEED,
+        self,
+        dataset_path: Optional[str] = None,
+        random_seed: int = DEFAULT_SEED,
     ) -> None:
         """
         Initialize the BenchmarkDataset with an optional dataset path and random
@@ -100,8 +99,7 @@ class BenchmarkDataset(ABC):
         self.dataset_path = dataset_path
         # Set the random seed, ensuring that a None value is replaced with the
         # default seed.
-        self.random_seed = (random_seed
-                            if random_seed is not None else self.DEFAULT_SEED)
+        self.random_seed = random_seed if random_seed is not None else self.DEFAULT_SEED
         self.data = None
 
     def load_data(self) -> None:
@@ -119,10 +117,13 @@ class BenchmarkDataset(ABC):
             "load_data must be implemented in subclasses.")
 
     @abstractmethod
-    def sample(self, tokenizer: PreTrainedTokenizerBase,
-               num_requests: int,
-               request_id_prefix: str = "",
-               no_oversample: bool = False) -> list[SampleRequest]:
+    def sample(
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+    ) -> list[SampleRequest]:
         """
         Abstract method to generate sample requests from the dataset.
 
@@ -142,11 +143,11 @@ class BenchmarkDataset(ABC):
         raise NotImplementedError("sample must be implemented in subclasses.")
 
     def maybe_oversample_requests(
-            self,
-            requests: list[SampleRequest],
-            num_requests: int,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
+        self,
+        requests: list[SampleRequest],
+        num_requests: int,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
     ) -> None:
         """
         Oversamples the list of requests if its size is less than the desired
@@ -190,12 +191,12 @@ class BenchmarkDataset(ABC):
 
 
 def is_valid_sequence(
-        prompt_len: int,
-        output_len: int,
-        min_len: int = 4,
-        max_prompt_len: int = 1024,
-        max_total_len: int = 2048,
-        skip_min_output_len_check: bool = False,
+    prompt_len: int,
+    output_len: int,
+    min_len: int = 4,
+    max_prompt_len: int = 1024,
+    max_total_len: int = 2048,
+    skip_min_output_len_check: bool = False,
 ) -> bool:
     """
     Validate a sequence based on prompt and output lengths.
@@ -236,8 +237,8 @@ def process_image(image: Any) -> Mapping[str, Any]:
     Raises:
         ValueError: If the input is not a supported type.
     """
-    if isinstance(image, dict) and 'bytes' in image:
-        image = Image.open(BytesIO(image['bytes']))
+    if isinstance(image, dict) and "bytes" in image:
+        image = Image.open(BytesIO(image["bytes"]))
     if isinstance(image, Image.Image):
         image = convert_image_mode(image, "RGB")
         with io.BytesIO() as image_data:
@@ -276,8 +277,8 @@ def process_video(video: Any) -> Mapping[str, Any]:
     Raises:
         ValueError: If the input is not a supported type.
     """
-    if isinstance(video, dict) and 'bytes' in video:
-        video_bytes = video['bytes']
+    if isinstance(video, dict) and "bytes" in video:
+        video_bytes = video["bytes"]
         video_base64 = base64.b64encode(video_bytes).decode("utf-8")
         return {
             "type": "video_url",
@@ -298,12 +299,12 @@ def process_video(video: Any) -> Mapping[str, Any]:
 
 
 def gen_prompt_decode_to_target_len(
-        tokenizer: PreTrainedTokenizerBase,
-        token_sequence: list[int],
-        target_token_len: int,
-        max_retry: int = 10,
-        add_special_tokens: bool = False,
-        rng: Optional[np.random.Generator] = None,
+    tokenizer: PreTrainedTokenizerBase,
+    token_sequence: list[int],
+    target_token_len: int,
+    max_retry: int = 10,
+    add_special_tokens: bool = False,
+    rng: Optional[np.random.Generator] = None,
 ) -> tuple[str, list[int], int]:
     """
     Ensure decoded-then-encoded prompt length matches the target token length.
@@ -323,8 +324,7 @@ def gen_prompt_decode_to_target_len(
     while True:
         prompt = tokenizer.decode(token_sequence)
         token_sequence = tokenizer.encode(
-            prompt, add_special_tokens=add_special_tokens
-        )
+            prompt, add_special_tokens=add_special_tokens)
         if remain_num_try <= 0:
             if len(token_sequence) != target_token_len:
                 token_mismatch = len(token_sequence) - target_token_len
@@ -359,6 +359,7 @@ def gen_prompt_decode_to_target_len(
 # Random Dataset Implementation (Synthetic Data)
 # -----------------------------------------------------------------------------
 
+
 class RandomDataset(BenchmarkDataset):
     """
     Synthetic text-only dataset for serving/throughput benchmarks.
@@ -372,6 +373,7 @@ class RandomDataset(BenchmarkDataset):
     - Decode then re-encode/truncate to ensure prompt token counts match.
     - Uses numpy.default_rng seeded with random_seed for reproducible sampling.
     """
+
     # Default values copied from benchmark_serving.py for the random dataset.
     DEFAULT_PREFIX_LEN = 0
     DEFAULT_RANGE_RATIO = 0.0
@@ -386,22 +388,21 @@ class RandomDataset(BenchmarkDataset):
         self._rng = np.random.default_rng(self.random_seed)
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            prefix_len: int = DEFAULT_PREFIX_LEN,
-            range_ratio: float = DEFAULT_RANGE_RATIO,
-            input_len: int = DEFAULT_INPUT_LEN,
-            output_len: int = DEFAULT_OUTPUT_LEN,
-            batchsize: int = 1,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        prefix_len: int = DEFAULT_PREFIX_LEN,
+        range_ratio: float = DEFAULT_RANGE_RATIO,
+        input_len: int = DEFAULT_INPUT_LEN,
+        output_len: int = DEFAULT_OUTPUT_LEN,
+        batchsize: int = 1,
+        **kwargs,
     ) -> list[SampleRequest]:
 
         input_lens, output_lens, offsets = self.get_sampling_params(
-            num_requests, range_ratio, input_len, output_len, tokenizer
-        )
+            num_requests, range_ratio, input_len, output_len, tokenizer)
 
         # Generate prefix once
         prefix_token_ids = self.get_prefix(tokenizer, prefix_len)
@@ -410,15 +411,16 @@ class RandomDataset(BenchmarkDataset):
         requests = []
         token_mismatch_total = 0
         for i in range(num_requests):
-            prompt, total_input_len, token_mismatch = self.generate_token_sequence(  # noqa: E501
-                tokenizer=tokenizer,
-                prefix_token_ids=prefix_token_ids,
-                prefix_len=prefix_len,
-                vocab_size=vocab_size,
-                input_len=int(input_lens[i]),
-                offset=int(offsets[i]),
-                index=i,
-            )
+            prompt, total_input_len, token_mismatch = (
+                self.generate_token_sequence(  # noqa: E501
+                    tokenizer=tokenizer,
+                    prefix_token_ids=prefix_token_ids,
+                    prefix_len=prefix_len,
+                    vocab_size=vocab_size,
+                    input_len=int(input_lens[i]),
+                    offset=int(offsets[i]),
+                    index=i,
+                ))
             token_mismatch_total += token_mismatch
             requests.append(
                 SampleRequest(
@@ -426,22 +428,20 @@ class RandomDataset(BenchmarkDataset):
                     prompt_len=total_input_len,
                     expected_output_len=int(output_lens[i]),
                     request_id=request_id_prefix + str(i),
-                )
-            )
+                ))
         # only used for embeddings benchmark.
         if batchsize > 1:
             batch_requests = []
             # Create batched requests
             for i in range(0, num_requests, batchsize):
-                batch = requests[i: i + batchsize]
+                batch = requests[i:i + batchsize]
                 batch_requests.append(
                     SampleRequest(
                         prompt=[req.prompt for req in batch],
                         prompt_len=sum(req.prompt_len for req in batch),
                         expected_output_len=0,
                         request_id=request_id_prefix + str(i // batchsize),
-                    )
-                )
+                    ))
             requests = batch_requests
 
         if token_mismatch_total != 0:
@@ -457,26 +457,22 @@ class RandomDataset(BenchmarkDataset):
 
         return requests
 
-    def get_prefix(
-            self, tokenizer: PreTrainedTokenizerBase, prefix_len: int
-    ) -> list[int]:
+    def get_prefix(self, tokenizer: PreTrainedTokenizerBase,
+                   prefix_len: int) -> list[int]:
         """
         Get the prefix for the dataset.
         """
-        return (
-            self._rng.integers(
-                0, tokenizer.vocab_size, size=prefix_len).tolist()
-            if prefix_len > 0
-            else []
-        )
+        return (self._rng.integers(0, tokenizer.vocab_size,
+                                   size=prefix_len).tolist()
+                if prefix_len > 0 else [])
 
     def get_sampling_params(
-            self,
-            num_requests: int,
-            range_ratio: float,
-            input_len: int,
-            output_len: int,
-            tokenizer: PreTrainedTokenizerBase,
+        self,
+        num_requests: int,
+        range_ratio: float,
+        input_len: int,
+        output_len: int,
+        tokenizer: PreTrainedTokenizerBase,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Get the sampling parameters for the dataset.
@@ -496,15 +492,11 @@ class RandomDataset(BenchmarkDataset):
         output_low = max(output_low, 1)
 
         if input_low > input_high:
-            raise ValueError(
-                "Invalid input sampling interval: "
-                f"low={input_low} > high={input_high}"
-            )
+            raise ValueError("Invalid input sampling interval: "
+                             f"low={input_low} > high={input_high}")
         if output_low > output_high:
-            raise ValueError(
-                "Invalid output sampling interval: "
-                f"low={output_low} > high={output_high}"
-            )
+            raise ValueError("Invalid output sampling interval: "
+                             f"low={output_low} > high={output_high}")
 
         logger.info(
             "Sampling input_len from [%s, %s] and output_len from [%s, %s]",
@@ -514,24 +506,27 @@ class RandomDataset(BenchmarkDataset):
             output_high,
         )
 
-        input_lens = self._rng.integers(input_low, input_high + 1,
+        input_lens = self._rng.integers(input_low,
+                                        input_high + 1,
                                         size=num_requests)
-        output_lens = self._rng.integers(output_low, output_high + 1,
+        output_lens = self._rng.integers(output_low,
+                                         output_high + 1,
                                          size=num_requests)
-        offsets = self._rng.integers(0, tokenizer.vocab_size,
+        offsets = self._rng.integers(0,
+                                     tokenizer.vocab_size,
                                      size=num_requests)
         return input_lens, output_lens, offsets
 
     def generate_token_sequence(
-            self,
-            *,
-            tokenizer: PreTrainedTokenizerBase,
-            prefix_token_ids: list[int],
-            prefix_len: int,
-            vocab_size: int,
-            input_len: int,
-            offset: int,
-            index: int,
+        self,
+        *,
+        tokenizer: PreTrainedTokenizerBase,
+        prefix_token_ids: list[int],
+        prefix_len: int,
+        vocab_size: int,
+        input_len: int,
+        offset: int,
+        index: int,
     ) -> tuple[str, int, int]:
         """
         Returns (prompt, total_input_len).
@@ -546,19 +541,20 @@ class RandomDataset(BenchmarkDataset):
         the encoded sequence is truncated before being decoded again.
         """
         # Build the inner sequence by sampling sequentially from the vocab
-        inner_seq = ((offset + index + np.arange(input_len))
-                     % vocab_size).tolist()
+        inner_seq = ((offset + index + np.arange(input_len)) %
+                     vocab_size).tolist()
         token_sequence = prefix_token_ids + inner_seq
 
         # Decode, then re-encode and truncate to preserve token count invariants
         total_input_len = prefix_len + int(input_len)
-        prompt, adjusted_token_sequence, token_mismatch = gen_prompt_decode_to_target_len(  # noqa: E501
-            tokenizer=tokenizer,
-            token_sequence=token_sequence,
-            target_token_len=total_input_len,
-            add_special_tokens=False,
-            rng=self._rng,
-        )
+        prompt, adjusted_token_sequence, token_mismatch = (
+            gen_prompt_decode_to_target_len(  # noqa: E501
+                tokenizer=tokenizer,
+                token_sequence=token_sequence,
+                target_token_len=total_input_len,
+                add_special_tokens=False,
+                rng=self._rng,
+            ))
         total_input_len = len(adjusted_token_sequence)
         return prompt, total_input_len, token_mismatch
 
@@ -593,14 +589,14 @@ class ShareGPTDataset(BenchmarkDataset):
         random.shuffle(self.data)
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            output_len: Optional[int] = None,
-            enable_multimodal_chat: bool = False,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        output_len: Optional[int] = None,
+        enable_multimodal_chat: bool = False,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
     ) -> list:
         samples: list = []
         ind = 0
@@ -614,12 +610,13 @@ class ShareGPTDataset(BenchmarkDataset):
             prompt_ids = tokenizer(prompt).input_ids
             completion_ids = tokenizer(completion).input_ids
             prompt_len = len(prompt_ids)
-            new_output_len = (len(completion_ids)
-                              if output_len is None else output_len)
-            if not is_valid_sequence(prompt_len,
-                                     new_output_len,
-                                     skip_min_output_len_check=output_len
-                                                               is not None):
+            new_output_len = len(
+                completion_ids) if output_len is None else output_len
+            if not is_valid_sequence(
+                    prompt_len,
+                    new_output_len,
+                    skip_min_output_len_check=output_len is not None,
+            ):
                 continue
             if image_path := entry.get("image"):
                 mm_content = process_image(image_path)
@@ -638,10 +635,8 @@ class ShareGPTDataset(BenchmarkDataset):
                     request_id=request_id_prefix + str(ind),
                 ))
             ind += 1
-        self.maybe_oversample_requests(samples,
-                                       num_requests,
-                                       request_id_prefix,
-                                       no_oversample)
+        self.maybe_oversample_requests(samples, num_requests,
+                                       request_id_prefix, no_oversample)
         return samples
 
 
@@ -652,8 +647,8 @@ class _ValidateDatasetArgs(argparse.Action):
         setattr(namespace, self.dest, values)
 
         # Get current values of both dataset_name and dataset_path
-        dataset_name = getattr(namespace, 'dataset_name', 'random')
-        dataset_path = getattr(namespace, 'dataset_path', None)
+        dataset_name = getattr(namespace, "dataset_name", "random")
+        dataset_path = getattr(namespace, "dataset_path", None)
 
         # Validate the combination
         if dataset_name == "random" and dataset_path is not None:
@@ -661,8 +656,7 @@ class _ValidateDatasetArgs(argparse.Action):
                 "Cannot use 'random' dataset with --dataset-path. "
                 "Please specify the appropriate --dataset-name (e.g., "
                 "'sharegpt', 'custom', 'sonnet') for your dataset file: "
-                f"{dataset_path}"
-            )
+                f"{dataset_path}")
 
 
 def add_dataset_parser(parser: FlexibleArgumentParser):
@@ -679,8 +673,15 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         default="random",
         action=_ValidateDatasetArgs,
         choices=[
-            "sharegpt", "burstgpt", "sonnet", "random", "random-mm", "hf",
-            "custom", "prefix_repetition", "spec_bench"
+            "sharegpt",
+            "burstgpt",
+            "sonnet",
+            "random",
+            "random-mm",
+            "hf",
+            "custom",
+            "prefix_repetition",
+            "spec_bench",
         ],
         help="Name of the dataset to benchmark on.",
     )
@@ -695,19 +696,18 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         default=None,
         action=_ValidateDatasetArgs,
         help="Path to the sharegpt/sonnet dataset. "
-             "Or the huggingface dataset ID if using HF dataset.",
+        "Or the huggingface dataset ID if using HF dataset.",
     )
     parser.add_argument(
         "--no-oversample",
         action="store_true",
-        help="Do not oversample if the dataset has " \
-             "fewer samples than num-prompts.",
+        help="Do not oversample if the dataset has "
+        "fewer samples than num-prompts.",
     )
     parser.add_argument(
         "--skip-chat-template",
         action="store_true",
-        help=
-        "Skip applying chat template to prompt for datasets that support it.",
+        help="Skip applying chat template to prompt for datasets that support it.",
     )
 
     # group for dataset-specific arguments
@@ -716,8 +716,7 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         "--custom-output-len",
         type=int,
         default=256,
-        help=
-        "Number of output tokens per request, used only for custom dataset.",
+        help="Number of output tokens per request, used only for custom dataset.",
     )
 
     spec_bench_group = parser.add_argument_group("spec bench dataset options")
@@ -725,15 +724,13 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         "--spec-bench-output-len",
         type=int,
         default=256,
-        help=
-        "Num of output tokens per request, used only for spec bench dataset.",
+        help="Num of output tokens per request, used only for spec bench dataset.",
     )
     spec_bench_group.add_argument(
         "--spec-bench-category",
         type=str,
         default=None,
-        help=
-        "Category for spec bench dataset. If None, use all categories.",
+        help="Category for spec bench dataset. If None, use all categories.",
     )
 
     sonnet_group = parser.add_argument_group("sonnet dataset options")
@@ -741,22 +738,19 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         "--sonnet-input-len",
         type=int,
         default=550,
-        help=
-        "Number of input tokens per request, used only for sonnet dataset.",
+        help="Number of input tokens per request, used only for sonnet dataset.",
     )
     sonnet_group.add_argument(
         "--sonnet-output-len",
         type=int,
         default=150,
-        help=
-        "Number of output tokens per request, used only for sonnet dataset.",
+        help="Number of output tokens per request, used only for sonnet dataset.",
     )
     sonnet_group.add_argument(
         "--sonnet-prefix-len",
         type=int,
         default=200,
-        help=
-        "Number of prefix tokens per request, used only for sonnet dataset.",
+        help="Number of prefix tokens per request, used only for sonnet dataset.",
     )
 
     sharegpt_group = parser.add_argument_group("sharegpt dataset options")
@@ -765,7 +759,7 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         type=int,
         default=None,
         help="Output length for each request. Overrides the output length "
-             "from the ShareGPT dataset.",
+        "from the ShareGPT dataset.",
     )
 
     blazedit_group = parser.add_argument_group("blazedit dataset options")
@@ -773,15 +767,13 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         "--blazedit-min-distance",
         type=float,
         default=0.0,
-        help=
-        "Minimum distance for blazedit dataset. Min: 0, Max: 1.0",
+        help="Minimum distance for blazedit dataset. Min: 0, Max: 1.0",
     )
     blazedit_group.add_argument(
         "--blazedit-max-distance",
         type=float,
         default=1.0,
-        help=
-        "Maximum distance for blazedit dataset. Min: 0, Max: 1.0",
+        help="Maximum distance for blazedit dataset. Min: 0, Max: 1.0",
     )
 
     random_group = parser.add_argument_group("random dataset options")
@@ -789,24 +781,22 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         "--random-input-len",
         type=int,
         default=1024,
-        help=
-        "Number of input tokens per request, used only for random sampling.",
+        help="Number of input tokens per request, used only for random sampling.",
     )
     random_group.add_argument(
         "--random-output-len",
         type=int,
         default=128,
-        help=
-        "Number of output tokens per request, used only for random sampling.",
+        help="Number of output tokens per request, used only for random sampling.",
     )
     random_group.add_argument(
         "--random-range-ratio",
         type=float,
         default=0.0,
         help="Range ratio for sampling input/output length, "
-             "used only for random sampling. Must be in the range [0, 1) to define "
-             "a symmetric sampling range"
-             "[length * (1 - range_ratio), length * (1 + range_ratio)].",
+        "used only for random sampling. Must be in the range [0, 1) to define "
+        "a symmetric sampling range"
+        "[length * (1 - range_ratio), length * (1 + range_ratio)].",
     )
     random_group.add_argument(
         "--random-prefix-len",
@@ -834,26 +824,22 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         "--random-mm-base-items-per-request",
         type=int,
         default=RandomMultiModalDataset.DEFAULT_BASE_ITEMS_PER_REQUEST,
-        help=(
-            "Base number of multimodal items per request for random-mm. "
-            "Actual per-request count is sampled around this base using "
-            "--random-mm-num-mm-items-range-ratio."
-        ),
+        help=("Base number of multimodal items per request for random-mm. "
+              "Actual per-request count is sampled around this base using "
+              "--random-mm-num-mm-items-range-ratio."),
     )
     random_mm_group.add_argument(
         "--random-mm-num-mm-items-range-ratio",
         type=float,
         default=RandomMultiModalDataset.DEFAULT_NUM_MM_ITEMS_RANGE_RATIO,
-        help=(
-            "Range ratio r in [0, 1] for sampling items per request. "
-            "We sample uniformly from the closed integer range "
-            "[floor(n*(1-r)), ceil(n*(1+r))] "
-            "where n is the base items per request. "
-            "r=0 keeps it fixed; r=1 allows 0 items. The maximum is clamped "
-            "to the sum of per-modality limits from "
-            "--random-mm-limit-mm-per-prompt. "
-            "An error is raised if the computed min exceeds the max."
-        ),
+        help=("Range ratio r in [0, 1] for sampling items per request. "
+              "We sample uniformly from the closed integer range "
+              "[floor(n*(1-r)), ceil(n*(1+r))] "
+              "where n is the base items per request. "
+              "r=0 keeps it fixed; r=1 allows 0 items. The maximum is clamped "
+              "to the sum of per-modality limits from "
+              "--random-mm-limit-mm-per-prompt. "
+              "An error is raised if the computed min exceeds the max."),
     )
     random_mm_group.add_argument(
         "--random-mm-limit-mm-per-prompt",
@@ -861,15 +847,15 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         default=RandomMultiModalDataset.DEFAULT_LIMIT_MM_PER_PROMPT,
         help=(
             "Per-modality hard caps for items attached per request, e.g. "
-            "'{\"image\": 3, \"video\": 0}'. The sampled per-request item "
+            '\'{"image": 3, "video": 0}\'. The sampled per-request item '
             "count is clamped to the sum of these limits. When a modality "
             "reaches its cap, its buckets are excluded and probabilities are "
             "renormalized."
-            "OBS.: Only image sampling is supported for now."
-        ),
+            "OBS.: Only image sampling is supported for now."),
     )
 
-    def _parse_mm_bucket_config(v: object) -> dict[tuple[int, int, int], float]:
+    def _parse_mm_bucket_config(
+            v: object) -> dict[tuple[int, int, int], float]:
         # If already a dict (e.g., programmatic call), normalize keys
         def normalize(d: dict) -> dict[tuple[int, int, int], float]:
             out: dict[tuple[int, int, int], float] = {}
@@ -881,8 +867,7 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
                 if not (isinstance(key, tuple) and len(key) == 3
                         and all(isinstance(x, int) for x in key)):
                     raise ValueError(
-                        f"Invalid bucket key {k!r}. Expected tuple (H, W, T)."
-                    )
+                        f"Invalid bucket key {k!r}. Expected tuple (H, W, T).")
                 out[(int(key[0]), int(key[1]), int(key[2]))] = float(val)
             return out
 
@@ -913,8 +898,7 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
             "Second item: images with resolution 720x1280 w.p. 0.4 "
             "Third item: videos with resolution 720x1280 and 16 frames w.p. 0.1"
             "OBS.: If the probabilities do not sum to 1, they are normalized."
-            "OBS bis.: Only image sampling is supported for now."
-        ),
+            "OBS bis.: Only image sampling is supported for now."),
     )
 
     hf_group = parser.add_argument_group("hf dataset options")
@@ -930,18 +914,16 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         "--hf-name",
         type=str,
         default=None,
-        help=(
-            "Name of the dataset on HuggingFace "
-            "(e.g., 'lmarena-ai/VisionArena-Chat'). "
-            "Specify this if your dataset-path is a local path."
-        ),
+        help=("Name of the dataset on HuggingFace "
+              "(e.g., 'lmarena-ai/VisionArena-Chat'). "
+              "Specify this if your dataset-path is a local path."),
     )
     hf_group.add_argument(
         "--hf-output-len",
         type=int,
         default=None,
         help="Output length for each request. Overrides the output lengths "
-             "from the sampled HF dataset.",
+        "from the sampled HF dataset.",
     )
 
     prefix_repetition_group = parser.add_argument_group(
@@ -951,28 +933,28 @@ def add_dataset_parser(parser: FlexibleArgumentParser):
         type=int,
         default=256,
         help="Number of prefix tokens per request, used only for prefix "
-             "repetition dataset.",
+        "repetition dataset.",
     )
     prefix_repetition_group.add_argument(
         "--prefix-repetition-suffix-len",
         type=int,
         default=256,
         help="Number of suffix tokens per request, used only for prefix "
-             "repetition dataset. Total input length is prefix_len + suffix_len.",
+        "repetition dataset. Total input length is prefix_len + suffix_len.",
     )
     prefix_repetition_group.add_argument(
         "--prefix-repetition-num-prefixes",
         type=int,
         default=10,
         help="Number of prefixes to generate, used only for prefix repetition "
-             "dataset. Prompts per prefix is num_requests // num_prefixes.",
+        "dataset. Prompts per prefix is num_requests // num_prefixes.",
     )
     prefix_repetition_group.add_argument(
         "--prefix-repetition-output-len",
         type=int,
         default=128,
         help="Number of output tokens per request, used only for prefix "
-             "repetition dataset.",
+        "repetition dataset.",
     )
 
 
@@ -1006,8 +988,9 @@ def get_samples(args, tokenizer) -> list[SampleRequest]:
                 no_oversample=args.no_oversample,
             )
         else:
-            assert tokenizer.chat_template or tokenizer.default_chat_template, (
-                "Tokenizer/model must have chat template for sonnet dataset.")
+            assert (
+                tokenizer.chat_template or tokenizer.default_chat_template
+            ), "Tokenizer/model must have chat template for sonnet dataset."
             input_requests = dataset.sample(
                 num_requests=args.num_prompts,
                 input_len=args.sonnet_input_len,
@@ -1023,47 +1006,34 @@ def get_samples(args, tokenizer) -> list[SampleRequest]:
         # all following datasets are implemented from the
         # HuggingFaceDataset base class
         hf_kwargs = {}
-        if (
-                args.dataset_path in MMVUDataset.SUPPORTED_DATASET_PATHS
-                or args.hf_name in MMVUDataset.SUPPORTED_DATASET_PATHS
-        ):
+        if (args.dataset_path in MMVUDataset.SUPPORTED_DATASET_PATHS
+                or args.hf_name in MMVUDataset.SUPPORTED_DATASET_PATHS):
             dataset_class = MMVUDataset
             args.hf_split = "validation"
             args.hf_subset = None
-        elif (
-                args.dataset_path in InstructCoderDataset.SUPPORTED_DATASET_PATHS
-                or args.hf_name in InstructCoderDataset.SUPPORTED_DATASET_PATHS
-        ):
+        elif (args.dataset_path in InstructCoderDataset.SUPPORTED_DATASET_PATHS
+              or args.hf_name in InstructCoderDataset.SUPPORTED_DATASET_PATHS):
             dataset_class = InstructCoderDataset
             args.hf_split = "train"
-        elif (
-                args.dataset_path in MTBenchDataset.SUPPORTED_DATASET_PATHS
-                or args.hf_name in MTBenchDataset.SUPPORTED_DATASET_PATHS
-        ):
+        elif (args.dataset_path in MTBenchDataset.SUPPORTED_DATASET_PATHS
+              or args.hf_name in MTBenchDataset.SUPPORTED_DATASET_PATHS):
             dataset_class = MTBenchDataset
             args.hf_split = "train"
-        elif (
-                args.dataset_path in ConversationDataset.SUPPORTED_DATASET_PATHS
-                or args.hf_name in ConversationDataset.SUPPORTED_DATASET_PATHS
-        ):
+        elif (args.dataset_path in ConversationDataset.SUPPORTED_DATASET_PATHS
+              or args.hf_name in ConversationDataset.SUPPORTED_DATASET_PATHS):
             dataset_class = ConversationDataset
-        elif (
-                args.dataset_path in AIMODataset.SUPPORTED_DATASET_PATHS
-                or args.hf_name in AIMODataset.SUPPORTED_DATASET_PATHS
-        ):
+        elif (args.dataset_path in AIMODataset.SUPPORTED_DATASET_PATHS
+              or args.hf_name in AIMODataset.SUPPORTED_DATASET_PATHS):
             dataset_class = AIMODataset
             args.hf_split = "train"
-        elif (
-                args.dataset_path
-                in NextEditPredictionDataset.SUPPORTED_DATASET_PATHS  # noqa: E501
-                or args.hf_name in NextEditPredictionDataset.SUPPORTED_DATASET_PATHS
-        ):
+        elif (args.dataset_path in
+              NextEditPredictionDataset.SUPPORTED_DATASET_PATHS  # noqa: E501
+              or args.hf_name
+              in NextEditPredictionDataset.SUPPORTED_DATASET_PATHS):
             dataset_class = NextEditPredictionDataset
             args.hf_split = "train"
-        elif (
-                args.dataset_path in ASRDataset.SUPPORTED_DATASET_PATHS
-                or args.hf_name in ASRDataset.SUPPORTED_DATASET_PATHS
-        ):
+        elif (args.dataset_path in ASRDataset.SUPPORTED_DATASET_PATHS
+              or args.hf_name in ASRDataset.SUPPORTED_DATASET_PATHS):
             dataset_class = ASRDataset
             args.hf_split = "train"
         elif args.dataset_path in BlazeditDataset.SUPPORTED_DATASET_PATHS:
@@ -1073,22 +1043,19 @@ def get_samples(args, tokenizer) -> list[SampleRequest]:
                 "min_distance": args.blazedit_min_distance,
                 "max_distance": args.blazedit_max_distance,
             }
-        elif (
-                args.dataset_path in MLPerfDataset.SUPPORTED_DATASET_PATHS
-                or args.hf_name in MLPerfDataset.SUPPORTED_DATASET_PATHS
-        ):
+        elif (args.dataset_path in MLPerfDataset.SUPPORTED_DATASET_PATHS
+              or args.hf_name in MLPerfDataset.SUPPORTED_DATASET_PATHS):
             dataset_class = MLPerfDataset
             args.hf_split = "train"
-        elif (
-                args.dataset_path in MMStarDataset.SUPPORTED_DATASET_PATHS
-                or args.hf_name in MMStarDataset.SUPPORTED_DATASET_PATHS
-        ):
+        elif (args.dataset_path in MMStarDataset.SUPPORTED_DATASET_PATHS
+              or args.hf_name in MMStarDataset.SUPPORTED_DATASET_PATHS):
             dataset_class = MMStarDataset
             args.hf_split = "val"
             args.hf_subset = None
         else:
             supported_datasets = {
-                dataset_name for cls in HuggingFaceDataset.__subclasses__()
+                dataset_name
+                for cls in HuggingFaceDataset.__subclasses__()
                 for dataset_name in cls.SUPPORTED_DATASET_PATHS
             }
             raise ValueError(
@@ -1099,7 +1066,7 @@ def get_samples(args, tokenizer) -> list[SampleRequest]:
                 "like to add support for additional dataset formats.")
 
         if dataset_class.IS_MULTIMODAL and args.backend not in [
-            "openai-chat",
+                "openai-chat",
         ]:
             # a multi-modal benchmark is only available on OpenAI Chat
             # endpoint-type.
@@ -1120,72 +1087,72 @@ def get_samples(args, tokenizer) -> list[SampleRequest]:
             request_id_prefix=args.request_id_prefix,
             no_oversample=args.no_oversample,
             skip_chat_template=args.skip_chat_template,
-            **hf_kwargs
+            **hf_kwargs,
         )
 
     else:
         # For datasets that follow a similar structure, use a mapping.
         dataset_mapping = {
             "spec_bench":
-                lambda: SpecBench(dataset_path=args.dataset_path,
-                                  category=args.spec_bench_category).sample(
-                    num_requests=args.num_prompts,
+            lambda: SpecBench(dataset_path=args.dataset_path,
+                              category=args.spec_bench_category).sample(
+                                  num_requests=args.num_prompts,
+                                  tokenizer=tokenizer,
+                                  output_len=args.spec_bench_output_len,
+                                  request_id_prefix=args.request_id_prefix,
+                                  no_oversample=args.no_oversample,
+            ),
+            "sharegpt":
+            lambda: ShareGPTDataset(
+                random_seed=args.seed, dataset_path=args.dataset_path).sample(
                     tokenizer=tokenizer,
-                    output_len=args.spec_bench_output_len,
+                    num_requests=args.num_prompts,
+                    output_len=args.sharegpt_output_len,
                     request_id_prefix=args.request_id_prefix,
                     no_oversample=args.no_oversample,
-                ),
-            "sharegpt": lambda: ShareGPTDataset(
-                random_seed=args.seed, dataset_path=args.dataset_path
-            ).sample(
-                tokenizer=tokenizer,
-                num_requests=args.num_prompts,
-                output_len=args.sharegpt_output_len,
-                request_id_prefix=args.request_id_prefix,
-                no_oversample=args.no_oversample,
             ),
-            "burst": lambda: BurstGPTDataset(
-                random_seed=args.seed, dataset_path=args.dataset_path
-            ).sample(
-                tokenizer=tokenizer,
-                num_requests=args.num_prompts,
-                request_id_prefix=args.request_id_prefix,
-                no_oversample=args.no_oversample,
+            "burst":
+            lambda: BurstGPTDataset(
+                random_seed=args.seed, dataset_path=args.dataset_path).sample(
+                    tokenizer=tokenizer,
+                    num_requests=args.num_prompts,
+                    request_id_prefix=args.request_id_prefix,
+                    no_oversample=args.no_oversample,
             ),
-            "random": lambda: RandomDataset(
-                random_seed=args.seed, dataset_path=args.dataset_path
-            ).sample(
+            "random":
+            lambda: RandomDataset(random_seed=args.seed,
+                                  dataset_path=args.dataset_path).sample(
+                                      tokenizer=tokenizer,
+                                      num_requests=args.num_prompts,
+                                      prefix_len=args.random_prefix_len,
+                                      input_len=args.random_input_len,
+                                      output_len=args.random_output_len,
+                                      range_ratio=args.random_range_ratio,
+                                      request_id_prefix=args.request_id_prefix,
+                                      batchsize=args.random_batch_size,
+                                      no_oversample=args.no_oversample,
+            ),
+            "random-mm":
+            lambda: RandomMultiModalDataset(random_seed=args.seed,
+                                            dataset_path=args.dataset_path).
+            sample(
                 tokenizer=tokenizer,
                 num_requests=args.num_prompts,
                 prefix_len=args.random_prefix_len,
+                range_ratio=args.random_range_ratio,
                 input_len=args.random_input_len,
                 output_len=args.random_output_len,
-                range_ratio=args.random_range_ratio,
+                base_items_per_request=args.random_mm_base_items_per_request,
+                limit_mm_per_prompt=args.random_mm_limit_mm_per_prompt,
+                num_mm_items_range_ratio=args.
+                random_mm_num_mm_items_range_ratio,
+                bucket_config=args.random_mm_bucket_config,
                 request_id_prefix=args.request_id_prefix,
-                batchsize=args.random_batch_size,
                 no_oversample=args.no_oversample,
             ),
-            "random-mm":
-                lambda: RandomMultiModalDataset(
-                    random_seed=args.seed, dataset_path=args.dataset_path
-                ).sample(
-                    tokenizer=tokenizer,
-                    num_requests=args.num_prompts,
-                    prefix_len=args.random_prefix_len,
-                    range_ratio=args.random_range_ratio,
-                    input_len=args.random_input_len,
-                    output_len=args.random_output_len,
-                    base_items_per_request=args.random_mm_base_items_per_request,
-                    limit_mm_per_prompt=args.random_mm_limit_mm_per_prompt,
-                    num_mm_items_range_ratio=args.random_mm_num_mm_items_range_ratio,
-                    bucket_config=args.random_mm_bucket_config,
-                    request_id_prefix=args.request_id_prefix,
-                    no_oversample=args.no_oversample,
-                ),
             "prefix_repetition":
-                lambda: PrefixRepetitionRandomDataset(
-                    random_seed=args.seed, dataset_path=args.dataset_path
-                ).sample(
+            lambda: PrefixRepetitionRandomDataset(
+                random_seed=args.seed, dataset_path=args.dataset_path).sample(
                     tokenizer=tokenizer,
                     num_requests=args.num_prompts,
                     prefix_len=args.prefix_repetition_prefix_len,
@@ -1194,17 +1161,17 @@ def get_samples(args, tokenizer) -> list[SampleRequest]:
                     output_len=args.prefix_repetition_output_len,
                     request_id_prefix=args.request_id_prefix,
                     no_oversample=args.no_oversample,
-                ),
+            ),
         }
 
         try:
             # Enforce endpoint compatibility for multimodal datasets.
             if args.dataset_name == "random-mm" and args.backend not in [
-                "openai-chat"]:
+                    "openai-chat"
+            ]:
                 raise ValueError(
                     "Multi-modal content (images) is only supported on "
-                    "'openai-chat' backend."
-                )
+                    "'openai-chat' backend.")
             input_requests = dataset_mapping[args.dataset_name]()
         except KeyError as err:
             raise ValueError(f"Unknown dataset: {args.dataset_name}") from err
@@ -1266,23 +1233,25 @@ class CustomDataset(BenchmarkDataset):
         random.shuffle(self.data)
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            output_len: Optional[int] = None,
-            enable_multimodal_chat: bool = False,
-            skip_chat_template: bool = False,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        output_len: Optional[int] = None,
+        enable_multimodal_chat: bool = False,
+        skip_chat_template: bool = False,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
     ) -> list:
         # load all data if needed
         self.num_available_samples = len(self.data)
         if num_requests <= 0:
             num_requests = self.num_available_samples
-            logger.info("num_requests is set to 0 or negative, "
-                        "so using all available samples: %d",
-                        num_requests)
+            logger.info(
+                "num_requests is set to 0 or negative, "
+                "so using all available samples: %d",
+                num_requests,
+            )
 
         sampled_requests = []
         for i, item in enumerate(self.data):
@@ -1339,8 +1308,7 @@ class SpecBench(CustomDataset):
         self.data = []
 
         # Load the JSONL file
-        jsonl_data = pd.read_json(path_or_buf=self.dataset_path,
-                                  lines=True)
+        jsonl_data = pd.read_json(path_or_buf=self.dataset_path, lines=True)
 
         # check if the JSONL file has a 'turns' column
         if "turns" not in jsonl_data.columns:
@@ -1348,7 +1316,7 @@ class SpecBench(CustomDataset):
 
         for _, row in jsonl_data.iterrows():
             # sample only from a specific category if specified
-            if (not self.category) or (self.category == row['category']):
+            if (not self.category) or (self.category == row["category"]):
                 prompt = row["turns"][0]
                 self.data.append({"prompt": prompt})
 
@@ -1364,6 +1332,7 @@ class SpecBench(CustomDataset):
 # Sonnet Dataset Implementation
 # -----------------------------------------------------------------------------
 
+
 class SonnetDataset(BenchmarkDataset):
     """
     Simplified implementation of the Sonnet dataset.  Loads poem lines from a
@@ -1376,8 +1345,8 @@ class SonnetDataset(BenchmarkDataset):
     DEFAULT_OUTPUT_LEN = 150
 
     def __init__(
-            self,
-            **kwargs,
+        self,
+        **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self.load_data()
@@ -1389,16 +1358,16 @@ class SonnetDataset(BenchmarkDataset):
             self.data = f.readlines()
 
     def sample(
-            self,
-            tokenizer,
-            num_requests: int,
-            prefix_len: int = DEFAULT_PREFIX_LEN,
-            input_len: int = DEFAULT_INPUT_LEN,
-            output_len: int = DEFAULT_OUTPUT_LEN,
-            return_prompt_formatted: bool = False,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            **kwargs,
+        self,
+        tokenizer,
+        num_requests: int,
+        prefix_len: int = DEFAULT_PREFIX_LEN,
+        input_len: int = DEFAULT_INPUT_LEN,
+        output_len: int = DEFAULT_OUTPUT_LEN,
+        return_prompt_formatted: bool = False,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
     ) -> list:
         # Calculate average token length for a poem line.
         tokenized_lines = [tokenizer(line).input_ids for line in self.data]
@@ -1487,12 +1456,12 @@ class BurstGPTDataset(BenchmarkDataset):
         return data.values.tolist()
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
     ) -> list[SampleRequest]:
         samples = []
         data = self._sample_loaded_data(num_requests=num_requests)
@@ -1519,21 +1488,27 @@ class BurstGPTDataset(BenchmarkDataset):
 # -----------------------------------------------------------------------------
 class HuggingFaceDataset(BenchmarkDataset, ABC):
     """Base class for datasets hosted on HuggingFace."""
+
     @abstractmethod
-    def sample(self, tokenizer: PreTrainedTokenizerBase, num_requests: int, request_id_prefix: str = "",
-               no_oversample: bool = False) -> list[SampleRequest]:
+    def sample(
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+    ) -> list[SampleRequest]:
         raise NotImplementedError
 
     SUPPORTED_DATASET_PATHS: Union[set[str], dict[str, Callable]] = set()
 
     def __init__(
-            self,
-            dataset_path: str,
-            dataset_split: str,
-            no_stream: bool = False,
-            dataset_subset: Optional[str] = None,
-            hf_name: Optional[str] = None,
-            **kwargs,
+        self,
+        dataset_path: str,
+        dataset_split: str,
+        no_stream: bool = False,
+        dataset_subset: Optional[str] = None,
+        hf_name: Optional[str] = None,
+        **kwargs,
     ) -> None:
         super().__init__(dataset_path=dataset_path, **kwargs)
 
@@ -1563,23 +1538,21 @@ class MMVUDataset(HuggingFaceDataset):
     DEFAULT_OUTPUT_LEN = 128
     SUPPORTED_DATASET_PATHS = {
         "yale-nlp/MMVU":
-            lambda x: x["question"] + " " + (
-                " ".join(f"{k}.{v}" for k, v in x["choices"].items())
-            ),
+        lambda x: x["question"] + " " +
+        (" ".join(f"{k}.{v}" for k, v in x["choices"].items())),
     }
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            output_len: Optional[int] = None,
-            enable_multimodal_chat: bool = False,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        output_len: Optional[int] = None,
+        enable_multimodal_chat: bool = False,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
     ) -> list:
-        output_len = (output_len
-                      if output_len is not None else self.DEFAULT_OUTPUT_LEN)
+        output_len = output_len if output_len is not None else self.DEFAULT_OUTPUT_LEN
         sampled_requests = []
         for i, item in enumerate(self.data):
             if len(sampled_requests) >= num_requests:
@@ -1628,25 +1601,24 @@ class InstructCoderDataset(HuggingFaceDataset):
         "likaixin/InstructCoder",
     }
 
-    def sample(self,
-               tokenizer: PreTrainedTokenizerBase,
-               num_requests: int,
-               output_len: Optional[int] = None,
-               enable_multimodal_chat: bool = False,
-               skip_chat_template: bool = False,
-               request_id_prefix: str = "",
-               no_oversample: bool = False,
-               **kwargs) -> list:
-        output_len = (output_len
-                      if output_len is not None else self.DEFAULT_OUTPUT_LEN)
+    def sample(
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        output_len: Optional[int] = None,
+        enable_multimodal_chat: bool = False,
+        skip_chat_template: bool = False,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
+    ) -> list:
+        output_len = output_len if output_len is not None else self.DEFAULT_OUTPUT_LEN
         sampled_requests = []
         for i, item in enumerate(self.data):
             if len(sampled_requests) >= num_requests:
                 break
-            prompt = (
-                f"{item['input']}\n\n{item['instruction']} Just output "
-                "the code, do not include any explanation."
-            )
+            prompt = (f"{item['input']}\n\n{item['instruction']} Just output "
+                      "the code, do not include any explanation.")
 
             # apply template
             if not skip_chat_template:
@@ -1693,18 +1665,17 @@ class MTBenchDataset(HuggingFaceDataset):
     }
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            output_len: Optional[int] = None,
-            enable_multimodal_chat: bool = False,
-            skip_chat_template: bool = False,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        output_len: Optional[int] = None,
+        enable_multimodal_chat: bool = False,
+        skip_chat_template: bool = False,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
     ) -> list:
-        output_len = (output_len
-                      if output_len is not None else self.DEFAULT_OUTPUT_LEN)
+        output_len = output_len if output_len is not None else self.DEFAULT_OUTPUT_LEN
         sampled_requests = []
 
         for i, item in enumerate(self.data):
@@ -1761,19 +1732,18 @@ class BlazeditDataset(HuggingFaceDataset):
     }
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            output_len: Optional[int] = None,
-            skip_chat_template: bool = False,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            min_distance: float = 0.0,
-            max_distance: float = 1.0,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        output_len: Optional[int] = None,
+        skip_chat_template: bool = False,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        min_distance: float = 0.0,
+        max_distance: float = 1.0,
+        **kwargs,
     ) -> list:
-        output_len = (output_len
-                      if output_len is not None else self.DEFAULT_OUTPUT_LEN)
+        output_len = output_len if output_len is not None else self.DEFAULT_OUTPUT_LEN
         sampled_requests = []
 
         for i, item in enumerate(self.data):
@@ -1836,18 +1806,22 @@ class AIMODataset(HuggingFaceDataset):
     """
     Dataset class for processing an AIMO dataset with reasoning questions.
     """
+
     SUPPORTED_DATASET_PATHS = {
-        "AI-MO/aimo-validation-aime", "AI-MO/NuminaMath-1.5",
-        "AI-MO/NuminaMath-CoT"
+        "AI-MO/aimo-validation-aime",
+        "AI-MO/NuminaMath-1.5",
+        "AI-MO/NuminaMath-CoT",
     }
 
-    def sample(self,
-               tokenizer: PreTrainedTokenizerBase,
-               num_requests: int,
-               output_len: Optional[int] = None,
-               request_id_prefix: str = "",
-               no_oversample: bool = False,
-               **kwargs) -> list:
+    def sample(
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        output_len: Optional[int] = None,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
+    ) -> list:
         sampled_requests = []
         ind = 0
         dynamic_output = output_len is None
@@ -1855,7 +1829,7 @@ class AIMODataset(HuggingFaceDataset):
         for item in self.data:
             if len(sampled_requests) >= num_requests:
                 break
-            prompt, completion = item['problem'], item["solution"]
+            prompt, completion = item["problem"], item["solution"]
 
             prompt_ids = tokenizer(prompt).input_ids
             completion_ids = tokenizer(completion).input_ids
@@ -1946,10 +1920,14 @@ class NextEditPredictionDataset(HuggingFaceDataset):
         "zed-industries/zeta": _format_zeta_prompt,
     }
 
-    def sample(self, tokenizer: PreTrainedTokenizerBase, num_requests: int,
-               request_id_prefix: str = "",
-               no_oversample: bool = False,
-               **kwargs):
+    def sample(
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
+    ):
         formatting_prompt_func = self.MAPPING_PROMPT_FUNCS.get(self.hf_name)
         if formatting_prompt_func is None:
             raise ValueError(f"Unsupported dataset path: {self.hf_name}")
@@ -1966,10 +1944,8 @@ class NextEditPredictionDataset(HuggingFaceDataset):
                 ))
             if len(samples) >= num_requests:
                 break
-        self.maybe_oversample_requests(samples,
-                                       num_requests,
-                                       request_id_prefix,
-                                       no_oversample)
+        self.maybe_oversample_requests(samples, num_requests,
+                                       request_id_prefix, no_oversample)
         return samples
 
 
@@ -2002,13 +1978,13 @@ class MLPerfDataset(HuggingFaceDataset):
     }
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            output_len: Optional[int] = None,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        output_len: Optional[int] = None,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
     ) -> list[SampleRequest]:
         # Force dynamic output length based on reference completion.
         dynamic_output = output_len is None
@@ -2025,18 +2001,23 @@ class MLPerfDataset(HuggingFaceDataset):
 
             # Build chat-style prompt using tokenizer template, if available.
             messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": question},
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": question
+                },
             ]
             prompt_formatted = tokenizer.apply_chat_template(
-                messages, add_generation_prompt=True, tokenize=False
-            )
+                messages, add_generation_prompt=True, tokenize=False)
             prompt_len = len(tokenizer(prompt_formatted).input_ids)
 
             # Determine output length from reference answer tokens.
             ref_out_len = len(
-                tokenizer(reference_answer, add_special_tokens=False).input_ids
-            )
+                tokenizer(reference_answer,
+                          add_special_tokens=False).input_ids)
             expected_output_len = ref_out_len if dynamic_output else output_len
 
             # Validate sequence lengths.
@@ -2049,8 +2030,7 @@ class MLPerfDataset(HuggingFaceDataset):
                     prompt_len=prompt_len,
                     expected_output_len=expected_output_len,
                     request_id=request_id_prefix + str(ind),
-                )
-            )
+                ))
             ind += 1
 
         self.maybe_oversample_requests(sampled_requests, num_requests,
@@ -2072,47 +2052,47 @@ class PrefixRepetitionRandomDataset(BenchmarkDataset):
     DEFAULT_OUTPUT_LEN = 128
 
     def __init__(
-            self,
-            **kwargs,
+        self,
+        **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         random.seed(self.random_seed)
         np.random.seed(self.random_seed)
 
     def sample(
-            self,
-            tokenizer: PreTrainedTokenizerBase,
-            num_requests: int,
-            prefix_len: int = DEFAULT_PREFIX_LEN,
-            suffix_len: int = DEFAULT_SUFFIX_LEN,
-            num_prefixes: int = DEFAULT_NUM_PREFIXES,
-            output_len: int = DEFAULT_OUTPUT_LEN,
-            request_id_prefix: str = "",
-            no_oversample: bool = False,
-            **kwargs,
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        num_requests: int,
+        prefix_len: int = DEFAULT_PREFIX_LEN,
+        suffix_len: int = DEFAULT_SUFFIX_LEN,
+        num_prefixes: int = DEFAULT_NUM_PREFIXES,
+        output_len: int = DEFAULT_OUTPUT_LEN,
+        request_id_prefix: str = "",
+        no_oversample: bool = False,
+        **kwargs,
     ) -> list[SampleRequest]:
         vocab_size = tokenizer.vocab_size
         prompts_per_prefix = num_requests // num_prefixes
         if prompts_per_prefix == 0:
             raise ValueError(
                 f"num_requests ({num_requests}) must be greater than or equal "
-                f"to num_prefixes ({num_prefixes})"
-            )
+                f"to num_prefixes ({num_prefixes})")
 
-        def _generate_exact_length_tokens(target_length: int) -> tuple[list[int], int]:
+        def _generate_exact_length_tokens(
+                target_length: int) -> tuple[list[int], int]:
             """Generate tokens that decode and re-encode to exactly
             target_length."""
             # Generate random tokens
             rng = np.random.default_rng(0)
-            tokens = rng.integers(
-                0, vocab_size, size=target_length).tolist()
+            tokens = rng.integers(0, vocab_size, size=target_length).tolist()
 
-            _, adjusted_tokens, token_mismatch = gen_prompt_decode_to_target_len(  # noqa: E501
-                tokenizer=tokenizer,
-                token_sequence=tokens,
-                target_token_len=target_length,
-                add_special_tokens=False,
-            )
+            _, adjusted_tokens, token_mismatch = (
+                gen_prompt_decode_to_target_len(  # noqa: E501
+                    tokenizer=tokenizer,
+                    token_sequence=tokens,
+                    target_token_len=target_length,
+                    add_special_tokens=False,
+                ))
             return adjusted_tokens, token_mismatch
 
         requests = []
@@ -2121,7 +2101,8 @@ class PrefixRepetitionRandomDataset(BenchmarkDataset):
             prefix_tokens = _generate_exact_length_tokens(prefix_len)
 
             for _ in range(prompts_per_prefix):
-                suffix_tokens, token_mistmatch = _generate_exact_length_tokens(suffix_len)  # noqa: E501
+                suffix_tokens, token_mistmatch = _generate_exact_length_tokens(
+                    suffix_len)  # noqa: E501
                 token_mismatch_total += token_mistmatch
                 combined_tokens = prefix_tokens + suffix_tokens
                 prompt = tokenizer.decode(combined_tokens)
@@ -2131,8 +2112,7 @@ class PrefixRepetitionRandomDataset(BenchmarkDataset):
                         prompt=prompt,
                         prompt_len=prompt_len,
                         expected_output_len=output_len,
-                    )
-                )
+                    ))
 
         if token_mismatch_total != 0:
             sign = "more" if token_mismatch_total > 0 else "fewer"

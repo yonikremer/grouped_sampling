@@ -35,21 +35,22 @@ import aiohttp
 import numpy as np
 from tqdm.asyncio import tqdm
 from transformers import PreTrainedTokenizerBase
-
-from vllm.benchmarks.datasets import (SampleRequest, add_dataset_parser,
-                                      get_samples)
+from vllm.benchmarks.datasets import SampleRequest, add_dataset_parser, get_samples
 from vllm.benchmarks.lib.endpoint_request_func import (
-    ASYNC_REQUEST_FUNCS, OPENAI_COMPATIBLE_BACKENDS, RequestFuncInput,
-    RequestFuncOutput)
+    ASYNC_REQUEST_FUNCS,
+    OPENAI_COMPATIBLE_BACKENDS,
+    RequestFuncInput,
+    RequestFuncOutput,
+)
 from vllm.benchmarks.lib.ready_checker import wait_for_endpoint
-from vllm.benchmarks.lib.utils import (convert_to_pytorch_benchmark_format,
-                                       write_to_json)
+from vllm.benchmarks.lib.utils import convert_to_pytorch_benchmark_format, write_to_json
 from vllm.transformers_utils.tokenizer import get_tokenizer
 
 MILLISECONDS_TO_SECONDS_CONVERSION = 1000
 
-TERM_PLOTLIB_AVAILABLE = ((importlib.util.find_spec("termplotlib") is not None)
-                          and (shutil.which("gnuplot") is not None))
+TERM_PLOTLIB_AVAILABLE = (importlib.util.find_spec("termplotlib")
+                          is not None) and (shutil.which("gnuplot")
+                                            is not None)
 
 
 class TaskType(Enum):
@@ -157,8 +158,9 @@ async def get_request(
         ramp_up_end_rps (optional):
             The ending request rate for ramp-up.
     """
-    assert burstiness > 0, (
-        f"A positive burstiness factor is expected, but given {burstiness}.")
+    assert (
+        burstiness > 0
+    ), f"A positive burstiness factor is expected, but given {burstiness}."
     # Convert to list to get length for ramp-up calculations
     if isinstance(input_requests,
                   Iterable) and not isinstance(input_requests, list):
@@ -172,8 +174,13 @@ async def get_request(
     delay_ts = []
     for request_index, request in enumerate(input_requests):
         current_request_rate = _get_current_request_rate(
-            ramp_up_strategy, ramp_up_start_rps, ramp_up_end_rps,
-            request_index, total_requests, request_rate)
+            ramp_up_strategy,
+            ramp_up_start_rps,
+            ramp_up_end_rps,
+            request_index,
+            total_requests,
+            request_rate,
+        )
         request_rates.append(current_request_rate)
         if current_request_rate == float("inf"):
             delay_ts.append(0)
@@ -239,7 +246,8 @@ def calculate_metrics_for_embeddings(
         warnings.warn(
             "All requests failed. This is likely due to a misconfiguration "
             "on the benchmark arguments.",
-            stacklevel=2)
+            stacklevel=2,
+        )
     metrics = EmbedBenchmarkMetrics(
         completed=completed,
         total_input=total_input,
@@ -339,7 +347,8 @@ def calculate_metrics(
         warnings.warn(
             "All requests failed. This is likely due to a misconfiguration "
             "on the benchmark arguments.",
-            stacklevel=2)
+            stacklevel=2,
+        )
 
     # Calculate max output tokens per second metric
     max_output_tokens_per_s = 0.0
@@ -390,13 +399,18 @@ def calculate_metrics(
 
         if TERM_PLOTLIB_AVAILABLE:
             import termplotlib as tpl
+
             fig = tpl.figure()
-            fig.plot(np.arange(len(tokens_per_second)),
-                     tokens_per_second,
-                     title="Output tokens per second")
-            fig.plot(np.arange(len(concurrent_requests_per_second)),
-                     concurrent_requests_per_second,
-                     title="Concurrent requests per second")
+            fig.plot(
+                np.arange(len(tokens_per_second)),
+                tokens_per_second,
+                title="Output tokens per second",
+            )
+            fig.plot(
+                np.arange(len(concurrent_requests_per_second)),
+                concurrent_requests_per_second,
+                title="Concurrent requests per second",
+            )
             fig.show()
         else:
             print("tip: install termplotlib and gnuplot to plot the metrics")
@@ -535,24 +549,25 @@ async def benchmark(
 
     if profile:
         print("Starting profiler...")
-        profile_input = RequestFuncInput(model=model_id,
-                                         model_name=model_name,
-                                         prompt=test_prompt,
-                                         api_url=base_url + "/start_profile",
-                                         prompt_len=test_prompt_len,
-                                         output_len=test_output_len,
-                                         logprobs=logprobs,
-                                         multi_modal_content=test_mm_content,
-                                         ignore_eos=ignore_eos,
-                                         extra_headers=extra_headers,
-                                         extra_body=extra_body)
+        profile_input = RequestFuncInput(
+            model=model_id,
+            model_name=model_name,
+            prompt=test_prompt,
+            api_url=base_url + "/start_profile",
+            prompt_len=test_prompt_len,
+            output_len=test_output_len,
+            logprobs=logprobs,
+            multi_modal_content=test_mm_content,
+            ignore_eos=ignore_eos,
+            extra_headers=extra_headers,
+            extra_body=extra_body,
+        )
         profile_output = await request_func(request_func_input=profile_input,
                                             session=session)
         if profile_output.success:
             print("Profiler started")
 
-    distribution = ("Poisson process"
-                    if burstiness == 1.0 else "Gamma distribution")
+    distribution = "Poisson process" if burstiness == 1.0 else "Gamma distribution"
 
     if ramp_up_strategy is not None:
         print(f"Traffic ramp-up strategy: {ramp_up_strategy}.")
@@ -570,8 +585,7 @@ async def benchmark(
     # and it will simplify the code in limited_request_func.
     #    semaphore = (asyncio.Semaphore(max_concurrency)
     #                 if max_concurrency else contextlib.nullcontext())
-    semaphore = (asyncio.Semaphore(max_concurrency)
-                 if max_concurrency else None)
+    semaphore = asyncio.Semaphore(max_concurrency) if max_concurrency else None
 
     async def limited_request_func(request_func_input, session, pbar):
         if semaphore is None:
@@ -596,8 +610,13 @@ async def benchmark(
         })
 
     async for request, current_request_rate in get_request(
-            input_requests, request_rate, burstiness, ramp_up_strategy,
-            ramp_up_start_rps, ramp_up_end_rps):
+            input_requests,
+            request_rate,
+            burstiness,
+            ramp_up_strategy,
+            ramp_up_start_rps,
+            ramp_up_end_rps,
+    ):
         if ramp_up_strategy is not None:
             current_int_rps = int(current_request_rate)
             if current_int_rps > last_int_rps:
@@ -660,12 +679,12 @@ async def benchmark(
         )
         actual_output_lens = 0
 
-    print("{s:{c}^{n}}".format(s=' Serving Benchmark Result ', n=50, c='='))
+    print("{s:{c}^{n}}".format(s=" Serving Benchmark Result ", n=50, c="="))
     print("{:<40} {:<10}".format("Successful requests:", metrics.completed))
     if max_concurrency is not None:
         print("{:<40} {:<10}".format("Maximum request concurrency:",
                                      max_concurrency))
-    if request_rate != float('inf'):
+    if request_rate != float("inf"):
         print("{:<40} {:<10.2f}".format("Request rate configured (RPS):",
                                         request_rate))
     print("{:<40} {:<10.2f}".format("Benchmark duration (s):",
@@ -736,13 +755,15 @@ async def benchmark(
         # metric.
         if metric_attribute_name not in selected_percentile_metrics:
             return
-        print("{s:{c}^{n}}".format(s=metric_header, n=50, c='-'))
+        print("{s:{c}^{n}}".format(s=metric_header, n=50, c="-"))
         print("{:<40} {:<10.2f}".format(
             f"Mean {metric_name} (ms):",
-            getattr(metrics, f"mean_{metric_attribute_name}_ms")))
+            getattr(metrics, f"mean_{metric_attribute_name}_ms"),
+        ))
         print("{:<40} {:<10.2f}".format(
             f"Median {metric_name} (ms):",
-            getattr(metrics, f"median_{metric_attribute_name}_ms")))
+            getattr(metrics, f"median_{metric_attribute_name}_ms"),
+        ))
         result[f"mean_{metric_attribute_name}_ms"] = getattr(
             metrics, f"mean_{metric_attribute_name}_ms")
         result[f"median_{metric_attribute_name}_ms"] = getattr(
@@ -813,7 +834,7 @@ def parse_goodput(slo_pairs):
     except ValueError as err:
         raise argparse.ArgumentTypeError(
             "Invalid format found for service level objectives. "
-            "Specify service level objectives for goodput as \"KEY:VALUE\" "
+            'Specify service level objectives for goodput as "KEY:VALUE" '
             "pairs, where the key is a metric name, and the value is a "
             "number in milliseconds.") from err
     return goodput_config_dict
@@ -823,9 +844,18 @@ def save_to_pytorch_benchmark_format(args: argparse.Namespace,
                                      results: dict[str, Any],
                                      file_name: str) -> None:
     metrics = [
-        "median_ttft_ms", "mean_ttft_ms", "std_ttft_ms", "p99_ttft_ms",
-        "mean_tpot_ms", "median_tpot_ms", "std_tpot_ms", "p99_tpot_ms",
-        "median_itl_ms", "mean_itl_ms", "std_itl_ms", "p99_itl_ms"
+        "median_ttft_ms",
+        "mean_ttft_ms",
+        "std_ttft_ms",
+        "p99_ttft_ms",
+        "mean_tpot_ms",
+        "median_tpot_ms",
+        "std_tpot_ms",
+        "p99_tpot_ms",
+        "median_itl_ms",
+        "mean_itl_ms",
+        "std_itl_ms",
+        "p99_itl_ms",
     ]
     # These raw data might be useful, but they are rather big. They can be added
     # later if needed
@@ -837,7 +867,8 @@ def save_to_pytorch_benchmark_format(args: argparse.Namespace,
         extra_info={
             k: results[k]
             for k in results if k not in metrics and k not in ignored_metrics
-        })
+        },
+    )
     if pt_records:
         # Don't use json suffix here as we don't want CI to pick it up
         pt_file = f"{os.path.splitext(file_name)[0]}.pytorch.json"
@@ -858,7 +889,7 @@ def add_cli_args(parser: argparse.ArgumentParser):
         type=str,
         default="openai",
         choices=list(ASYNC_REQUEST_FUNCS.keys()),
-        help="The type of backend or endpoint to use for the benchmark."
+        help="The type of backend or endpoint to use for the benchmark.",
     )
     parser.add_argument(
         "--base-url",
@@ -880,9 +911,9 @@ def add_cli_args(parser: argparse.ArgumentParser):
         metavar="KEY=VALUE",
         nargs="*",
         help="Key-value pairs (e.g, --header x-additional-info=0.3.3) "
-        "for headers to be passed with each request. These headers override " \
-        "per backend constants and values set via environment variable, and " \
-        "will be overriden by other arguments (such as request ids)."
+        "for headers to be passed with each request. These headers override "
+        "per backend constants and values set via environment variable, and "
+        "will be overriden by other arguments (such as request ids).",
     )
     parser.add_argument(
         "--max-concurrency",
@@ -907,8 +938,7 @@ def add_cli_args(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--tokenizer",
         type=str,
-        help=
-        "Name or path of the tokenizer, if not using the default tokenizer.",  # noqa: E501
+        help="Name or path of the tokenizer, if not using the default tokenizer.",  # noqa: E501
     )
     parser.add_argument("--use-beam-search", action="store_true")
     parser.add_argument(
@@ -1002,32 +1032,34 @@ def add_cli_args(parser: argparse.ArgumentParser):
         "--ignore-eos",
         action="store_true",
         help="Set ignore_eos flag when sending the benchmark request."
-        "Warning: ignore_eos is not supported in deepspeed_mii and tgi.")
+        "Warning: ignore_eos is not supported in deepspeed_mii and tgi.",
+    )
     parser.add_argument(
         "--percentile-metrics",
         type=str,
         default="ttft,tpot,itl",
         help="Comma-separated list of selected metrics to report percentils. "
         "This argument specifies the metrics to report percentiles. "
-        "Allowed metric names are \"ttft\", \"tpot\", \"itl\", \"e2el\". ")
+        'Allowed metric names are "ttft", "tpot", "itl", "e2el". ',
+    )
     parser.add_argument(
         "--metric-percentiles",
         type=str,
         default="99",
         help="Comma-separated list of percentiles for selected metrics. "
-        "To report 25-th, 50-th, and 75-th percentiles, use \"25,50,75\". "
-        "Default value is \"99\"."
-        "Use \"--percentile-metrics\" to select metrics.",
+        'To report 25-th, 50-th, and 75-th percentiles, use "25,50,75". '
+        'Default value is "99".'
+        'Use "--percentile-metrics" to select metrics.',
     )
     parser.add_argument(
         "--goodput",
         nargs="+",
         required=False,
-        help="Specify service level objectives for goodput as \"KEY:VALUE\" "
+        help='Specify service level objectives for goodput as "KEY:VALUE" '
         "pairs, where the key is a metric name, and the value is in "
-        "milliseconds. Multiple \"KEY:VALUE\" pairs can be provided, "
+        'milliseconds. Multiple "KEY:VALUE" pairs can be provided, '
         "separated by spaces. Allowed request level metric names are "
-        "\"ttft\", \"tpot\", \"e2el\". For more context on the definition of "
+        '"ttft", "tpot", "e2el". For more context on the definition of '
         "goodput, refer to DistServe paper: https://arxiv.org/pdf/2401.09670 "
         "and the blog: https://hao-ai-lab.github.io/blogs/distserve",
     )
@@ -1092,22 +1124,25 @@ def add_cli_args(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        '--tokenizer-mode',
+        "--tokenizer-mode",
         type=str,
         default="auto",
-        choices=['auto', 'slow', 'mistral', 'custom'],
+        choices=["auto", "slow", "mistral", "custom"],
         help='The tokenizer mode.\n\n* "auto" will use the '
         'fast tokenizer if available.\n* "slow" will '
-        'always use the slow tokenizer. \n* '
+        "always use the slow tokenizer. \n* "
         '"mistral" will always use the `mistral_common` tokenizer. \n*'
-        '"custom" will use --tokenizer to select the preregistered tokenizer.')
+        '"custom" will use --tokenizer to select the preregistered tokenizer.',
+    )
 
-    parser.add_argument("--served-model-name",
-                        type=str,
-                        default=None,
-                        help="The model name used in the API. "
-                        "If not specified, the model name will be the "
-                        "same as the ``--model`` argument. ")
+    parser.add_argument(
+        "--served-model-name",
+        type=str,
+        default=None,
+        help="The model name used in the API. "
+        "If not specified, the model name will be the "
+        "same as the ``--model`` argument. ",
+    )
 
     parser.add_argument(
         "--ramp-up-strategy",
@@ -1117,7 +1152,8 @@ def add_cli_args(parser: argparse.ArgumentParser):
         help="The ramp-up strategy. This would be used to "
         "ramp up the request rate from initial RPS to final "
         "RPS rate (specified by --ramp-up-start-rps and "
-        "--ramp-up-end-rps.) over the duration of the benchmark.")
+        "--ramp-up-end-rps.) over the duration of the benchmark.",
+    )
     parser.add_argument(
         "--ramp-up-start-rps",
         type=int,
@@ -1138,7 +1174,7 @@ def add_cli_args(parser: argparse.ArgumentParser):
         default=600,
         help="Maximum time to wait for the endpoint to become ready "
         "in seconds (default: 600 seconds / 10 minutes). If set to 0, "
-        "the ready check will be skipped."
+        "the ready check will be skipped.",
     )
 
 
@@ -1166,8 +1202,7 @@ async def main_async(args: argparse.Namespace) -> dict[str, Any]:
             raise ValueError("Ramp-up start and end RPS must be non-negative")
         if args.ramp_up_start_rps > args.ramp_up_end_rps:
             raise ValueError("Ramp-up start RPS must be less than end RPS")
-        if (args.ramp_up_strategy == "exponential"
-                and args.ramp_up_start_rps == 0):
+        if args.ramp_up_strategy == "exponential" and args.ramp_up_start_rps == 0:
             raise ValueError(
                 "For exponential ramp-up, the start RPS cannot be 0.")
 
@@ -1196,9 +1231,11 @@ async def main_async(args: argparse.Namespace) -> dict[str, Any]:
                 raise ValueError(
                     "Invalid header format. Please use KEY=VALUE format.")
 
-    tokenizer = get_tokenizer(tokenizer_id,
-                              tokenizer_mode=tokenizer_mode,
-                              trust_remote_code=args.trust_remote_code)
+    tokenizer = get_tokenizer(
+        tokenizer_id,
+        tokenizer_mode=tokenizer_mode,
+        trust_remote_code=args.trust_remote_code,
+    )
 
     if args.dataset_name is None:
         raise ValueError(
@@ -1269,7 +1306,7 @@ async def main_async(args: argparse.Namespace) -> dict[str, Any]:
     # Setup
     current_dt = datetime.now().strftime("%Y%m%d-%H%M%S")
     result_json["date"] = current_dt
-    result_json["endpoint_type"] = args.backend # for backward compatibility
+    result_json["endpoint_type"] = args.backend  # for backward compatibility
     result_json["backend"] = args.backend
     result_json["label"] = label
     result_json["model_id"] = model_id
