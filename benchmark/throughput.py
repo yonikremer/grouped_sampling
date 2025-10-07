@@ -142,51 +142,16 @@ def run_grouped_sampling(
         n: int,
         max_batch_size: int,
 ) -> float:
-    pipeline = ReturnManyPipeLine(model_name=model, seed=0, temperature=1.0, top_p=1.0)
-    pbar = tqdm(total=len(requests))
+    pipeline = ReturnManyPipeLine(model_name=model, seed=0, temperature=1.0, top_p=1.0, max_batch_size=max_batch_size)
     start = time.perf_counter()
-    batch: list[str] = []
-    max_prompt_len = 0
-    max_output_len = 0
     profiler = cProfile.Profile()
     profiler.enable()
-    all_outputs: list[torch.Tensor] = []
-    for i in range(len(requests)):
-        prompt = requests[i].prompt
-        prompt_len = requests[i].prompt_len
-        output_len = requests[i].expected_output_len
-        # Add the prompt to the batch.
-        batch.append(prompt)
-        max_prompt_len = max(max_prompt_len, prompt_len)
-        max_output_len = max(max_output_len, output_len)
-        if len(batch) < max_batch_size and i != len(requests) - 1:
-            # Check if we can add more requests to the batch.
-            next_prompt_len = requests[i + 1].prompt_len
-            next_output_len = requests[i + 1].expected_output_len
-            if (max(max_prompt_len, next_prompt_len) +
-                max(max_output_len, next_output_len)) <= 2048:
-                # We can add more requests to the batch.
-                continue
-
-        tokenized_batch = pipeline.tokenize_and_pad(
-            batch, max_output_len
-        )
-        output_tokens: torch.Tensor = pipeline.generate_return_many_tokens(
-            prompts=tokenized_batch,
-            num_return_sequences=n,
-            output_length=max_output_len,
-        )
-        all_outputs.extend(output_tokens.tolist())
-        pbar.update(len(batch))
-
-        # Clear the batch.
-        batch = []
-        max_prompt_len = 0
-        max_output_len = 0
-    _output_strings = pipeline.tokenizer.batch_decode(all_outputs, skip_special_tokens=True)
+    max_output_len = max(r.expected_output_len for r in requests)
+    prompts = [r.prompt for r in requests]
+    _output_strings = pipeline.generate_return_many(prompts=prompts, output_length=max_output_len, num_return_sequences=n)
+    end = time.perf_counter()
     profiler.disable()
     profiler.dump_stats('benchmark/my_profile_data.prof')
-    end = time.perf_counter()
     return end - start
 
 
@@ -473,7 +438,6 @@ def add_cli_args(parser: argparse.ArgumentParser):
              "repetition dataset.",
     )
     _parser = EngineArgs.add_cli_args(parser)
-    print(_parser.parse_args())
 
 
 def main(args: argparse.Namespace):
