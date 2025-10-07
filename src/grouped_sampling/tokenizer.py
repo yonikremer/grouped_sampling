@@ -169,6 +169,7 @@ def get_tokenizer(
             tokenizer_name,
             trust_remote_code=True,
             padding_side="right",
+            use_fast=True,
         )
     except OSError as error:
         raise RepositoryNotFoundError(

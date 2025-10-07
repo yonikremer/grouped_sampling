@@ -23,3 +23,4 @@ comet_ml
 seaborn
 ipython
 flashinfer-python
+tokenizers
