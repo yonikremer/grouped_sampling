@@ -1,11 +1,11 @@
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode
+from torch import no_grad
 
 from torch.nn import Module
 from transformers import AutoModelForCausalLM
 
 
-@inference_mode()
+@no_grad()
 def get_model(
     model_name: str,
     **kwargs,

@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, List
+from typing import Optional, List
 
 import torch
 from torch import Tensor, argmax, eq, int8, ones_like, full, long
@@ -49,9 +49,12 @@ class BasePipeLine:
             model_name=model_name,
             **model_kwargs,
         )
+        if "load_in_8bit" not in model_kwargs and "load_in_4bit" not in model_kwargs:
+            self.model.half()
         self.device: torch.device = self.model.device
         self.max_total_len = self.model.config.max_position_embeddings
 
+    @torch.no_grad()
     def tokens_batch_to_logit_matrices(
             self,
             padded_tokens: Tensor,
