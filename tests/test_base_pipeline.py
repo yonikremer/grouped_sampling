@@ -3,7 +3,6 @@ import torch
 from torch import inference_mode
 
 from src.grouped_sampling.base_pipeline import BasePipeLine
-
 """
 Code Analysis
 
@@ -34,8 +33,7 @@ class TestBasePipeLine:
         assert pipeline.tokenizer is not None
         assert pipeline.model is not None
         assert pipeline.device == torch.device(
-            "cuda:0" if torch.cuda.is_available() else "cpu"
-        )
+            "cuda:0" if torch.cuda.is_available() else "cpu")
         assert pipeline.max_total_len == 1024
 
     #  Tests that the tokens_batch_to_logit_matrices method returns the expected output
@@ -44,9 +42,7 @@ class TestBasePipeLine:
         pipeline = BasePipeLine("gpt2")
         prompts = ["Hello world!", "How are you?"]
         tokens = pipeline.tokenize_and_pad(prompts, 10)
-        logits = pipeline.tokens_batch_to_logit_matrices(
-            tokens, 10
-        )
+        logits = pipeline.tokens_batch_to_logit_matrices(tokens, 10)
         assert logits.shape == (2, 10, pipeline.tokenizer.vocab_size)
 
     #  Tests that the class raises a TypeError if model_name is not a string
@@ -85,4 +81,5 @@ class TestBasePipeLine:
     def test_tokens_batch_to_logit_matrices_value_error_1(self):
         pipeline = BasePipeLine("gpt2")
         with pytest.raises(ValueError):
-            pipeline.tokens_batch_to_logit_matrices(torch.tensor([1, 2, 3]), 10)
+            pipeline.tokens_batch_to_logit_matrices(torch.tensor([1, 2, 3]),
+                                                    10)

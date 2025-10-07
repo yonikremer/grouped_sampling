@@ -1,8 +1,8 @@
 from typing import List, Optional, Union
 
 import torch
-from torch import inference_mode
 import tqdm
+from torch import inference_mode
 from transformers import GenerationConfig
 
 from src.grouped_sampling.base_pipeline import BasePipeLine
@@ -13,13 +13,14 @@ class ReturnOnePipeLine(BasePipeLine):
     """
     A pipeline for generating a single sequence for each prompt using grouped sampling.
     """
+
     def __init__(
-            self,
-            model_name: str,
-            model_kwargs: Optional[dict] = None,
-            generation_config: Optional[GenerationConfig] = None,
-            max_batch_size: int = 128,
-            seed: Optional[int] = 0
+        self,
+        model_name: str,
+        model_kwargs: Optional[dict] = None,
+        generation_config: Optional[GenerationConfig] = None,
+        max_batch_size: int = 128,
+        seed: Optional[int] = 0,
     ):
         """
         Create a new ReturnOnePipeLine.
@@ -43,13 +44,13 @@ class ReturnOnePipeLine(BasePipeLine):
             max_batch_size=max_batch_size,
         )
         if generation_config is not None and not isinstance(
-                generation_config, GenerationConfig
-        ):
+                generation_config, GenerationConfig):
             raise TypeError(
                 f"generation_config should be a GenerationConfig or None, got {type(generation_config)}"
             )
         if generation_config is None:
-            generation_config = GenerationConfig.from_model_config(self.model.config)
+            generation_config = GenerationConfig.from_model_config(
+                self.model.config)
         self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
             generation_config=generation_config,
             seed=seed,
@@ -57,9 +58,9 @@ class ReturnOnePipeLine(BasePipeLine):
 
     @inference_mode()
     def generate_batch_return_one(
-            self,
-            prompts: Union[List[str], str],
-            output_length: int,
+        self,
+        prompts: Union[List[str], str],
+        output_length: int,
     ) -> List[str]:
         """
         Given a batch of prompts and output length, generates a list of output strings.
@@ -81,19 +82,19 @@ class ReturnOnePipeLine(BasePipeLine):
         if len(prompts) > self.max_batch_size:
             outputs: List[str] = []
             for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i: i + self.max_batch_size]
-                outputs.extend(self.generate_batch_return_one(batch, output_length))
+                batch = prompts[i:i + self.max_batch_size]
+                outputs.extend(
+                    self.generate_batch_return_one(batch, output_length))
                 torch.cuda.empty_cache()
             return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits = self.tokens_batch_to_logit_matrices(
-            padded_tokens, output_length
-        )
+        logits = self.tokens_batch_to_logit_matrices(padded_tokens,
+                                                     output_length)
         assert logits.shape[0] == len(prompts)
         assert logits.shape[1] == output_length
         assert logits.shape[2] == self.model.config.vocab_size
         output_tokens = self.logit_to_token_pipeline.logits_to_tokens_return_one(
-            logits=logits,
-        )
-        return self.tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+            logits=logits, )
+        return self.tokenizer.batch_decode(output_tokens,
+                                           skip_special_tokens=True)
