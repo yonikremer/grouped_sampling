@@ -10,11 +10,9 @@ import time
 from typing import Any, Optional
 
 import numpy as np
-from tqdm import tqdm
-
 import vllm.envs as envs
-from vllm.benchmarks.lib.utils import (convert_to_pytorch_benchmark_format,
-                                       write_to_json)
+from tqdm import tqdm
+from vllm.benchmarks.lib.utils import convert_to_pytorch_benchmark_format, write_to_json
 from vllm.engine.arg_utils import EngineArgs
 from vllm.inputs import PromptType
 
@@ -27,7 +25,8 @@ def save_to_pytorch_benchmark_format(args: argparse.Namespace,
         args=args,
         metrics={"latency": results["latencies"]},
         extra_info={k: results[k]
-                    for k in ["avg_latency", "percentiles"]})
+                    for k in ["avg_latency", "percentiles"]},
+    )
     if pt_records:
         pt_file = f"{os.path.splitext(args.output_json)[0]}.pytorch.json"
         write_to_json(pt_file, pt_records)
@@ -81,9 +80,9 @@ def main(args: argparse.Namespace):
     # the engine will automatically process the request in multiple batches.
     llm = LLM(**dataclasses.asdict(engine_args))
     assert llm.llm_engine.model_config.max_model_len >= (
-            args.input_len +
-            args.output_len), ("Please ensure that max_model_len is greater than"
-                               " the sum of input_len and output_len.")
+        args.input_len +
+        args.output_len), ("Please ensure that max_model_len is greater than"
+                           " the sum of input_len and output_len.")
 
     sampling_params = SamplingParams(
         n=args.n,
@@ -95,13 +94,14 @@ def main(args: argparse.Namespace):
     )
     rng = np.random.default_rng(seed=0)
     dummy_prompt_token_ids = rng.integers(10000,
-                                               size=(args.batch_size,
-                                                     args.input_len))
+                                          size=(args.batch_size,
+                                                args.input_len))
     dummy_prompts: list[PromptType] = [{
         "prompt_token_ids": batch
     } for batch in dummy_prompt_token_ids.tolist()]
 
-    def run_to_completion(curr_profile_dir: Optional[str] = None) -> Optional[float]:
+    def run_to_completion(
+            curr_profile_dir: Optional[str] = None) -> Optional[float]:
         if curr_profile_dir:
             llm.start_profile()
             llm.generate(dummy_prompts,
@@ -138,7 +138,6 @@ def main(args: argparse.Namespace):
     print(f"Avg latency: {np.mean(latencies)} seconds")
     for percentage, percentile in zip(percentages, percentiles):
         print(f"{percentage}% percentile latency: {percentile} seconds")
-
 
     results = {
         "avg_latency": np.mean(latencies),

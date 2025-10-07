@@ -39,15 +39,13 @@ class CompletionOutput:
         return self.finish_reason is not None
 
     def __repr__(self) -> str:
-        return (
-            f"CompletionOutput(index={self.index}, "
-            f"text={self.text!r}, "
-            f"token_ids={self.token_ids}, "
-            f"cumulative_logprob={self.cumulative_logprob}, "
-            f"logprobs={self.logprobs}, "
-            f"finish_reason={self.finish_reason}, "
-            f"stop_reason={self.stop_reason})"
-        )
+        return (f"CompletionOutput(index={self.index}, "
+                f"text={self.text!r}, "
+                f"token_ids={self.token_ids}, "
+                f"cumulative_logprob={self.cumulative_logprob}, "
+                f"logprobs={self.logprobs}, "
+                f"finish_reason={self.finish_reason}, "
+                f"stop_reason={self.stop_reason})")
 
 
 class RequestOutput:
@@ -108,15 +106,16 @@ class RequestOutput:
                     if aggregate:
                         # Merge outputs with same index
                         completion.text += next_completion.text
-                        if not isinstance(completion.token_ids, MutableSequence):
+                        if not isinstance(completion.token_ids,
+                                          MutableSequence):
                             completion.token_ids = list(completion.token_ids)
                         completion.token_ids.extend(next_completion.token_ids)
                         if next_completion.logprobs:
                             assert completion.logprobs is not None
-                            completion.logprobs.extend(next_completion.logprobs)
+                            completion.logprobs.extend(
+                                next_completion.logprobs)
                         completion.cumulative_logprob = (
-                            next_completion.cumulative_logprob
-                        )
+                            next_completion.cumulative_logprob)
                         completion.finish_reason = next_completion.finish_reason
                         completion.stop_reason = next_completion.stop_reason
                     else:
@@ -127,13 +126,10 @@ class RequestOutput:
                 self.outputs.append(next_completion)
 
     def __repr__(self) -> str:
-        return (
-            f"RequestOutput(request_id={self.request_id}, "
-            f"prompt={self.prompt!r}, "
-            f"prompt_token_ids={self.prompt_token_ids}, "
-            f"outputs={self.outputs}, "
-            f"finished={self.finished}, "
-            f"metrics={self.metrics}, "
-            f"num_cached_tokens={self.num_cached_tokens}, "
-        )
-
+        return (f"RequestOutput(request_id={self.request_id}, "
+                f"prompt={self.prompt!r}, "
+                f"prompt_token_ids={self.prompt_token_ids}, "
+                f"outputs={self.outputs}, "
+                f"finished={self.finished}, "
+                f"metrics={self.metrics}, "
+                f"num_cached_tokens={self.num_cached_tokens}, ")

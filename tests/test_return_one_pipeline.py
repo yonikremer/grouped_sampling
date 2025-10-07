@@ -4,18 +4,18 @@ import string
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode, Tensor, float32, long, no_grad
+from torch import Tensor, float32, inference_mode, long, no_grad
 from transformers import (
     AutoConfig,
+    GenerationConfig,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
-    GenerationConfig,
 )
 
+from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 from src.grouped_sampling.return_one_pipeline import (
     ReturnOnePipeLine,
 )
-from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
 """
 Code Analysis
@@ -63,14 +63,16 @@ def validate_logits(
             f"logits should be on device {pipeline.device}, got {logits.device}"
         )
     if logits.dtype != pipeline.model.dtype:
-        raise ValueError(f"logits should have the same dtype as model, got {logits.dtype} != {pipeline.model.dtype}")
+        raise ValueError(
+            f"logits should have the same dtype as model, got {logits.dtype} != {pipeline.model.dtype}"
+        )
 
 
-def validate_padded_tokens(pipeline: ReturnOnePipeLine, padded_tokens: Tensor) -> None:
+def validate_padded_tokens(pipeline: ReturnOnePipeLine,
+                           padded_tokens: Tensor) -> None:
     if padded_tokens.dim() != 2:
         raise ValueError(
-            f"tokens should be a 2D tensor, got {padded_tokens.dim()}D tensor"
-        )
+            f"tokens should be a 2D tensor, got {padded_tokens.dim()}D tensor")
     if padded_tokens.requires_grad:
         raise ValueError("tokens should not require grad")
     if padded_tokens.shape[1] > pipeline.max_total_len:
@@ -80,19 +82,17 @@ def validate_padded_tokens(pipeline: ReturnOnePipeLine, padded_tokens: Tensor) -
     if min(padded_tokens.shape) == 0:
         raise ValueError("tokens should not be empty")
     if padded_tokens.dtype != long:
-        raise ValueError(f"tokens should have dtype {long}, got {padded_tokens.dtype}")
-    if not all(
-        0 <= token < pipeline.tokenizer.vocab_size for token in padded_tokens.flatten()
-    ):
+        raise ValueError(
+            f"tokens should have dtype {long}, got {padded_tokens.dtype}")
+    if not all(0 <= token < pipeline.tokenizer.vocab_size
+               for token in padded_tokens.flatten()):
         raise ValueError("tokens should be valid token ids")
     if padded_tokens.device != pipeline.device:
         raise ValueError(
             f"tokens should be on device {pipeline.device}, got {padded_tokens.device}"
         )
-    if any(
-        padded_tokens[i, -1] == padded_tokens[i, 0]
-        for i in range(padded_tokens.shape[0])
-    ):
+    if any(padded_tokens[i, -1] == padded_tokens[i, 0]
+           for i in range(padded_tokens.shape[0])):
         raise ValueError("The first token can never be the padding token")
 
 
@@ -103,7 +103,8 @@ def validate_output_tokens(
     batch_size: int,
 ) -> None:
     if not isinstance(output_tokens, Tensor):
-        raise TypeError(f"output_tokens should be a list, got {type(output_tokens)}")
+        raise TypeError(
+            f"output_tokens should be a list, got {type(output_tokens)}")
     if output_tokens.dtype != long:
         raise ValueError(
             f"output_tokens should be a tensor of type long. Got {output_tokens.dtype} instead"
@@ -120,9 +121,8 @@ def validate_output_tokens(
         raise ValueError(
             f"output_tokens should be of size (batch_size, output_length). Got {output_tokens.shape} instead"
         )
-    if not all(
-        0 <= token < pipeline.tokenizer.vocab_size for token in output_tokens.flatten()
-    ):
+    if not all(0 <= token < pipeline.tokenizer.vocab_size
+               for token in output_tokens.flatten()):
         raise ValueError("output_tokens should be valid token ids")
 
 
@@ -138,14 +138,15 @@ class TestReturnOnePipeLine:
         assert len(result) == len(prompts)
         for output in result:
             assert isinstance(output, str), f"{output} is not a string"
-            assert len(output) >= output_length, f"{len(output)} > {output_length}"
+            assert len(
+                output) >= output_length, f"{len(output)} > {output_length}"
             # Each token is at least 1 character long
             output_tokens = pipeline.tokenizer.encode(output)
             rebuilt_output = pipeline.tokenizer.decode(output_tokens)
             assert rebuilt_output == output, f"{rebuilt_output} != {output}"
             assert (
-                len(output_tokens) <= output_length
-            ), f"{len(output_tokens)} != {output_length}"
+                len(output_tokens)
+                <= output_length), f"{len(output_tokens)} != {output_length}"
 
     #  Tests that the function returns an empty list for an empty batch
     def test_empty_prompts(self):
@@ -153,10 +154,8 @@ class TestReturnOnePipeLine:
         prompts = []
         output_length = 5
         expected_output = []
-        assert (
-            pipeline.generate_batch_return_one(prompts, output_length)
-            == expected_output
-        )
+        assert (pipeline.generate_batch_return_one(
+            prompts, output_length) == expected_output)
 
     # Tests that the function returns a list of empty strings for a batch of
     # prompts with output length 0
@@ -165,10 +164,8 @@ class TestReturnOnePipeLine:
         prompts = ["Hello", "How are you?"]
         output_length = 0
         expected_output = ["", ""]
-        assert (
-            pipeline.generate_batch_return_one(prompts, output_length)
-            == expected_output
-        )
+        assert (pipeline.generate_batch_return_one(
+            prompts, output_length) == expected_output)
 
     # Tests that the function returns a list of empty strings for an empty
     # list of prompts
@@ -214,12 +211,10 @@ class TestReturnOnePipeLine:
         validate_padded_tokens(pipeline, padded_tokens)
         assert not padded_tokens.requires_grad
         logits = pipeline.tokens_batch_to_logit_matrices(
-            padded_tokens, output_length
-        )
+            padded_tokens, output_length)
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens_return_one(
-            logits=logits,
-        )
+            logits=logits, )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
 
     # Tests that the function raises a ValueError if output_length is too
@@ -241,14 +236,15 @@ class TestReturnOnePipeLine:
         assert len(result) == 1
         for output in result:
             assert isinstance(output, str), f"{output} is not a string"
-            assert len(output) >= output_length, f"{len(output)} > {output_length}"
+            assert len(
+                output) >= output_length, f"{len(output)} > {output_length}"
             # Each token is at least 1 character long
             output_tokens = pipeline.tokenizer.encode(output)
             rebuilt_output = pipeline.tokenizer.decode(output_tokens)
             assert rebuilt_output == output, f"{rebuilt_output} != {output}"
             assert (
-                len(output_tokens) <= output_length
-            ), f"{len(output_tokens)} != {output_length}"
+                len(output_tokens)
+                <= output_length), f"{len(output_tokens)} != {output_length}"
 
     def test_init(self):
         pipeline = ReturnOnePipeLine("gpt2")
@@ -266,16 +262,12 @@ class TestReturnOnePipeLine:
         padded_tokens = pipeline.tokenize_and_pad(prompts, output_length)
         validate_padded_tokens(pipeline, padded_tokens)
         logits = pipeline.tokens_batch_to_logit_matrices(
-            padded_tokens, output_length
-        )
+            padded_tokens, output_length)
         # assert that the output is on cuda
-        assert (
-            logits.device.type == "cuda"
-        ), f"device is not cuda: {logits.device.type}"
+        assert logits.device.type == "cuda", f"device is not cuda: {logits.device.type}"
         validate_logits(pipeline, logits, output_length)
         output_tokens = pipeline.logit_to_token_pipeline.logits_to_tokens_return_one(
-            logits=logits,
-        )
+            logits=logits, )
         validate_output_tokens(pipeline, output_tokens, output_length, 2)
         # self.validate_pipeline(pipeline)
 
@@ -296,24 +288,25 @@ class TestReturnOnePipeLine:
     @no_grad()
     def validate_pipeline(pipeline):
         assert pipeline.tokenizer is not None, "tokenizer is None"
-        assert isinstance(pipeline.tokenizer, (PreTrainedTokenizer, PreTrainedTokenizerFast)), \
-            "tokenizer is not PreTrainedTokenizer or PreTrainedTokenizerFast"
+        assert isinstance(
+            pipeline.tokenizer, (PreTrainedTokenizer, PreTrainedTokenizerFast)
+        ), "tokenizer is not PreTrainedTokenizer or PreTrainedTokenizerFast"
         assert pipeline.model is not None, "model is None"
-        assert (
-            pipeline.logit_to_token_pipeline is not None
-        ), "logit_to_token_pipeline is None"
+        assert (pipeline.logit_to_token_pipeline
+                is not None), "logit_to_token_pipeline is None"
         assert isinstance(
             pipeline.logit_to_token_pipeline, LogitVectorToTokenPipeLine
         ), "logit_to_token_pipeline is not LogitVectorToTokenPipeLine"
         assert pipeline.max_total_len is not None, "max_total_len is None"
-        assert isinstance(pipeline.max_total_len, int), "max_total_len is not int"
+        assert isinstance(pipeline.max_total_len,
+                          int), "max_total_len is not int"
         assert pipeline.max_total_len > 0, "max_total_len <= 0"
         assert pipeline.device is not None, "device is None"
-        assert isinstance(pipeline.device, torch.device), "device is not torch.device"
+        assert isinstance(pipeline.device,
+                          torch.device), "device is not torch.device"
         # assert that the device is cuda
-        assert (
-            pipeline.device.type == "cuda"
-        ), f"device is not cuda: {pipeline.device.type}"
+        assert (pipeline.device.type == "cuda"
+                ), f"device is not cuda: {pipeline.device.type}"
         prompt = "Hello"
         pipeline.generate_batch_return_one(prompt, 5)
 
@@ -336,14 +329,15 @@ class TestReturnOnePipeLine:
         assert len(result) == number_of_prompts
         for output in result:
             assert isinstance(output, str), f"{output} is not a string"
-            assert len(output) >= output_length, f"{len(output)} > {output_length}"
+            assert len(
+                output) >= output_length, f"{len(output)} > {output_length}"
             # Each token is at least 1 character long
             output_tokens = pipeline.tokenizer.encode(output)
             rebuilt_output = pipeline.tokenizer.decode(output_tokens)
             assert rebuilt_output == output, f"{rebuilt_output} != {output}"
             assert (
-                len(output_tokens) <= output_length
-            ), f"{len(output_tokens)} != {output_length}"
+                len(output_tokens)
+                <= output_length), f"{len(output_tokens)} != {output_length}"
 
     @staticmethod
     def random_prompt(length):
@@ -355,12 +349,14 @@ class TestReturnOnePipeLine:
         random.seed(0)
         my_pipeline = ReturnOnePipeLine("fxmarty/tiny-llama-fast-tokenizer")
         prompts = [
-            self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)
+            self.random_prompt(64)
+            for _ in range(my_pipeline.max_batch_size * 2)
         ]
         my_pipeline.generate_batch_return_one(prompts, 10)
         mid_memory = torch.cuda.memory_allocated()
         prompts = [
-            self.random_prompt(64) for _ in range(my_pipeline.max_batch_size * 2)
+            self.random_prompt(64)
+            for _ in range(my_pipeline.max_batch_size * 2)
         ]
         my_pipeline.generate_batch_return_one(prompts, 10)
         end_memory = torch.cuda.memory_allocated()
