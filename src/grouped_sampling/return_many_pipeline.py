@@ -2,7 +2,7 @@ from typing import Optional, List
 
 import torch
 import tqdm
-from torch import inference_mode
+from torch import inference_mode, Tensor
 from transformers import GenerationConfig
 
 from src.grouped_sampling.base_pipeline import BasePipeLine
@@ -55,6 +55,45 @@ class ReturnManyPipeLine(BasePipeLine):
         )
 
     @inference_mode()
+    def generate_return_many_tokens(
+            self,
+            prompts: Tensor,
+            output_length: int,
+            num_return_sequences: int,
+    ) -> Tensor:
+        """
+        Generates a pre-determined number of responses for each prompt
+        Arguments:
+            prompts: a tensor with the prompt tokens, size (batch_size, max_input_length) - the output of tokenize_and_pad.
+            output_length: int the number of tokens to generate for each prompt.
+            num_return_sequences: int the number of responses to generate for each prompt.
+        Returns:
+            Tensor with the generated tokens, size (batch_size, num_return_sequences, output_length).
+        """
+        if output_length <= 0 or num_return_sequences <= 0:
+            raise ValueError(f"output_length and num_return_sequences must be positive, got {output_length} and {num_return_sequences}")
+        if prompts.dim() != 2:
+            raise ValueError(
+                f"prompts should be a 2D tensor, got {prompts.dim()}D tensor"
+            )
+        prompts.requires_grad = False
+        batch_size, max_input_length = prompts.size()
+        if batch_size > self.max_batch_size:
+            outputs: Tensor = torch.zeros(batch_size, num_return_sequence, output_length, dtype=prompts.dtype, device=prompts.device)
+            for i in tqdm.tqdm(range(0, batch_size, self.max_batch_size)):
+                curr_batch = prompts[i: i + self.max_batch_size, :]
+                outputs[i: i + self.max_batch_size, :, :] = self.generate_return_many_tokens(
+                    curr_batch,
+                    output_length,
+                    num_return_sequences
+                )
+                torch.cuda.empty_cache()
+            return outputs
+        logits = self.tokens_batch_to_logit_matrices(prompts, output_length)
+        tokens = self.logit_to_token_pipeline.logits_to_tokens_return_many(logits, num_return_sequences)
+        return tokens
+
+    @inference_mode()
     def generate_return_many(
             self,
             prompts: List[str],
@@ -62,7 +101,7 @@ class ReturnManyPipeLine(BasePipeLine):
             num_return_sequences: int,
     ) -> List[List[str]]:
         """
-        Generates a pre-determined number of responses for each propmt
+        Generates a pre-determined number of responses for each prompt
         Arguments:
             prompts: a list of strings - the prompts to generate responses for.
             output_length: int the number of tokens to generate for each prompt.
