@@ -22,3 +22,4 @@ huggingface_hub[hf_xet]
 comet_ml
 seaborn
 ipython
+flashinfer-python
