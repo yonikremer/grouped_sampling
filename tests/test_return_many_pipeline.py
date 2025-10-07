@@ -106,3 +106,57 @@ class TestLogitsToTokensReturnMany:
         pipeline.generate_return_many(
             [prompt], output_length, num_return_sequences
         )
+
+    # Tests for generate_return_many_tokens
+    def test_generate_return_many_tokens_shape(self):
+        prompt = "Hello, how are you?"
+        output_length = 5
+        num_return_sequences = 2
+        # Tokenize and pad prompt to get tensor input
+        padded_tokens = self.pipeline.tokenize_and_pad([prompt], output_length)
+        result = self.pipeline.generate_return_many_tokens(
+            padded_tokens, output_length, num_return_sequences
+        )
+        assert isinstance(result, torch.Tensor)
+        assert result.shape == (1, num_return_sequences, output_length)
+
+    def test_generate_return_many_tokens_multiple_prompts(self):
+        prompts = ["Hello, how are you?", "What is your name?"]
+        output_length = 4
+        num_return_sequences = 3
+        padded_tokens = self.pipeline.tokenize_and_pad(prompts, output_length)
+        result = self.pipeline.generate_return_many_tokens(
+            padded_tokens, output_length, num_return_sequences
+        )
+        assert result.shape == (2, num_return_sequences, output_length)
+
+    def test_generate_return_many_tokens_invalid_output_length(self):
+        prompt = "Hello, how are you?"
+        output_length = 0
+        num_return_sequences = 2
+        padded_tokens = self.pipeline.tokenize_and_pad([prompt], 1)
+        with pytest.raises(ValueError):
+            self.pipeline.generate_return_many_tokens(
+                padded_tokens, output_length, num_return_sequences
+            )
+
+    def test_generate_return_many_tokens_invalid_num_return_sequences(self):
+        prompt = "Hello, how are you?"
+        output_length = 5
+        num_return_sequences = 0
+        padded_tokens = self.pipeline.tokenize_and_pad([prompt], output_length)
+        with pytest.raises(ValueError):
+            self.pipeline.generate_return_many_tokens(
+                padded_tokens, output_length, num_return_sequences
+            )
+
+    def test_generate_return_many_tokens_invalid_prompt_shape(self):
+        prompt = "Hello, how are you?"
+        output_length = 5
+        num_return_sequences = 2
+        # Create a 1D tensor instead of 2D
+        padded_tokens = self.pipeline.tokenize_and_pad([prompt], output_length).view(-1)
+        with pytest.raises(ValueError):
+            self.pipeline.generate_return_many_tokens(
+                padded_tokens, output_length, num_return_sequences
+            )
