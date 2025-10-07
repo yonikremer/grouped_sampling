@@ -1,6 +1,7 @@
 import pytest
 
 import torch
+from openai import responses
 
 from src.grouped_sampling.return_many_pipeline import ReturnManyPipeLine
 
@@ -38,6 +39,7 @@ class TestLogitsToTokensReturnMany:
         )
         assert len(result) == 1
         assert len(result[0]) == 1
+        assert isinstance(result[0][0], str)
 
     #  Tests that generate_return_many returns multiple sequences for a single prompt with valid inputs
     def test_generate_return_many_single_prompt_multiple_sequences(self):
@@ -49,6 +51,7 @@ class TestLogitsToTokensReturnMany:
         )
         assert len(result) == 1
         assert len(result[0]) == 3
+        assert all(isinstance(token, str) for token in result[0])
 
     #  Tests that generate_return_many returns a single sequence for multiple prompts with valid inputs
     def test_generate_return_many_multiple_prompts_single_sequence(self):
@@ -61,6 +64,7 @@ class TestLogitsToTokensReturnMany:
         assert len(result) == 2
         assert len(result[0]) == 1
         assert len(result[1]) == 1
+        assert all(isinstance(response, str) for r in result for response in r)
 
     #  Tests that generate_return_many returns multiple sequences for multiple prompts with valid inputs
     def test_generate_return_many_multiple_prompts_multiple_sequences(self):
@@ -103,9 +107,12 @@ class TestLogitsToTokensReturnMany:
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 3
-        pipeline.generate_return_many(
+        res = pipeline.generate_return_many(
             [prompt], output_length, num_return_sequences
         )
+        assert len(res) == 1
+        assert len(res[0]) == 3
+        assert all(isinstance(token, str) for token in res[0])
 
     # Tests for generate_return_many_tokens
     def test_generate_return_many_tokens_shape(self):
@@ -129,6 +136,7 @@ class TestLogitsToTokensReturnMany:
             padded_tokens, output_length, num_return_sequences
         )
         assert result.shape == (2, num_return_sequences, output_length)
+        assert isinstance(result, torch.Tensor)
 
     def test_generate_return_many_tokens_invalid_output_length(self):
         prompt = "Hello, how are you?"
