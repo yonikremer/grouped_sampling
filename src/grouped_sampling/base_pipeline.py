@@ -129,7 +129,15 @@ class BasePipeLine:
             prompts: List[str],
             output_length: int,
     ) -> Tensor:
-        """A helper function that converts a list of strings to a padded tensor of tokens."""
+        """
+        A helper function that converts a list of strings to a padded tensor of tokens.
+        Arguments:
+            prompts: a list of strings.
+            output_length: the length of the output tokens (excluding the prompts) in tokens.
+        Returns:
+            A tensor of shape (len(prompts), max_input_length + output_length - 1) with the tokens for every string in the prompts.
+            max_input_length is the maximum length of the prompts in tokens.
+        """
         prompt_tokens: Tensor = self.tokenizer.batch_encode_plus(
             prompts,
             add_special_tokens=True,
