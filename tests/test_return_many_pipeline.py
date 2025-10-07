@@ -1,9 +1,7 @@
 import pytest
-
 import torch
 
 from src.grouped_sampling.return_many_pipeline import ReturnManyPipeLine
-
 """
 Code Analysis
 
@@ -33,9 +31,8 @@ class TestLogitsToTokensReturnMany:
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 1
-        result = self.pipeline.generate_return_many(
-            [prompt], output_length, num_return_sequences
-        )
+        result = self.pipeline.generate_return_many([prompt], output_length,
+                                                    num_return_sequences)
         assert len(result) == 1
         assert len(result[0]) == 1
 
@@ -44,9 +41,8 @@ class TestLogitsToTokensReturnMany:
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 3
-        result = self.pipeline.generate_return_many(
-            [prompt], output_length, num_return_sequences
-        )
+        result = self.pipeline.generate_return_many([prompt], output_length,
+                                                    num_return_sequences)
         assert len(result) == 1
         assert len(result[0]) == 3
 
@@ -55,9 +51,8 @@ class TestLogitsToTokensReturnMany:
         prompts = ["Hello, how are you?", "What is your name?"]
         output_length = 10
         num_return_sequences = 1
-        result = self.pipeline.generate_return_many(
-            prompts, output_length, num_return_sequences
-        )
+        result = self.pipeline.generate_return_many(prompts, output_length,
+                                                    num_return_sequences)
         assert len(result) == 2
         assert len(result[0]) == 1
         assert len(result[1]) == 1
@@ -67,9 +62,8 @@ class TestLogitsToTokensReturnMany:
         prompts = ["Hello, how are you?", "What is your name?"]
         output_length = 10
         num_return_sequences = 3
-        result = self.pipeline.generate_return_many(
-            prompts, output_length, num_return_sequences
-        )
+        result = self.pipeline.generate_return_many(prompts, output_length,
+                                                    num_return_sequences)
         assert len(result) == 2
         assert len(result[0]) == 3
         assert len(result[1]) == 3
@@ -80,9 +74,8 @@ class TestLogitsToTokensReturnMany:
         output_length = -1
         num_return_sequences = 3
         with pytest.raises(ValueError):
-            self.pipeline.generate_return_many(
-                prompts, output_length, num_return_sequences
-            )
+            self.pipeline.generate_return_many(prompts, output_length,
+                                               num_return_sequences)
 
     #  Tests that generate_return_many raises a ValueError when num_return_sequences is invalid
     def test_generate_return_many_invalid_num_return_sequences(self):
@@ -90,19 +83,15 @@ class TestLogitsToTokensReturnMany:
         output_length = 10
         num_return_sequences = -1
         with pytest.raises(ValueError):
-            self.pipeline.generate_return_many(
-                prompts, output_length, num_return_sequences
-            )
+            self.pipeline.generate_return_many(prompts, output_length,
+                                               num_return_sequences)
 
     # Tests the pipeline with 8bit quantization
     def test_quantization(self):
-        pipeline = ReturnManyPipeLine(
-            "fxmarty/tiny-llama-fast-tokenizer",
-            model_kwargs={"load_in_8bit": True}
-        )
+        pipeline = ReturnManyPipeLine("fxmarty/tiny-llama-fast-tokenizer",
+                                      model_kwargs={"load_in_8bit": True})
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 3
-        pipeline.generate_return_many(
-            [prompt], output_length, num_return_sequences
-        )
+        pipeline.generate_return_many([prompt], output_length,
+                                      num_return_sequences)
