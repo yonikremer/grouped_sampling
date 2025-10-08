@@ -13,6 +13,7 @@ class ReturnOnePipeLine(BasePipeLine):
     """
     A pipeline for generating a single sequence for each prompt using grouped sampling.
     """
+
     def __init__(
             self,
             model_name: str,
@@ -76,24 +77,18 @@ class ReturnOnePipeLine(BasePipeLine):
         if output_length == 0:
             return ["" for _ in prompts]
         self._validate_output_length(output_length)
-        if len(prompts) == 0:
+        num_prompts = len(prompts)
+        if num_prompts == 0:
             return []
-        if len(prompts) > self.max_batch_size:
-            outputs: List[str] = []
-            for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i: i + self.max_batch_size]
-                outputs.extend(self.generate_batch_return_one(batch, output_length))
-                torch.cuda.empty_cache()
-            return outputs
         self._validate_prompts(prompts)
         padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits = self.tokens_batch_to_logit_matrices(
-            padded_tokens, output_length
-        )
-        assert logits.shape[0] == len(prompts)
-        assert logits.shape[1] == output_length
-        assert logits.shape[2] == self.model.config.vocab_size
-        output_tokens = self.logit_to_token_pipeline.logits_to_tokens_return_one(
-            logits=logits,
-        )
+        output_tokens_buffer = torch.zeros((num_prompts, output_length), dtype=padded_tokens.dtype, device=self.device)
+        for i in range(0, num_prompts, self.max_batch_size):
+            logits = self.tokens_batch_to_logit_matrices(
+                padded_tokens[i:i+self.max_batch_size], output_length
+            )
+            output_tokens_buffer[i:i+self.max_batch_size] = self.logit_to_token_pipeline.logits_to_tokens_return_one(
+                logits=logits
+            )
+        output_tokens = output_tokens_buffer.tolist()
         return self.tokenizer.batch_decode(output_tokens, skip_special_tokens=True)

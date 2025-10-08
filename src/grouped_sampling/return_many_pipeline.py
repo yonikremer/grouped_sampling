@@ -77,7 +77,7 @@ class ReturnManyPipeLine(BasePipeLine):
                 f"prompts should be a 2D tensor, got {prompts.dim()}D tensor"
             )
         prompts.requires_grad = False
-        batch_size, max_input_length = prompts.size()
+        batch_size = prompts.shape[0]
         if batch_size > self.max_batch_size:
             outputs: Tensor = torch.zeros(batch_size, num_return_sequence, output_length, dtype=prompts.dtype, device=prompts.device)
             for i in tqdm.tqdm(range(0, batch_size, self.max_batch_size)):
@@ -117,28 +117,31 @@ class ReturnManyPipeLine(BasePipeLine):
         if num_return_sequences == 0:
             return []
         self._validate_output_length(output_length)
-        if len(prompts) == 0:
-            return []
-        if len(prompts) > self.max_batch_size:
-            outputs: List[List[str]] = []
-            for i in tqdm.tqdm(range(0, len(prompts), self.max_batch_size)):
-                batch = prompts[i: i + self.max_batch_size]
-                outputs.extend(
-                    self.generate_return_many(
-                        batch, output_length, num_return_sequences
-                    )
-                )
-                torch.cuda.empty_cache()
-            return outputs
         self._validate_prompts(prompts)
-        padded_tokens = self.tokenize_and_pad(prompts, output_length)
-        logits = self.tokens_batch_to_logit_matrices(padded_tokens, output_length)
-        tokens = self.logit_to_token_pipeline.logits_to_tokens_return_many(logits, num_return_sequences)
-        assert tokens.dtype in {torch.int32, torch.int64, torch.long}
-        return [
-            self.tokenizer.batch_decode(tokens[i, :, :], skip_special_tokens=True)
-            for i in range(len(prompts))
+        num_prompts = len(prompts)
+        if num_prompts == 0:
+            return []
+        input_tokens = self.tokenize_and_pad(prompts, output_length)
+        output_tokens_buffer = torch.zeros((num_prompts, num_return_sequences, output_length), dtype=torch.int32, device=self.device)
+        for i in range(0, len(prompts), self.max_batch_size):
+            output_tokens_buffer[i: i + self.max_batch_size, :, :] = self.generate_return_many_tokens(
+                input_tokens[i: i + self.max_batch_size, :],
+                output_length,
+                num_return_sequences
+            )
+        # detokenize
+        output_tokens_buffer = output_tokens_buffer.reshape(num_prompts * num_return_sequences, output_length).tolist()
+        output_strings = self.tokenizer.batch_decode(
+            output_tokens_buffer,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+        # transform to A nested list of strings
+        output_strings = [
+            output_strings[i * num_return_sequences:(i + 1) * num_return_sequences]
+            for i in range(num_prompts)
         ]
+        return output_strings
 
     @staticmethod
     def _validate_num_return_sequences(num_return_sequences):
