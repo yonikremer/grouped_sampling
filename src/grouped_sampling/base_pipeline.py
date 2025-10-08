@@ -86,13 +86,6 @@ class BasePipeLine:
             input_ids=padded_tokens,
             attention_mask=attention_mask,
         ).logits
-        if all_logits.isnan().any():
-            raise RuntimeError(
-                f"Model returned NaN logits."
-                f" logits: {all_logits}"
-                f" tokens: {padded_tokens}"
-                f" attention_mask: {attention_mask}"
-            )
         padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
         batch_size = padded_tokens.shape[0]
