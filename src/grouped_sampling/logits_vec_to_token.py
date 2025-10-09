@@ -43,6 +43,13 @@ class LogitVectorToTokenPipeLine:
             return argmax(logits, dim=-1)
         if not logits.is_contiguous():
             logits = logits.contiguous()
+        if self.top_k is None:
+            probs = torch.softmax(logits, dim=-1)
+            return flashinfer.sampling.top_p_sampling_from_probs(
+                probs=probs,
+                top_p=self.top_p,
+                generator=self.rng
+            )
         return flashinfer.sampling.top_k_top_p_sampling_from_logits(
             logits=logits / self.temperature,
             top_k=self.top_k,
@@ -102,13 +109,23 @@ class LogitVectorToTokenPipeLine:
             logits = logits.contiguous()
         # from each logit vector I want to sample num_return_sequences tokens
         # so the indices should have each value from 0 to batch_size * output_length, output_length times
-        indices = torch.arange(0, batch_size * output_length, device=logits.device).repeat_interleave(num_return_sequences)
-        sampled_tokens = flashinfer.sampling.top_k_top_p_sampling_from_logits(
-            logits=logits / self.temperature,
-            top_k=self.top_k,
-            top_p=self.top_p,
-            generator=self.rng,
-            indices=indices
-        )
+        indices = torch.arange(0, batch_size * output_length, device=logits.device).repeat_interleave(
+            num_return_sequences)
+        if self.top_k is None:
+            probs = torch.softmax(logits, dim=-1)
+            sampled_tokens = flashinfer.sampling.top_p_sampling_from_probs(
+                probs=probs,
+                top_p=self.top_p,
+                generator=self.rng,
+                indices=indices
+            )
+        else:
+            sampled_tokens = flashinfer.sampling.top_k_top_p_sampling_from_logits(
+                logits=logits / self.temperature,
+                top_k=self.top_k,
+                top_p=self.top_p,
+                generator=self.rng,
+                indices=indices
+            )
         sampled_tokens = sampled_tokens.reshape(batch_size, num_return_sequences, output_length)
         return sampled_tokens

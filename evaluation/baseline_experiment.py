@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from warnings import warn
 
-import comet_ml
 from evaluate import load, EvaluationModule
 from datasets import Dataset, get_dataset_config_names
 from transformers import TextGenerationPipeline, AutoModelForCausalLM, AutoTokenizer
