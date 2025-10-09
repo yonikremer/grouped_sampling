@@ -1,20 +1,20 @@
 from typing import Optional
 
-import torch
-from torch import Tensor, argmax, inference_mode, Generator
-from transformers import (
-    GenerationConfig
-)
 import flashinfer
+import torch
+from torch import Generator, Tensor, argmax, inference_mode
+from transformers import GenerationConfig
 
 
 class LogitVectorToTokenPipeLine:
+
     def __init__(
-            self,
-            generation_config: GenerationConfig,
-            seed: Optional[int] = 0,
+        self,
+        generation_config: GenerationConfig,
+        seed: Optional[int] = 0,
     ):
-        if isinstance(generation_config.num_beams, int) and generation_config.num_beams > 1:
+        if (isinstance(generation_config.num_beams, int)
+                and generation_config.num_beams > 1):
             raise ValueError("Beam search is not supported.")
         self.do_sample = generation_config.do_sample
         self.top_p = generation_config.top_p
@@ -22,7 +22,7 @@ class LogitVectorToTokenPipeLine:
         self.temperature = generation_config.temperature
         if self.top_p == 0 or self.top_k == 1:
             self.do_sample = False
-        self.rng = Generator(device='cuda')
+        self.rng = Generator(device="cuda")
         if seed is not None:
             self.rng.manual_seed(seed)
 
@@ -46,21 +46,18 @@ class LogitVectorToTokenPipeLine:
         if self.top_k is None:
             probs = torch.softmax(logits, dim=-1)
             return flashinfer.sampling.top_p_sampling_from_probs(
-                probs=probs,
-                top_p=self.top_p,
-                generator=self.rng
-            )
+                probs=probs, top_p=self.top_p, generator=self.rng)
         return flashinfer.sampling.top_k_top_p_sampling_from_logits(
             logits=logits / self.temperature,
             top_k=self.top_k,
             top_p=self.top_p,
-            generator=self.rng
+            generator=self.rng,
         )
 
     @inference_mode()
     def logits_to_tokens_return_one(
-            self,
-            logits: Tensor,
+        self,
+        logits: Tensor,
     ) -> Tensor:
         """
         Convert a batch of logit matrices to tokens.
@@ -79,9 +76,9 @@ class LogitVectorToTokenPipeLine:
 
     @inference_mode()
     def logits_to_tokens_return_many(
-            self,
-            logits: Tensor,
-            num_return_sequences: int,
+        self,
+        logits: Tensor,
+        num_return_sequences: int,
     ) -> Tensor:
         """
         Convert a batch of logit matrices to tokens.
@@ -93,14 +90,17 @@ class LogitVectorToTokenPipeLine:
                 with num_return_sequences generated output sequences for each prompt in the tokens.
         """
         if num_return_sequences <= 0:
-            raise ValueError(f"num_return_sequences must be positive, got {num_return_sequences}")
+            raise ValueError(
+                f"num_return_sequences must be positive, got {num_return_sequences}"
+            )
         if not self.do_sample:
             raise ValueError("""
             logits_to_tokens_return_many is only supported when do_sample is True.
             return many with greedy decoding does not make sense, it would return the same output multiple times.
             """)
         if any(s == 0 for s in logits.size()):
-            raise ValueError(f"logits should not be empty, got {logits.size()}")
+            raise ValueError(
+                f"logits should not be empty, got {logits.size()}")
         batch_size = logits.size(0)
         output_length = logits.size(1)
         vocab_size = logits.size(2)
@@ -109,23 +109,25 @@ class LogitVectorToTokenPipeLine:
             logits = logits.contiguous()
         # from each logit vector I want to sample num_return_sequences tokens
         # so the indices should have each value from 0 to batch_size * output_length, output_length times
-        indices = torch.arange(0, batch_size * output_length, device=logits.device).repeat_interleave(
-            num_return_sequences)
+        indices = torch.arange(
+            0, batch_size * output_length,
+            device=logits.device).repeat_interleave(num_return_sequences)
         if self.top_k is None:
             probs = torch.softmax(logits, dim=-1)
             sampled_tokens = flashinfer.sampling.top_p_sampling_from_probs(
                 probs=probs,
                 top_p=self.top_p,
                 generator=self.rng,
-                indices=indices
-            )
+                indices=indices)
         else:
             sampled_tokens = flashinfer.sampling.top_k_top_p_sampling_from_logits(
                 logits=logits / self.temperature,
                 top_k=self.top_k,
                 top_p=self.top_p,
                 generator=self.rng,
-                indices=indices
+                indices=indices,
             )
-        sampled_tokens = sampled_tokens.reshape(batch_size, num_return_sequences, output_length)
+        sampled_tokens = sampled_tokens.reshape(batch_size,
+                                                num_return_sequences,
+                                                output_length)
         return sampled_tokens
