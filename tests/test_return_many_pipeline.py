@@ -1,7 +1,7 @@
 import pytest
 
 import torch
-from openai import responses
+from transformers import GenerationConfig
 
 from src.grouped_sampling.return_many_pipeline import ReturnManyPipeLine
 
@@ -27,7 +27,11 @@ Fields:
 
 
 class TestLogitsToTokensReturnMany:
-    pipeline = ReturnManyPipeLine("gpt2", top_k=50, top_p=0.9)
+    generation_config = GenerationConfig.from_pretrained("gpt2")
+    generation_config.top_p = 0.9
+    generation_config.top_k = 50
+    generation_config.do_sample = True
+    pipeline = ReturnManyPipeLine("gpt2", generation_config=generation_config, max_batch_size=2, seed=42)
 
     #  Tests that generate_return_many returns a single sequence for a single prompt with valid inputs
     def test_generate_return_many_single_prompt_single_sequence(self):
@@ -100,9 +104,15 @@ class TestLogitsToTokensReturnMany:
 
     # Tests the pipeline with 8bit quantization
     def test_quantization(self):
+        generation_config = GenerationConfig.from_pretrained("gpt2")
+        generation_config.top_k = 50
+        generation_config.do_sample = True
         pipeline = ReturnManyPipeLine(
             "fxmarty/tiny-llama-fast-tokenizer",
-            model_kwargs={"load_in_8bit": True}
+            model_kwargs={"load_in_8bit": True},
+            generation_config=generation_config,
+            max_batch_size=2,
+            seed=42,
         )
         prompt = "Hello, how are you?"
         output_length = 10

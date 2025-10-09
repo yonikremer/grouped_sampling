@@ -6,7 +6,6 @@ from torch import inference_mode, Tensor
 from transformers import GenerationConfig
 
 from src.grouped_sampling.base_pipeline import BasePipeLine
-from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
 
 class ReturnManyPipeLine(BasePipeLine):
@@ -16,42 +15,21 @@ class ReturnManyPipeLine(BasePipeLine):
     def __init__(
             self,
             model_name: str,
+            max_batch_size: int,
+            seed: Optional[int] = 0,
             model_kwargs: Optional[dict] = None,
-            max_batch_size: int = 128,
-            top_p: float = 1.0,
-            top_k: int = 0,
-            temperature: float = 1.0,
-            seed: Optional[int] = 0
+            generation_config: Optional[GenerationConfig] = None,
     ):
-        super(ReturnManyPipeLine, self).__init__(
+        """
+        Create a new ReturnManyPipeLine.
+        For more details, see the documentation of BasePipeLine.
+        """
+        super().__init__(
             model_name=model_name,
             model_kwargs=model_kwargs,
+            generation_config=generation_config,
             max_batch_size=max_batch_size,
-        )
-        if not isinstance(top_p, float):
-            raise TypeError(f"top_p should be a float, got {type(top_p)}")
-        if not isinstance(top_k, int):
-            raise TypeError(f"top_k should be an int, got {type(top_k)}")
-        if not isinstance(temperature, float):
-            raise TypeError(f"temperature should be a float, got {type(temperature)}")
-        if top_p < 0.0:
-            raise ValueError(f"top_p should be at least 0.0, got {top_p}")
-        if top_k < 0:
-            raise ValueError(f"top_k should be at least 0, got {top_k}")
-        if temperature <= 0.0:
-            raise ValueError(f"temperature should be positive, got {temperature}")
-        self.temperature = temperature
-        if top_p == 0 or top_k == 1:
-            raise ValueError(
-                """
-                return many pipeline does not support top_p=0 or top_k=1 (greedy decoding)
-                Because greedy decoding does not return multiple sequences.
-                """)
-        generation_config = GenerationConfig(
-            top_p=top_p, top_k=top_k, temperature=temperature, do_sample=True
-        )
-        self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
-            generation_config=generation_config, seed=seed
+            seed=seed
         )
 
     @inference_mode()

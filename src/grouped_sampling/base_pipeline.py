@@ -1,18 +1,22 @@
 from typing import Optional, List
 
 import torch
-from torch import Tensor, argmax, eq, int8, ones_like, full, long
+from torch import Tensor, argmax, eq, int8, ones_like, full, long, Generator
+from transformers import GenerationConfig
 
 from src.grouped_sampling.tokenizer import get_tokenizer
 from src.grouped_sampling.model import get_model
+from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
 
 class BasePipeLine:
     def __init__(
-        self,
-        model_name: str,
-        model_kwargs: Optional[dict] = None,
-        max_batch_size: int = 128,
+            self,
+            model_name: str,
+            max_batch_size: int = 128,
+            model_kwargs: Optional[dict] = None,
+            generation_config: Optional[GenerationConfig] = None,
+            seed: Optional[int] = 0
     ):
         """
         Create a new BasePipeLine.
@@ -20,7 +24,11 @@ class BasePipeLine:
             model_name: str. The name of the model to load from huggingfacehub.
             model_kwargs: Optional dict. Additional arguments to pass to the model's from_pretrained method.
                 If None, no additional arguments will be passed.
+            generation_config: Optional GenerationConfig. The generation config for the model
+                used for top_p, top_k, temperature, etc.
+                If None, the method would create a generation config from the model's config.
             max_batch_size: int. The maximum batch size to use.
+            seed: Optional int. The seed to use for sampling.
         Returns:
             A new BatchEndToEndSingleSequencePipeLine.
         Raises:
@@ -53,6 +61,18 @@ class BasePipeLine:
             self.model.half()
         self.device: torch.device = self.model.device
         self.max_total_len = self.model.config.max_position_embeddings
+        if generation_config is None:
+            generation_config = GenerationConfig.from_model_config(self.model.config)
+        if not isinstance(generation_config, GenerationConfig):
+            raise TypeError(
+                f"generation_config should be a GenerationConfig or None, got {type(generation_config)}"
+            )
+        self.logit_to_token_pipeline = LogitVectorToTokenPipeLine(
+            generation_config=generation_config,
+            seed=seed,
+        )
+        self.rng = Generator(device=self.device)
+        self.rng.manual_seed(seed)
 
     @torch.no_grad()
     def tokens_batch_to_logit_matrices(
