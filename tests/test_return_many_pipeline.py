@@ -1,5 +1,4 @@
 import pytest
-
 import torch
 from transformers import GenerationConfig
 
@@ -31,16 +30,18 @@ class TestLogitsToTokensReturnMany:
     generation_config.top_p = 0.9
     generation_config.top_k = 50
     generation_config.do_sample = True
-    pipeline = ReturnManyPipeLine("gpt2", generation_config=generation_config, max_batch_size=2, seed=42)
+    pipeline = ReturnManyPipeLine("gpt2",
+                                  generation_config=generation_config,
+                                  max_batch_size=2,
+                                  seed=42)
 
     #  Tests that generate_return_many returns a single sequence for a single prompt with valid inputs
     def test_generate_return_many_single_prompt_single_sequence(self):
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 1
-        result = self.pipeline.generate_return_many(
-            [prompt], output_length, num_return_sequences
-        )
+        result = self.pipeline.generate_return_many([prompt], output_length,
+                                                    num_return_sequences)
         assert len(result) == 1
         assert len(result[0]) == 1
         assert isinstance(result[0][0], str)
@@ -50,9 +51,8 @@ class TestLogitsToTokensReturnMany:
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 3
-        result = self.pipeline.generate_return_many(
-            [prompt], output_length, num_return_sequences
-        )
+        result = self.pipeline.generate_return_many([prompt], output_length,
+                                                    num_return_sequences)
         assert len(result) == 1
         assert len(result[0]) == 3
         assert all(isinstance(token, str) for token in result[0])
@@ -62,9 +62,8 @@ class TestLogitsToTokensReturnMany:
         prompts = ["Hello, how are you?", "What is your name?"]
         output_length = 10
         num_return_sequences = 1
-        result = self.pipeline.generate_return_many(
-            prompts, output_length, num_return_sequences
-        )
+        result = self.pipeline.generate_return_many(prompts, output_length,
+                                                    num_return_sequences)
         assert len(result) == 2
         assert len(result[0]) == 1
         assert len(result[1]) == 1
@@ -75,9 +74,8 @@ class TestLogitsToTokensReturnMany:
         prompts = ["Hello, how are you?", "What is your name?"]
         output_length = 10
         num_return_sequences = 3
-        result = self.pipeline.generate_return_many(
-            prompts, output_length, num_return_sequences
-        )
+        result = self.pipeline.generate_return_many(prompts, output_length,
+                                                    num_return_sequences)
         assert len(result) == 2
         assert len(result[0]) == 3
         assert len(result[1]) == 3
@@ -88,9 +86,8 @@ class TestLogitsToTokensReturnMany:
         output_length = -1
         num_return_sequences = 3
         with pytest.raises(ValueError):
-            self.pipeline.generate_return_many(
-                prompts, output_length, num_return_sequences
-            )
+            self.pipeline.generate_return_many(prompts, output_length,
+                                               num_return_sequences)
 
     #  Tests that generate_return_many raises a ValueError when num_return_sequences is invalid
     def test_generate_return_many_invalid_num_return_sequences(self):
@@ -98,9 +95,8 @@ class TestLogitsToTokensReturnMany:
         output_length = 10
         num_return_sequences = -1
         with pytest.raises(ValueError):
-            self.pipeline.generate_return_many(
-                prompts, output_length, num_return_sequences
-            )
+            self.pipeline.generate_return_many(prompts, output_length,
+                                               num_return_sequences)
 
     # Tests the pipeline with 8bit quantization
     def test_quantization(self):
@@ -117,9 +113,8 @@ class TestLogitsToTokensReturnMany:
         prompt = "Hello, how are you?"
         output_length = 10
         num_return_sequences = 3
-        res = pipeline.generate_return_many(
-            [prompt], output_length, num_return_sequences
-        )
+        res = pipeline.generate_return_many([prompt], output_length,
+                                            num_return_sequences)
         assert len(res) == 1
         assert len(res[0]) == 3
         assert all(isinstance(token, str) for token in res[0])
@@ -132,8 +127,7 @@ class TestLogitsToTokensReturnMany:
         # Tokenize and pad prompt to get tensor input
         padded_tokens = self.pipeline.tokenize_and_pad([prompt], output_length)
         result = self.pipeline.generate_return_many_tokens(
-            padded_tokens, output_length, num_return_sequences
-        )
+            padded_tokens, output_length, num_return_sequences)
         assert isinstance(result, torch.Tensor)
         assert result.shape == (1, num_return_sequences, output_length)
 
@@ -143,8 +137,7 @@ class TestLogitsToTokensReturnMany:
         num_return_sequences = 3
         padded_tokens = self.pipeline.tokenize_and_pad(prompts, output_length)
         result = self.pipeline.generate_return_many_tokens(
-            padded_tokens, output_length, num_return_sequences
-        )
+            padded_tokens, output_length, num_return_sequences)
         assert result.shape == (2, num_return_sequences, output_length)
         assert isinstance(result, torch.Tensor)
 
@@ -154,9 +147,9 @@ class TestLogitsToTokensReturnMany:
         num_return_sequences = 2
         padded_tokens = self.pipeline.tokenize_and_pad([prompt], 1)
         with pytest.raises(ValueError):
-            self.pipeline.generate_return_many_tokens(
-                padded_tokens, output_length, num_return_sequences
-            )
+            self.pipeline.generate_return_many_tokens(padded_tokens,
+                                                      output_length,
+                                                      num_return_sequences)
 
     def test_generate_return_many_tokens_invalid_num_return_sequences(self):
         prompt = "Hello, how are you?"
@@ -164,17 +157,18 @@ class TestLogitsToTokensReturnMany:
         num_return_sequences = 0
         padded_tokens = self.pipeline.tokenize_and_pad([prompt], output_length)
         with pytest.raises(ValueError):
-            self.pipeline.generate_return_many_tokens(
-                padded_tokens, output_length, num_return_sequences
-            )
+            self.pipeline.generate_return_many_tokens(padded_tokens,
+                                                      output_length,
+                                                      num_return_sequences)
 
     def test_generate_return_many_tokens_invalid_prompt_shape(self):
         prompt = "Hello, how are you?"
         output_length = 5
         num_return_sequences = 2
         # Create a 1D tensor instead of 2D
-        padded_tokens = self.pipeline.tokenize_and_pad([prompt], output_length).view(-1)
+        padded_tokens = self.pipeline.tokenize_and_pad([prompt],
+                                                       output_length).view(-1)
         with pytest.raises(ValueError):
-            self.pipeline.generate_return_many_tokens(
-                padded_tokens, output_length, num_return_sequences
-            )
+            self.pipeline.generate_return_many_tokens(padded_tokens,
+                                                      output_length,
+                                                      num_return_sequences)
