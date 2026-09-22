@@ -8,7 +8,10 @@ This library supports models from huggingface hub that follow the causal languag
 
 ## Installation
 
-```pip install grouped-sampling```
+```bash
+# from the repo root:
+pip install ./src
+```
 
 ## Usage
 

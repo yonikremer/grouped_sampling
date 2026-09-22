@@ -1,10 +1,10 @@
 # A Single Usage Is All You Need — Grouped Sampling
 
-[![PyPI version](https://badge.fury.io/py/grouped-sampling.svg)](https://pypi.org/project/grouped-sampling/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE) [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE) [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 
 > Single-forward-pass text generation from causal LMs: 1 model call per text, not 1 per word.
 >
-> **Links:** [PyPI](https://pypi.org/project/grouped-sampling/) · [ISEF ROBO037](https://isef.net/project/robo037-a-single-usage-is-all-you-need) · [Eval logs (Comet)](https://www.comet.com/yonikremer/grouped-sampling-evaluation/view/new/experiments) · [Library](./src/README.md)
+> **Links:** [ISEF ROBO037](https://isef.net/project/robo037-a-single-usage-is-all-you-need) · [Eval logs (Comet)](https://www.comet.com/yonikremer/grouped-sampling-evaluation/view/new/experiments) · [Library](./src/README.md)
 
 ## Results (TED Talks / IWSLT translation, vs. naive autoregressive baseline)
 
@@ -16,10 +16,10 @@
 
 *Scope: fixed-length outputs up to group size; comparison is against the naive per-word baseline, not modern inference servers like vLLM.*
 
-## Use the package
+## Use the code
 
 ```bash
-pip install grouped-sampling
+pip install ./src
 ```
 
 ```python
@@ -46,7 +46,7 @@ Trade-off: output length is fixed up front — longer than needed wastes compute
 ## Repo layout
 
 ```text
-src/grouped_sampling/   pip-installable library (pip name: grouped-sampling)
+src/grouped_sampling/   library (install from repo root: pip install ./src)
   base_pipeline.py      model/tokenizer loading, batching, single-forward-pass logits
   return_one_pipeline.py  one completion per prompt (generate_batch_return_one)
   return_many_pipeline.py many completions per prompt
