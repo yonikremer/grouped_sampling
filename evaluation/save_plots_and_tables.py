@@ -1,6 +1,8 @@
 """This is a script that plots the results of the experiments and saves the figures to the plots folder"""
+from __future__ import annotations
+
 from os.path import abspath, dirname, join
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 from comet_ml import API, APIExperiment
 from matplotlib import pyplot as plt
@@ -30,8 +32,8 @@ def experiment_filter(exp: APIExperiment) -> bool:
     return "third part" in exp.get_tags()
 
 
-def get_relevant_experiments() -> List[APIExperiment]:
-    all_experiments: List[APIExperiment] = api.get_experiments(
+def get_relevant_experiments() -> list[APIExperiment]:
+    all_experiments: list[APIExperiment] = api.get_experiments(
         workspace=WORKSPACE, project_name=get_project_name(debug=False)
     )
     unsorted_relevant_experiments = (
@@ -40,9 +42,9 @@ def get_relevant_experiments() -> List[APIExperiment]:
     return sorted(unsorted_relevant_experiments, key=get_duration)
 
 
-def get_parameter(experiment: APIExperiment, parameter_name: str) -> Optional[str]:
+def get_parameter(experiment: APIExperiment, parameter_name: str) -> str | None:
     """Gets a parameter from an APIExperiment."""
-    summary: List[dict] = experiment.get_parameters_summary()
+    summary: list[dict] = experiment.get_parameters_summary()
     for curr_param in summary:
         if curr_param["name"] == parameter_name:
             return curr_param["valueCurrent"]
@@ -55,15 +57,15 @@ def get_group_size(experiment: APIExperiment) -> int:
 
 
 def filter_dict_by_name(
-    dict_list: List[Dict[str, Any]], name: str
-) -> List[Dict[str, Any]]:
+    dict_list: list[dict[str, Any]], name: str
+) -> list[dict[str, Any]]:
     return [curr_dict for curr_dict in dict_list if curr_dict["name"] == name]
 
 
-def get_score_stat(experiment: APIExperiment, stat: str) -> Dict[str, float]:
+def get_score_stat(experiment: APIExperiment, stat: str) -> dict[str, float]:
     score_stat = {}
     for curr_metric_name in metric_names:
-        summary: List[Dict[str, Any]] = experiment.get_metrics_summary()
+        summary: list[dict[str, Any]] = experiment.get_metrics_summary()
         metric_stat_name: str = f"general_{curr_metric_name}_{stat}"
         metric_values = filter_dict_by_name(summary, metric_stat_name)
         for curr_metric_value in metric_values:
@@ -71,7 +73,7 @@ def get_score_stat(experiment: APIExperiment, stat: str) -> Dict[str, float]:
     return score_stat
 
 
-def save_plot_from_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
+def save_plot_from_data(data: dict[int, dict[str, float]], stat: str) -> None:
     """
     Adds a scatter plot to the panel.
     makes sure that:
@@ -83,7 +85,7 @@ def save_plot_from_data(data: Dict[int, Dict[str, float]], stat: str) -> None:
     curr_figure = plt.gcf()
     curr_figure.clear()
     colors = ["red", "green", "blue"]
-    for curr_metric_name, curr_color in zip(metric_names, colors):
+    for curr_metric_name, curr_color in zip(metric_names, colors):  # noqa: B905 - strict= needs Python 3.10+, project supports 3.8+
         plt.scatter(
             data.keys(),
             [data[curr_group_size][curr_metric_name] for curr_group_size in data],
@@ -164,10 +166,10 @@ def get_stat_dict(stat_name):
     """
     Returns a dictionary mapping group size to a dictionary of metric name to score.
     """
-    group_size_to_score_stats: Dict[int, Dict[str, float]] = {}
+    group_size_to_score_stats: dict[int, dict[str, float]] = {}
     for exp in get_relevant_experiments():
         group_size: int = get_group_size(exp)
-        curr_exp_stats: Dict[str, float] = get_score_stat(exp, stat_name)
+        curr_exp_stats: dict[str, float] = get_score_stat(exp, stat_name)
         if len(curr_exp_stats) > 0:
             group_size_to_score_stats[group_size] = curr_exp_stats
     return group_size_to_score_stats

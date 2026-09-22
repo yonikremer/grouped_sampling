@@ -1,29 +1,29 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, ClassVar
 
 import matplotlib.pyplot as plt
 from comet_ml import Experiment
 from datasets import Dataset
 from pandas import DataFrame, concat
 
+from cometml_key import get_comet_api_key
 from evaluation import (
     BERT_SCORES,
     STAT_NAME_TO_FUNC,
     get_project_name,
     lang_code_to_name,
 )
-from cometml_key import get_comet_api_key
 
 
 class ExperimentManager:
     start_time: datetime
     experiment: Experiment
     df: DataFrame
-    language_pairs: Set[Tuple[str, str]] = set()
+    language_pairs: ClassVar[set[tuple[str, str]]] = set()
 
-    def __init__(self, debug: bool, parameters: Dict[str, Any] = None):
+    def __init__(self, debug: bool, parameters: dict[str, Any] | None = None):
         self.experiment = Experiment(
             api_key=get_comet_api_key(),
             project_name=get_project_name(debug=debug),
@@ -41,8 +41,8 @@ class ExperimentManager:
                 "target_text",
                 "input_language",
                 "output_language",
+                *BERT_SCORES,
             ]
-            + list(BERT_SCORES)
         )
 
     def log_stats(self, scores: DataFrame, title: str) -> None:
@@ -65,14 +65,14 @@ class ExperimentManager:
 
     def log_sub_experiment(
         self,
-        bert_scores: Dict[str, Union[List[float], Any]],
+        bert_scores: dict[str, list[float] | Any],
         input_lang_code: str,
         output_lang_code: str,
         sub_set: Dataset,
     ) -> None:
         """
         Args:
-        bert_scores: Dict[str, Union[List[float], Any]]
+        bert_scores: dict[str, Union[list[float], Any]]
             with keys "f1", "precision", "recall"
             values of shape (number of examples in the sub-experiment) and type float
         input_lang_code: The name of the input language in this sub experiment half
@@ -83,9 +83,9 @@ class ExperimentManager:
             input_lang_code
         ), lang_code_to_name(output_lang_code)
         self.language_pairs.add((input_lang_name, output_lang_name))
-        f_1: List[float] = bert_scores["f1"]
-        precision: List[float] = bert_scores["precision"]
-        recall: List[float] = bert_scores["recall"]
+        f_1: list[float] = bert_scores["f1"]
+        precision: list[float] = bert_scores["precision"]
+        recall: list[float] = bert_scores["recall"]
         if not len(f_1) == len(precision) == len(recall):
             raise AssertionError
         # add scores to the dataframe

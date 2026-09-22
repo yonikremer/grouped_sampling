@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from __future__ import annotations
 
 import torch
 from torch import no_grad
@@ -16,9 +16,9 @@ class ReturnOnePipeLine(BasePipeLine):
             self,
             model_name: str,
             max_batch_size: int,
-            seed: Optional[int] = 0,
-            model_kwargs: Optional[dict] = None,
-            generation_config: Optional[GenerationConfig] = None,
+            seed: int | None = 0,
+            model_kwargs: dict | None = None,
+            generation_config: GenerationConfig | None = None,
     ):
         """
         Create a new ReturnOnePipeLine.
@@ -35,9 +35,9 @@ class ReturnOnePipeLine(BasePipeLine):
     @no_grad()
     def generate_batch_return_one(
             self,
-            prompts: Union[List[str], str],
+            prompts: list[str] | str,
             output_length: int,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Given a batch of prompts and output length, generates a list of output strings.
         Args:

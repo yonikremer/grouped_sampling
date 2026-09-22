@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 import string
 
@@ -7,36 +9,15 @@ from huggingface_hub.utils import RepositoryNotFoundError
 from torch import Tensor, long, no_grad
 from transformers import (
     AutoConfig,
+    GenerationConfig,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
-    GenerationConfig,
 )
 
+from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 from src.grouped_sampling.return_one_pipeline import (
     ReturnOnePipeLine,
 )
-from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
-
-"""
-Code Analysis
-
-Main functionalities:
-BatchEndToEndSingleSequencePipeLine is a class that provides an end-to-end pipeline for generating sequences from a given prompt using a pre-trained language model. It takes a list of prompts and an output length as input, and returns a list of generated sequences of the specified length. The class uses a tokenizer and a language model from the Hugging Face Transformers library, and provides methods for converting tokens to logits and logits to tokens.
-
-Methods:
-- tokens_batch_to_logit_matrices: Given a batch of prompts where each prompt is a sequence of tokens, and an output_length, returns the logits matrices of shape (batch_size, output_length, vocab_size) where logits[i] is the logits matrix of the i-th prompt.
-- __call__: Given a batch of prompts and output length, generates a list of output strings.
-- get_padding_id: Returns the padding id of a given tokenizer.
-- get_tokenizer: Returns a tokenizer based on the model name.
-- get_model: Load a model from the huggingface model hub, and compile it for faster inference.
-
-Fields:
-- tokenizer: A tokenizer object from the Hugging Face Transformers library.
-- model: A language model object from the Hugging Face Transformers library.
-- device: The device on which the model is loaded.
-- max_total_len: The maximum length of the input sequence that the model can handle.
-- logit_to_token_pipeline: An object of the LogitVectorToTokenPipeLine class, which provides methods for converting logits to tokens.
-"""
 
 
 def validate_logits(
@@ -313,11 +294,11 @@ class TestReturnOnePipeLine:
     # noinspection PyTypeChecker
     def test_init_wrong_types(self):
         with pytest.raises(TypeError):
-            ReturnOnePipeLine(1)
+            ReturnOnePipeLine(1, 128)
         with pytest.raises(TypeError):
-            ReturnOnePipeLine("gpt2", model_kwargs=1)
+            ReturnOnePipeLine("gpt2", 128, model_kwargs=1)
         with pytest.raises(TypeError):
-            ReturnOnePipeLine("gpt2", generation_config=1)
+            ReturnOnePipeLine("gpt2", 128, generation_config=1)
 
     def test_generate_huge_batch(self):
         number_of_prompts = 1024

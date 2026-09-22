@@ -1,8 +1,11 @@
-import torch
-from torch import LongTensor, FloatTensor, Tensor
-from transformers import GenerationConfig
-import pytest
+from __future__ import annotations
+
 from unittest.mock import patch
+
+import pytest
+import torch
+from torch import FloatTensor, LongTensor, Tensor
+from transformers import GenerationConfig
 
 from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
 
@@ -95,7 +98,7 @@ class TestLogitVectorToTokenPipeLine:
 
     def test_beam_search_raises(self):
         config = GenerationConfig(num_beams=2)
-        with pytest.raises(ValueError, match="Beam search is not supported."):
+        with pytest.raises(ValueError, match=r"Beam search is not supported\."):
             LogitVectorToTokenPipeLine(config, 0)
 
     @patch("src.grouped_sampling.logits_vec_to_token.flashinfer.sampling.top_k_top_p_sampling_from_logits")

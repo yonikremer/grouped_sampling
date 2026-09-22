@@ -1,29 +1,10 @@
-import pytest
+from __future__ import annotations
 
+import pytest
 import torch
 from transformers import GenerationConfig
 
 from src.grouped_sampling.return_many_pipeline import ReturnManyPipeLine
-
-"""
-Code Analysis
-
-Main functionalities:
-The ReturnManyPipeLine class is a subclass of BasePipeLine that generates multiple output sequences for each input prompt. It uses a probability processor to modify the probabilities of the model's output and then samples from the modified probabilities to generate multiple output sequences. The class provides two main functionalities: logits_to_tokens_return_many, which converts a batch of logit matrices to tokens, and generate_return_many, which generates multiple output sequences for a batch of input prompts.
-
-Methods:
-- logits_to_tokens_return_many: Converts a batch of logit matrices to tokens and returns a Tensor of shape (batch_size, output_seq_len, num_return_sequences) with num_return_sequences generated output sequences for each prompt in the tokens.
-- generate_return_many: Generates multiple output sequences for a batch of input prompts. It first tokenizes and pads the input prompts, then converts the tokens to logit matrices using tokens_batch_to_logit_matrices, and finally generates multiple output sequences using logits_to_tokens_return_many.
-
-Fields:
-- max_batch_size: The maximum batch size to use.
-- tokenizer: The tokenizer used to tokenize the input prompts.
-- model: The model used to generate the output sequences.
-- device: The device on which the model is run.
-- max_total_len: The maximum length of the input and output sequences.
-- temperature: The temperature used to modify the probabilities of the model's output.
-- probability_processor: The probability processor used to modify the probabilities of the model's output.
-"""
 
 
 class TestLogitsToTokensReturnMany:

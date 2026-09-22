@@ -1,9 +1,12 @@
-from typing import Generator
+from __future__ import annotations
+
+# pylint: disable=protected-access  # tests probe the tokenizer fallback chain on purpose
+from collections.abc import Generator
 
 import pytest
 from transformers import PreTrainedTokenizer
 
-from src.grouped_sampling.tokenizer import get_tokenizer, get_padding_id
+from src.grouped_sampling.tokenizer import get_padding_id, get_tokenizer
 
 
 def create_tokenizers() -> Generator[PreTrainedTokenizer, None, None]:

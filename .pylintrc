@@ -1,0 +1,9 @@
+[pylint]
+# Old research project: fail on real problems (E/F/W), not style.
+# - C/R off: hundreds of pre-existing style nits, never the project standard.
+# - import-error off: lint env has no GPU deps (torch, flashinfer); CI never
+#   installed them, so this check only reports the missing environment.
+#   Genuine first-party API breakage is still caught (e.g. no-name-in-module).
+disable=C,R,import-error
+# torch is not installed in the lint env, so its members cannot be verified.
+ignored-modules=torch

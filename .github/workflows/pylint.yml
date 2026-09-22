@@ -19,5 +19,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install pylint
     - name: Analysing the code with pylint
+      # benchmark/ is a vendored vLLM harness skewed to a newer vLLM API; excluded (see .pylintrc).
       run: |
-        pylint $(git ls-files '*.py')
+        pylint src tests evaluation cometml_key.py fix_bitsandbytes.py run_tests.py

@@ -3,20 +3,20 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 from warnings import warn
 
-from evaluate import load, EvaluationModule
 from datasets import Dataset, get_dataset_config_names
-from transformers import TextGenerationPipeline, AutoModelForCausalLM, AutoTokenizer
+from evaluate import EvaluationModule, load
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextGenerationPipeline
 
-from evaluation.experiment_manager import ExperimentManager
 from evaluation import (
-    lang_code_to_name,
-    process_translation_data,
     DATASET_NAME,
     disable_progress_bars,
+    lang_code_to_name,
+    process_translation_data,
 )
+from evaluation.experiment_manager import ExperimentManager
 
 disable_progress_bars()
 
@@ -28,7 +28,7 @@ metric: EvaluationModule = load(
 
 def process_sub_set_half(
     sub_set_half: Dataset, in_lang_code: str, out_lang_code: str
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     input_lang_name = lang_code_to_name(in_lang_code)
     output_lang_name = lang_code_to_name(out_lang_code)
     prefix = (
@@ -36,7 +36,7 @@ def process_sub_set_half(
     )
     postfix = f"\n {output_lang_name}: "
     inputs = [prefix + x["translation"][in_lang_code] + postfix for x in sub_set_half]
-    references: List[str] = [x["translation"][out_lang_code] for x in sub_set_half]
+    references: list[str] = [x["translation"][out_lang_code] for x in sub_set_half]
     return inputs, references
 
 
@@ -47,10 +47,10 @@ def sub_experiment_half(
     manager: ExperimentManager,
     sub_set_half: Dataset,
 ) -> None:
-    inputs: List[str]
-    references: List[str]
+    inputs: list[str]
+    references: list[str]
     inputs, references = process_sub_set_half(sub_set_half, in_lang_code, out_lang_code)
-    raw_predictions: List[List[Dict[str, str]]] = pipeline(
+    raw_predictions: list[list[dict[str, str]]] = pipeline(
         inputs,
         num_beams=1,
         num_return_sequences=1,
@@ -60,7 +60,7 @@ def sub_experiment_half(
         return_text=True,
         repetition_penalty=1.2,
     )
-    predictions: List[str] = [x[0]["generated_text"] for x in raw_predictions]
+    predictions: list[str] = [x[0]["generated_text"] for x in raw_predictions]
     metric.add_batch(
         predictions=predictions,
         references=references,
@@ -76,9 +76,9 @@ def sub_experiment_half(
 
 def run_experiment(
     pipe: TextGenerationPipeline,
-    sub_sut_names: List[str],
+    sub_sut_names: list[str],
     debug: bool,
-    parameters: Dict[str, Any],
+    parameters: dict[str, Any],
 ) -> None:
     manager = ExperimentManager(debug=debug, parameters=parameters)
     for i, sub_set_name in enumerate(sub_sut_names):
@@ -112,13 +112,16 @@ def run_experiment(
 
 def create_hugging_face_pipeline(
     debug: bool,
-) -> Tuple[TextGenerationPipeline, Dict[str, Any]]:
+) -> tuple[TextGenerationPipeline, dict[str, Any]]:
     """Creates a translation pipeline from hugging face"""
-    parent_folder = Path(__file__).parent
-    with open(
-        os.path.join(parent_folder, "experiment_arguments.json"), "r"
-    ) as json_file:
-        evaluated_text_generator_dict = json.load(json_file)
+    args_file = Path(__file__).parent / "experiment_arguments.json"
+    try:
+        with args_file.open(encoding="utf-8") as json_file:
+            evaluated_text_generator_dict = json.load(json_file)
+    except OSError as error:
+        raise RuntimeError(f"Could not open experiment config: {args_file}") from error
+    except ValueError as error:
+        raise RuntimeError(f"Invalid experiment config: {args_file}") from error
     model_name = "gpt2" if debug else evaluated_text_generator_dict["model_name"]
     model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -150,7 +153,7 @@ def create_hugging_face_pipeline(
 def main(debug: bool = __debug__) -> None:
     if debug:
         # send a warning
-        warn("Running in debug mode, only a small subset of the data will be used")
+        warn("Running in debug mode, only a small subset of the data will be used", stacklevel=2)
     sub_sut_names = get_dataset_config_names(DATASET_NAME, trust_remote_code=True)
     if debug:
         sub_sut_names = sub_sut_names[:1]

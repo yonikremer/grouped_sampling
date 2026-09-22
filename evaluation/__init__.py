@@ -1,16 +1,23 @@
+from __future__ import annotations
+
 import json
-import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Tuple, Dict, Any
+from typing import Any
 from warnings import warn
 
 from datasets import Dataset, load_dataset
+from datasets.utils.logging import (
+    disable_progress_bar as _disable_datasets_progress_bar,
+)
 from transformers import GenerationConfig
+from transformers.utils.logging import (
+    disable_progress_bar as _disable_transformers_progress_bar,
+)
 
 from src.grouped_sampling import ReturnOnePipeLine
 
-
-STAT_NAME_TO_FUNC: Tuple[Tuple[str, Callable], ...] = (
+STAT_NAME_TO_FUNC: tuple[tuple[str, Callable], ...] = (
     ("mean", lambda x: x.mean()),
     ("median", lambda x: x.median()),
     ("25_percentile", lambda x: x.quantile(0.25)),
@@ -45,13 +52,13 @@ def lang_code_to_name(language_code: str) -> str:
 
 def get_project_name(debug: bool = __debug__) -> str:
     if debug:
-        warn("RUNNING IN DEBUG MODE")
+        warn("RUNNING IN DEBUG MODE", stacklevel=2)
     return "grouped-sampling-debug" if debug else "grouped-sampling-evaluation"
 
 
 def process_translation_data(
     sub_set_name: str, debug: bool
-) -> Tuple[Dataset, Dataset, str, str]:
+) -> tuple[Dataset, Dataset, str, str]:
     spited_sub_set_name = sub_set_name.split("_")
     language_code1, language_code2 = spited_sub_set_name[:2]
     if debug:
@@ -60,9 +67,9 @@ def process_translation_data(
         sub_set: Dataset = load_dataset(DATASET_NAME, sub_set_name, split="train")
 
     def rename_keys(
-        x: Dict[str, Any], input_lang_name: str, output_lang_name: str
-    ) -> Dict[str, str]:
-        translation: Dict[str, str] = x["translation"]
+        x: dict[str, Any], input_lang_name: str, output_lang_name: str
+    ) -> dict[str, str]:
+        translation: dict[str, str] = x["translation"]
         return {
             input_lang_name: translation[input_lang_name],
             output_lang_name: translation[output_lang_name],
@@ -92,34 +99,31 @@ def create_pipeline(max_batch_size: int) -> ReturnOnePipeLine:
     generation_config = GenerationConfig.from_pretrained(model_name)
     for key, value in experiment_parameters.items():
         setattr(generation_config, key, value)
-    pipeline = ReturnOnePipeLine(
+    return ReturnOnePipeLine(
         model_name=model_name,
         model_kwargs={"load_in_8bits": True},
         generation_config=generation_config,
         max_batch_size=max_batch_size,
     )
-    return pipeline
 
 
 def get_experiment_parameters():
-    parent_folder = Path(__file__).parent
-    with open(
-        os.path.join(parent_folder, "experiment_arguments.json"), "r"
-    ) as json_file:
-        experiment_parameters = json.load(json_file)
-    return experiment_parameters
+    args_file = Path(__file__).parent / "experiment_arguments.json"
+    try:
+        with args_file.open(encoding="utf-8") as json_file:
+            return json.load(json_file)
+    except OSError as error:
+        raise RuntimeError(f"Could not open experiment config: {args_file}") from error
+    except ValueError as error:
+        raise RuntimeError(f"Invalid experiment config: {args_file}") from error
 
 
 def disable_transformers_progress_bar():
-    from transformers.utils.logging import disable_progress_bar
-
-    disable_progress_bar()
+    _disable_transformers_progress_bar()
 
 
 def disable_datasets_progress_bar():
-    from datasets.utils.logging import disable_progress_bar
-
-    disable_progress_bar()
+    _disable_datasets_progress_bar()
 
 
 def disable_progress_bars():

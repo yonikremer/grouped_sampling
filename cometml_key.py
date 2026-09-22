@@ -1,4 +1,6 @@
-import os
+from __future__ import annotations
+
+from pathlib import Path
 
 try:
     # noinspection PyUnresolvedReferences
@@ -11,21 +13,20 @@ else:  # if we are using kaggle, we need to set the api key
 
 def get_comet_api_key() -> str:
     """
-    Returns the Comet API key from the file "final_project/evaluate/comet_api_key.txt"
-    if this file does not exist, asks the user to enter the key manually and saves it to the file
+    Returns the Comet API key from the api key file.
+    If the file does not exist, asks the user to enter the key manually and saves it.
     """
     if using_kaggle:
         return UserSecretsClient().get_secret("comet_ml_api_key")
-    if os.getcwd() == "/content":
+    if Path.cwd() == Path("/content"):
         # if running on colab
-        api_key_file = "final_project/evaluation/comet_ml_api_key.txt"
+        api_key_file = Path("final_project/evaluation/comet_ml_api_key.txt")
     else:
         # if running locally
-        api_key_file = "comet_ml_api_key.txt"
-    if os.path.exists(api_key_file):
-        with open(api_key_file, "r") as f:
-            return f.read().strip()
-    api_key = input("Please enter your api_key for comet ml: ")
-    with open(api_key_file, "w") as f:
-        f.write(api_key)
-    return api_key
+        api_key_file = Path("comet_ml_api_key.txt")
+    try:
+        return api_key_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        api_key = input("Please enter your api_key for comet ml: ")
+        api_key_file.write_text(api_key, encoding="utf-8")
+        return api_key

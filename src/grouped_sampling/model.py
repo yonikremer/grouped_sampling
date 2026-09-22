@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from huggingface_hub.utils import RepositoryNotFoundError
 from torch import no_grad
-
 from torch.nn import Module
 from transformers import AutoModelForCausalLM
 
@@ -36,7 +37,7 @@ def get_model(
             "If you are trying to load a private model, make sure to pass your huggingface token."
             + str(error),
             response=None,
-        )
+        ) from error
     model = model.eval()
     if hasattr(model, "config") and hasattr(model.config, "use_cache"):
         model.config.use_cache = False

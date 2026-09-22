@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-
-from typing import Any, Dict, List, Union
+from typing import Any
 from warnings import warn
 
-from evaluate import TranslationEvaluator
 from datasets import Dataset, get_dataset_config_names
+from evaluate import TranslationEvaluator
 
-from evaluation.experiment_manager import ExperimentManager
 from evaluation import (
-    lang_code_to_name,
-    process_translation_data,
     DATASET_NAME,
     create_pipeline,
     disable_progress_bars,
     get_experiment_parameters,
+    lang_code_to_name,
+    process_translation_data,
 )
+from evaluation.experiment_manager import ExperimentManager
 from src.grouped_sampling import ReturnOnePipeLine
 
 disable_progress_bars()
@@ -39,7 +38,7 @@ def sub_experiment_half(
     my_evaluator.METRIC_KWARGS = {"lang": out_lang_code}
     my_evaluator.PIPELINE_KWARGS = {"prefix": prefix, "postfix": postfix}
     # noinspection PyTypeChecker
-    scores: Dict[str, Union[List[float], Any]] = my_evaluator.compute(
+    scores: dict[str, list[float] | Any] = my_evaluator.compute(
         model_or_pipeline=generator,
         data=sub_set_half,
         input_column=in_lang_code,
@@ -51,9 +50,9 @@ def sub_experiment_half(
 def run_experiment(
     pipeline: ReturnOnePipeLine,
     my_evaluator: TranslationEvaluator,
-    sub_sut_names: List[str],
+    sub_sut_names: list[str],
     debug: bool,
-    parameters: Dict[str, Any] = None,
+    parameters: dict[str, Any] | None = None,
 ) -> None:
     pipeline.task = "translation"
     manager = ExperimentManager(
@@ -103,7 +102,7 @@ def create_evaluator() -> TranslationEvaluator:
 def main(debug: bool = __debug__) -> None:
     if debug:
         # send a warning
-        warn("Running in debug mode, only a small subset of the data will be used")
+        warn("Running in debug mode, only a small subset of the data will be used", stacklevel=2)
     sub_sut_names = get_dataset_config_names(DATASET_NAME)
     if debug:
         sub_sut_names = sub_sut_names[:1]

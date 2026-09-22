@@ -1,45 +1,19 @@
+from __future__ import annotations
+
 import os
 import random
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import pytest
 import torch
 from huggingface_hub.utils import RepositoryNotFoundError
-from torch import inference_mode, cuda
+from torch import cuda, inference_mode
 from torch.nn import Module
 from transformers import AutoTokenizer, PretrainedConfig
 
 from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling.model import get_model
-
-"""
-Code Analysis
-
-Objective:
-The objective of the 'get_model' function is to load a pre-trained model from the Hugging Face Transformers library, with the option to use 8-bit quantization and CUDA acceleration, and return the compiled model.
-
-Inputs:
-- model_name (str): the name or path of the pre-trained model to load
-- **kwargs: additional keyword arguments to pass to the 'from_pretrained' method of the 'AutoModelForCausalLM' class
-
-Flow:
-1. Determine if 8-bit quantization and CUDA acceleration should be used based on the input parameters.
-2. Create a dictionary of keyword arguments to pass to the 'from_pretrained' method of the 'AutoModelForCausalLM' class, including the model name/path, 8-bit quantization flag, resume download flag, and any additional keyword arguments passed in.
-3. If 8-bit quantization is being used, set the 'device_map' key in the dictionary to 'auto'.
-4. Load the pre-trained model using the 'from_pretrained' method of the 'AutoModelForCausalLM' class with the created dictionary of keyword arguments.
-5. If CUDA acceleration is being used and available, move the model to the GPU.
-6. If the model has an 'eval' method, call it.
-7. Compile the model using the 'compile' method of the 'torch' module.
-8. Return the compiled model.
-
-Outputs:
-- model (PreTrainedModel): the loaded and compiled pre-trained model
-
-Additional aspects:
-- If the model is too large for the GPU and CUDA acceleration is being used, a warning is issued and the model is moved to the CPU.
-- If CUDA acceleration is not available, a warning is issued and the model is loaded on the CPU.
-"""
 
 
 class TestGetModel:

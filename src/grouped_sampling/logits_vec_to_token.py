@@ -1,18 +1,16 @@
-from typing import Optional
+from __future__ import annotations
 
-import torch
-from torch import Tensor, argmax, inference_mode, Generator
-from transformers import (
-    GenerationConfig
-)
 import flashinfer
+import torch
+from torch import Generator, Tensor, argmax, inference_mode
+from transformers import GenerationConfig
 
 
 class LogitVectorToTokenPipeLine:
     def __init__(
             self,
             generation_config: GenerationConfig,
-            seed: Optional[int] = 0,
+            seed: int | None = 0,
     ):
         if isinstance(generation_config.num_beams, int) and generation_config.num_beams > 1:
             raise ValueError("Beam search is not supported.")
@@ -76,8 +74,7 @@ class LogitVectorToTokenPipeLine:
         vocab_size = logits.size(2)
         output_logits = logits.reshape(batch_size * output_length, vocab_size)
         sampled_tokens = self.sample_logits(output_logits)
-        sampled_tokens = sampled_tokens.reshape(batch_size, output_length)
-        return sampled_tokens
+        return sampled_tokens.reshape(batch_size, output_length)
 
     @inference_mode()
     def logits_to_tokens_return_many(
@@ -129,5 +126,4 @@ class LogitVectorToTokenPipeLine:
                 generator=self.rng,
                 indices=indices
             )
-        sampled_tokens = sampled_tokens.reshape(batch_size, num_return_sequences, output_length)
-        return sampled_tokens
+        return sampled_tokens.reshape(batch_size, num_return_sequences, output_length)

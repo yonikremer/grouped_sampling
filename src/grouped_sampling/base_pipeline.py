@@ -1,12 +1,12 @@
-from typing import Optional, List
+from __future__ import annotations
 
 import torch
-from torch import Tensor, argmax, eq, int8, ones_like, full, long, Generator
+from torch import Generator, Tensor, argmax, eq, full, int8, long, ones_like
 from transformers import GenerationConfig
 
-from .tokenizer import get_tokenizer
-from .model import get_model
 from .logits_vec_to_token import LogitVectorToTokenPipeLine
+from .model import get_model
+from .tokenizer import get_tokenizer
 
 
 class BasePipeLine:
@@ -14,9 +14,9 @@ class BasePipeLine:
             self,
             model_name: str,
             max_batch_size: int = 128,
-            model_kwargs: Optional[dict] = None,
-            generation_config: Optional[GenerationConfig] = None,
-            seed: Optional[int] = 0
+            model_kwargs: dict | None = None,
+            generation_config: GenerationConfig | None = None,
+            seed: int | None = 0
     ):
         """
         Create a new BasePipeLine.
@@ -143,7 +143,7 @@ class BasePipeLine:
             )
 
     @staticmethod
-    def _validate_prompts(prompts: List[str]):
+    def _validate_prompts(prompts: list[str]):
         if not isinstance(prompts, list):
             raise TypeError(f"strings should be a list, got {type(prompts)}")
         if min(len(string) for string in prompts) == 0:
@@ -151,7 +151,7 @@ class BasePipeLine:
 
     def tokenize_and_pad(
             self,
-            prompts: List[str],
+            prompts: list[str],
             output_length: int,
     ) -> Tensor:
         """

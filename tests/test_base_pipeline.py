@@ -1,29 +1,11 @@
+from __future__ import annotations
+
+# pylint: disable=protected-access  # tests probe internal validators on purpose
 import pytest
 import torch
 from torch import inference_mode
 
 from src.grouped_sampling.base_pipeline import BasePipeLine
-
-"""
-Code Analysis
-
-Main functionalities:
-The BasePipeLine class is a base class for building pipelines for natural language processing tasks. It provides methods for loading a model and tokenizer from the Hugging Face model hub, tokenizing and padding input prompts, and converting batches of prompts to logits matrices. The class also includes methods for validating input arguments and handling errors.
-
-Methods:
-- __init__: Initializes the BasePipeLine object with a model name, whether to load the model in 8-bit mode, model arguments, and a maximum batch size.
-- tokens_batch_to_logit_matrices: Given a batch of prompts where each prompt is a sequence of tokens, and an output length, returns the logits matrices of shape (batch_size, output_length, vocab_size) where logits[i] is the logits matrix of the i-th prompt.
-- _validate_output_length: Validates the output length argument.
-- _validate_prompts: Validates the prompts argument.
-- tokenize_and_pad: A helper function that converts a list of strings to a padded tensor of tokens.
-
-Fields:
-- max_batch_size: The maximum batch size to use.
-- tokenizer: The tokenizer used to tokenize input prompts.
-- model: The model used to generate logits matrices from input prompts.
-- device: The device used to run the model.
-- max_total_len: The maximum total length of input prompts.
-"""
 
 
 class TestBasePipeLine:

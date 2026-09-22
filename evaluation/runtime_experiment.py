@@ -1,20 +1,21 @@
+from __future__ import annotations
+
 import os
 import time
+from collections.abc import Iterable
 from os.path import abspath, dirname
-from typing import List, Iterable
 
+import pandas as pd
 from datasets import get_dataset_config_names
 from torch import inference_mode
-import pandas as pd
-
-from torch.profiler import profile, ProfilerActivity
+from torch.profiler import ProfilerActivity, profile
 
 from evaluation import (
-    process_translation_data,
     DATASET_NAME,
-    lang_code_to_name,
     create_pipeline,
     get_experiment_parameters,
+    lang_code_to_name,
+    process_translation_data,
 )
 from fix_bitsandbytes import fix_ld_library_path
 from src.grouped_sampling import get_tokenizer
@@ -33,12 +34,12 @@ def prompt_engineering(
     ]
 
 
-def get_prompts(debug: bool) -> List[str]:
+def get_prompts(debug: bool) -> list[str]:
     """Gets a list of all the examples in the dataset with name DATASET_NAME"""
-    sub_set_names: List[str] = get_dataset_config_names(DATASET_NAME)
+    sub_set_names: list[str] = get_dataset_config_names(DATASET_NAME)
     if debug:
         sub_set_names = sub_set_names[:1]
-    prompts: List[str] = []
+    prompts: list[str] = []
     language_code1: str
     language_code2: str
     for sub_set_name in sub_set_names:
@@ -51,7 +52,7 @@ def get_prompts(debug: bool) -> List[str]:
 
 
 @inference_mode()
-def generate(prompts: List[str], max_batch_size: int, max_prompt_length: int):
+def generate(prompts: list[str], max_batch_size: int, max_prompt_length: int):
     pipeline = create_pipeline(max_batch_size)
     output_length = pipeline.max_total_len - max_prompt_length - 1
     pipeline.max_batch_size = max_batch_size
@@ -64,8 +65,7 @@ def generate(prompts: List[str], max_batch_size: int, max_prompt_length: int):
         pipeline.generate_batch_return_one(prompts, output_length)
     print(profiler.key_averages().table(sort_by="self_cuda_memory_usage"))
     end_time = time.time()
-    duration_seconds = end_time - start_time
-    return duration_seconds
+    return end_time - start_time
 
 
 @inference_mode()
@@ -74,7 +74,7 @@ def main(debug: bool = False):
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     model_name = get_experiment_parameters()["model_name"]
     tokenizer = get_tokenizer(model_name)
-    prompts: List[str] = get_prompts(debug=debug)
+    prompts: list[str] = get_prompts(debug=debug)
     batch_size_to_duration = {}
     max_prompt_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
     max_batch_size = 2

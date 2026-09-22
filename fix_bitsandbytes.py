@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 
@@ -7,6 +9,6 @@ def fix_ld_library_path():
         os.environ["LD_LIBRARY_PATH"] += ":" + new_path
     else:
         os.environ["LD_LIBRARY_PATH"] = new_path
-    import bitsandbytes
+    import bitsandbytes  # noqa: PLC0415 - must import after LD_LIBRARY_PATH is set
     print("bitsandbytes version:", bitsandbytes.__version__)
 

@@ -2,23 +2,22 @@
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 """Benchmark the latency of processing a single batch of requests."""
 
+from __future__ import annotations
+
 import argparse
 import dataclasses
 import json
 import os
 import time
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any
 
 import numpy as np
-from tqdm import tqdm
-
 import vllm.envs as envs
-from vllm.benchmarks.lib.utils import (convert_to_pytorch_benchmark_format,
-                                       write_to_json)
+from tqdm import tqdm
+from vllm.benchmarks.lib.utils import convert_to_pytorch_benchmark_format, write_to_json
 from vllm.engine.arg_utils import EngineArgs
 from vllm.inputs import PromptType
-
-from src.grouped_sampling import ReturnM
 
 
 def save_to_pytorch_benchmark_format(args: argparse.Namespace,
@@ -79,6 +78,11 @@ def main(args: argparse.Namespace):
 
     # NOTE(woosuk): If the request cannot be processed in a single batch,
     # the engine will automatically process the request in multiple batches.
+    from vllm import (  # noqa: PLC0415 - vllm is an optional benchmark-only dep
+        LLM,
+        SamplingParams,
+    )
+
     llm = LLM(**dataclasses.asdict(engine_args))
     assert llm.llm_engine.model_config.max_model_len >= (
             args.input_len +
@@ -101,7 +105,7 @@ def main(args: argparse.Namespace):
         "prompt_token_ids": batch
     } for batch in dummy_prompt_token_ids.tolist()]
 
-    def run_to_completion(curr_profile_dir: Optional[str] = None) -> Optional[float]:
+    def run_to_completion(curr_profile_dir: str | None = None) -> float | None:
         if curr_profile_dir:
             llm.start_profile()
             llm.generate(dummy_prompts,
@@ -109,14 +113,12 @@ def main(args: argparse.Namespace):
                          use_tqdm=False)
             llm.stop_profile()
             return None
-        else:
-            start_time = time.perf_counter()
-            llm.generate(dummy_prompts,
-                         sampling_params=sampling_params,
-                         use_tqdm=False)
-            end_time = time.perf_counter()
-            latency = end_time - start_time
-            return latency
+        start_time = time.perf_counter()
+        llm.generate(dummy_prompts,
+                     sampling_params=sampling_params,
+                     use_tqdm=False)
+        end_time = time.perf_counter()
+        return end_time - start_time
 
     print("Warming up...")
     for _ in tqdm(range(args.num_iters_warmup), desc="Warmup iterations"):
@@ -136,15 +138,15 @@ def main(args: argparse.Namespace):
     percentages = [10, 25, 50, 75, 90, 99]
     percentiles = np.percentile(latencies, percentages)
     print(f"Avg latency: {np.mean(latencies)} seconds")
-    for percentage, percentile in zip(percentages, percentiles):
+    for percentage, percentile in zip(percentages, percentiles):  # noqa: B905 - strict= needs Python 3.10+, project supports 3.8+
         print(f"{percentage}% percentile latency: {percentile} seconds")
 
 
     results = {
         "avg_latency": np.mean(latencies),
         "latencies": latencies.tolist(),
-        "percentiles": dict(zip(percentages, percentiles.tolist())),
+        "percentiles": dict(zip(percentages, percentiles.tolist())),  # noqa: B905 - strict= needs Python 3.10+, project supports 3.8+
     }
-    with open(args.output_json, "w") as f:
+    with Path(args.output_json).open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=4)
     save_to_pytorch_benchmark_format(args, results)

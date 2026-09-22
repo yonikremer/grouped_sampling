@@ -1,8 +1,8 @@
-from typing import Optional, List
+from __future__ import annotations
 
 import torch
 import tqdm
-from torch import inference_mode, Tensor
+from torch import Tensor, inference_mode
 from transformers import GenerationConfig
 
 from .base_pipeline import BasePipeLine
@@ -16,9 +16,9 @@ class ReturnManyPipeLine(BasePipeLine):
             self,
             model_name: str,
             max_batch_size: int,
-            seed: Optional[int] = 0,
-            model_kwargs: Optional[dict] = None,
-            generation_config: Optional[GenerationConfig] = None,
+            seed: int | None = 0,
+            model_kwargs: dict | None = None,
+            generation_config: GenerationConfig | None = None,
     ):
         """
         Create a new ReturnManyPipeLine.
@@ -68,16 +68,15 @@ class ReturnManyPipeLine(BasePipeLine):
                 torch.cuda.empty_cache()
             return outputs
         logits = self.tokens_batch_to_logit_matrices(prompts, output_length)
-        tokens = self.logit_to_token_pipeline.logits_to_tokens_return_many(logits, num_return_sequences)
-        return tokens
+        return self.logit_to_token_pipeline.logits_to_tokens_return_many(logits, num_return_sequences)
 
     @inference_mode()
     def generate_return_many(
             self,
-            prompts: List[str],
+            prompts: list[str],
             output_length: int,
             num_return_sequences: int,
-    ) -> List[List[str]]:
+    ) -> list[list[str]]:
         """
         Generates a pre-determined number of responses for each prompt
         Arguments:

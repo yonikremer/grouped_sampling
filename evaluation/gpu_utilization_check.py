@@ -1,12 +1,14 @@
-from threading import Thread, Event
-from typing import Callable
+from __future__ import annotations
+
+from collections.abc import Callable
+from threading import Event, Thread
 from warnings import warn
 
 # noinspection PyUnresolvedReferences
 from nvidia_smi import (
-    nvmlInit,
     nvmlDeviceGetHandleByIndex,
     nvmlDeviceGetUtilizationRates,
+    nvmlInit,
 )
 
 
@@ -54,4 +56,4 @@ def _check_utilization(handle: nvmlDeviceGetHandleByIndex, stop_flag: Event) -> 
         if gpu_utilization > 0:
             return
     # Print a warning if the GPU utilization is zero
-    warn("GPU utilization is zero")
+    warn("GPU utilization is zero", stacklevel=2)
