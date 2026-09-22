@@ -17,5 +17,5 @@ This library supports models from huggingface hub that follow the causal languag
 3. Choose a group size, which should be upper limit for the length of the generated texts.
 A higher group size will cause unnecessary computations.
 A lower group size will cause lower performance both in runtime and text quality.
-4. `pipe = GroupedSamplingPipeLine(model_name=YOUR_MODEL_NAME, group_size=YOUR_GROUP_SIZE)`
-5. `answer = pipe(YOUR_TEXT)["generated_text"]`
+4. `pipe = ReturnOnePipeLine(model_name=YOUR_MODEL_NAME, max_batch_size=8)`
+5. `answers = pipe.generate_batch_return_one([YOUR_TEXT], output_length=YOUR_MAX_NEW_TOKENS)`
