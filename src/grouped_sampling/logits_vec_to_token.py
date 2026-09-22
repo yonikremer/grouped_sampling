@@ -22,7 +22,9 @@ class LogitVectorToTokenPipeLine:
         self.temperature = generation_config.temperature
         if self.top_p == 0 or self.top_k == 1:
             self.do_sample = False
-        self.rng = Generator(device='cuda')
+        self.rng = Generator(
+            device="cuda" if torch.cuda.is_available() else "cpu"
+        )
         if seed is not None:
             self.rng.manual_seed(seed)
 

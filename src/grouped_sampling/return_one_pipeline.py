@@ -4,7 +4,7 @@ import torch
 from torch import no_grad
 from transformers import GenerationConfig
 
-from src.grouped_sampling.base_pipeline import BasePipeLine
+from .base_pipeline import BasePipeLine
 
 
 class ReturnOnePipeLine(BasePipeLine):

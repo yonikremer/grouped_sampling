@@ -4,9 +4,9 @@ import torch
 from torch import Tensor, argmax, eq, int8, ones_like, full, long, Generator
 from transformers import GenerationConfig
 
-from src.grouped_sampling.tokenizer import get_tokenizer
-from src.grouped_sampling.model import get_model
-from src.grouped_sampling.logits_vec_to_token import LogitVectorToTokenPipeLine
+from .tokenizer import get_tokenizer
+from .model import get_model
+from .logits_vec_to_token import LogitVectorToTokenPipeLine
 
 
 class BasePipeLine:
@@ -57,7 +57,11 @@ class BasePipeLine:
             model_name=model_name,
             **model_kwargs,
         )
-        if "load_in_8bit" not in model_kwargs and "load_in_4bit" not in model_kwargs:
+        if (
+            "load_in_8bit" not in model_kwargs
+            and "load_in_4bit" not in model_kwargs
+            and self.model.device.type == "cuda"
+        ):
             self.model.half()
         self.device: torch.device = self.model.device
         self.max_total_len = self.model.config.max_position_embeddings
@@ -107,7 +111,15 @@ class BasePipeLine:
             attention_mask=attention_mask,
         ).logits
         padding_int_tokens = eq(padded_tokens, self.tokenizer.pad_token_id).to(int8)
+        seq_len = padded_tokens.shape[1]
         last_non_pad_indices = argmax(padding_int_tokens, dim=1) - 1
+        # rows without any padding: argmax returns 0, so fall back to last position
+        has_padding = padding_int_tokens.sum(dim=1) > 0
+        last_non_pad_indices = torch.where(
+            has_padding,
+            last_non_pad_indices,
+            torch.full_like(last_non_pad_indices, seq_len - 1),
+        )
         batch_size = padded_tokens.shape[0]
         relevant_logits = torch.empty(
             (batch_size, output_length, all_logits.shape[-1]),

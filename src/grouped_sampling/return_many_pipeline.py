@@ -5,7 +5,7 @@ import tqdm
 from torch import inference_mode, Tensor
 from transformers import GenerationConfig
 
-from src.grouped_sampling.base_pipeline import BasePipeLine
+from .base_pipeline import BasePipeLine
 
 
 class ReturnManyPipeLine(BasePipeLine):
@@ -57,7 +57,7 @@ class ReturnManyPipeLine(BasePipeLine):
         prompts.requires_grad = False
         batch_size = prompts.shape[0]
         if batch_size > self.max_batch_size:
-            outputs: Tensor = torch.zeros(batch_size, num_return_sequence, output_length, dtype=prompts.dtype, device=prompts.device)
+            outputs: Tensor = torch.zeros(batch_size, num_return_sequences, output_length, dtype=prompts.dtype, device=prompts.device)
             for i in tqdm.tqdm(range(0, batch_size, self.max_batch_size)):
                 curr_batch = prompts[i: i + self.max_batch_size, :]
                 outputs[i: i + self.max_batch_size, :, :] = self.generate_return_many_tokens(
