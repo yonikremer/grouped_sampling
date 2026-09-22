@@ -16,6 +16,54 @@
 
 *Scope: fixed-length outputs up to group size; comparison is against the naive per-word baseline, not modern inference servers like vLLM.*
 
+## Use the package
+
+```bash
+pip install grouped-sampling
+```
+
+```python
+from grouped_sampling import ReturnOnePipeLine, ReturnManyPipeLine
+
+# one answer per prompt, output_length = max new tokens
+pipe = ReturnOnePipeLine(model_name="gpt2", max_batch_size=8)
+answers: list[str] = pipe.generate_batch_return_one(["Translate to French: Hello, how are you?"], output_length=32)
+
+# several answers per prompt
+many = ReturnManyPipeLine(model_name="gpt2", max_batch_size=8)
+```
+
+Any HuggingFace causal LM works as `model_name`. Sampling follows the model's `GenerationConfig` (temperature, top-p/top-k via flashinfer); greedy when sampling is off. Models load in fp16 with `device_map="auto"`.
+
+## How it works
+
+1. Prompts are tokenized, padded, and extended with a placeholder group of `output_length` tokens.
+2. One forward pass produces a logit matrix of shape `(batch, output_length, vocab)` (`BasePipeLine.tokens_batch_to_logit_matrices`).
+3. Each position is sampled independently (`LogitVectorToTokenPipeLine`, flashinfer top-p/top-k) and decoded back to text.
+
+Trade-off: output length is fixed up front — longer than needed wastes compute, shorter than needed clips the text.
+
+## Repo layout
+
+```text
+src/grouped_sampling/   pip-installable library (pip name: grouped-sampling)
+  base_pipeline.py      model/tokenizer loading, batching, single-forward-pass logits
+  return_one_pipeline.py  one completion per prompt (generate_batch_return_one)
+  return_many_pipeline.py many completions per prompt
+  logits_vec_to_token.py  sampling (greedy / top-p / top-k via flashinfer)
+  model.py / tokenizer.py HF loading helpers
+/
+evaluation/             TED Talks (IWSLT) translation experiments, BERTScore scoring, Comet logs
+benchmark/              throughput/latency harness (grouped sampling vs. vLLM)
+tests/                  pytest suite (run_tests.py)
+```
+
+## Reproduce & verify
+
+- Evaluation walkthrough: [`evaluation/README.md`](./evaluation/README.md); raw logs: [Comet](https://www.comet.com/yonikremer/grouped-sampling-evaluation/view/new/experiments)
+- Tests: `python run_tests.py` (or `pytest tests/`)
+- Benchmarks: `benchmark/throughput.py`, `benchmark/latency.py`
+
 ## Awards
 
 ## [FIRST PLACE in the Israeli Young Scientist and Developer Contest 2023](https://www.youngscientistsisrael.com/projects/dgymh-bqbvtsvt-shymvsh-y-yl-bmvdly-shph-sybtyym-causal-language-models)
